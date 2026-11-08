@@ -50,7 +50,7 @@ describe("buildApplicationMenu", () => {
     const onToggle = vi.fn();
     const template = build(platform, { openAtLogin: { checked: false, onToggle } });
     const item = template[0].submenu.find((entry) => entry.id === "open-at-login");
-    expect(template[0].label).toBe(platform === "darwin" ? "OpenMausBot" : "File");
+    expect(template[0].label).toBe(platform === "darwin" ? "Otávio Bot" : "File");
     expect(item).toMatchObject({ label: "Open at Login", type: "checkbox", checked: false });
     item.click();
     expect(onToggle).toHaveBeenCalledWith(true);
@@ -72,7 +72,7 @@ describe("buildApplicationMenu", () => {
     const template = build(platform);
     expect(template[0].role).toBe("fileMenu");
     for (const item of template) {
-      expect(item.label).not.toBe("OpenMausBot");
+      expect(item.label).not.toBe("Otávio Bot");
     }
   });
 
@@ -124,7 +124,7 @@ describe("buildApplicationMenu", () => {
     expect(server.submenu.find((entry) => entry.id === "add-cloud").label).toBe("Adicionar um Cloud…");
     expect(template[0].submenu.find((entry) => entry.accelerator === "CmdOrCtrl+,").label).toBe("Configurações…");
     expect(template[0].submenu.at(-1)).toEqual({ role: "quit", label: "Sair do app Otávio Bot" });
-    expect(template.map((entry) => entry.label)).toEqual(["OpenMausBot", "Arquivo", "Editar", "Servidor", "Visualizar", "Janela"]);
+    expect(template.map((entry) => entry.label)).toEqual(["Otávio Bot", "Arquivo", "Editar", "Servidor", "Visualizar", "Janela"]);
     for (const platform of ["win32", "linux"]) expect(build(platform, { t })[0].submenu[0].label).toBe("Sair do Otávio Bot");
   });
 
