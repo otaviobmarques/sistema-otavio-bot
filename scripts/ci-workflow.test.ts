@@ -49,8 +49,8 @@ describe("CI concurrency", () => {
     );
   });
 
-  it("runs the full lane every night", () => {
-    expect(workflow.on.schedule).toEqual([{ cron: expect.stringMatching(/^\d+ \d+ \* \* \*$/) }]);
+  it("runs no nightly lane, so the private repository spends no unattended Windows or macOS minutes", () => {
+    expect(workflow.on.schedule).toBeUndefined();
   });
 
   it("stops a closed PR's run by joining ci.yml's PR group", () => {
@@ -290,7 +290,8 @@ describe("CI concurrency", () => {
         continue;
       }
       expect(job.needs).toBe("static");
-      expect(job.if).toBe(`contains(needs.static.outputs.jobs, '"${name}"')`);
+      const onDemand = name === "windows-cua" || name === "electron-smokes" ? "github.event_name == 'workflow_dispatch' && " : "";
+      expect(job.if).toBe(`${onDemand}contains(needs.static.outputs.jobs, '"${name}"')`);
     }
     // ci-scope selects exactly the jobs the workflow has.
     expect(Object.keys(workflow.jobs).filter((name) => !["static", "gate", "deploy-composio-broker"].includes(name)).sort())

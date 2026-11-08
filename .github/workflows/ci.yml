@@ -20,10 +20,6 @@ on:
   # setting, which GitHub offers only once an organization owns the
   # repository (docs/ci.md); this trigger is what lets CI report on those runs.
   merge_group:
-  # The full lane every night on main's newest commit: every platform's shards
-  # and smokes, which pushes to main and merge groups leave out (docs/ci.md).
-  schedule:
-    - cron: "17 21 * * *"
 
 # least privilege: CI only reads the checkout, it never writes back
 permissions:
@@ -308,7 +304,8 @@ jobs:
 
   windows-cua:
     needs: static
-    if: contains(needs.static.outputs.jobs, '"windows-cua"')
+    # Otávio Bot is a private repository, where Windows and macOS minutes cost 2x and 10x: run only on demand.
+    if: github.event_name == 'workflow_dispatch' && contains(needs.static.outputs.jobs, '"windows-cua"')
     name: Windows CUA host smoke
     runs-on: windows-latest
     timeout-minutes: 15
@@ -329,7 +326,8 @@ jobs:
 
   electron-smokes:
     needs: static
-    if: contains(needs.static.outputs.jobs, '"electron-smokes"')
+    # Otávio Bot is a private repository, where Windows and macOS minutes cost 2x and 10x: run only on demand.
+    if: github.event_name == 'workflow_dispatch' && contains(needs.static.outputs.jobs, '"electron-smokes"')
     # Real Electron utility processes against disposable homes and fake CLIs.
     # Never the live app. Each script prints its own evidence lines. Every
     # PR's, push's and merge group's macOS checks live in this one job: macOS
