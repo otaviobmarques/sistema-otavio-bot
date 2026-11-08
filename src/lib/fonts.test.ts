@@ -36,13 +36,14 @@ describe("fonts", () => {
     for (const id of blocks) expect(FONT_IDS).toContain(id as (typeof FONT_IDS)[number]);
   });
 
-  it("leads every skin with the bundled Geist face, except the paper skins and Pop", () => {
+  it("leads every skin with the bundled Geist face, except the paper skins, Pop and the Otávio Bot midnight skin", () => {
     const skins = [...css.matchAll(/\[data-skin="([a-z-]+)"\]\s*\{[^}]*?--font-sans:\s*([^;]+);/g)];
     expect(skins.length).toBeGreaterThan(8);
     for (const [, skin, stack] of skins) {
       const first = stack.split(",")[0].trim();
       if (["atelier", "lagoon", "linen"].includes(skin)) expect(first, skin).toBe("system-ui");
       else if (skin === "pop") expect(first, skin).toBe('"Plus Jakarta Sans"');
+      else if (skin === "midnight") expect(first, skin).toBe('"Inter Variable"');
       else expect(first, skin).toBe('"Geist Variable"');
     }
     expect(css).toMatch(/@import "@fontsource-variable\/geist";/);

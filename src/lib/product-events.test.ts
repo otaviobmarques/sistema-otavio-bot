@@ -28,6 +28,7 @@ vi.stubGlobal("localStorage", {
 });
 
 beforeEach(() => {
+  vi.stubEnv("VITE_POSTHOG_TOKEN", "phc_test");
   store.clear();
   ph.captured = [];
 });

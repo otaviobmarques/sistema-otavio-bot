@@ -75,7 +75,7 @@ describe("claudeElicitations", () => {
     elicit.frame(ask("e6", { mode: "url", url: "javascript:alert(1)" }));
     elicit.frame(ask("e6b", { mode: "url", url: "http://example.com/auth" }));
     expect(written).toEqual([sent("e5", { action: "decline" }), sent("e6", { action: "decline" }), sent("e6b", { action: "decline" })]);
-    expect(events[0].message).toBe("github asked you to open a link to continue: https://example.com/auth. OpenMausBot can't open it from here, so the request was declined. Open the link yourself, then ask the bot to try again.");
+    expect(events[0].message).toBe("github asked you to open a link to continue: https://example.com/auth. Otávio Bot can't open it from here, so the request was declined. Open the link yourself, then ask the bot to try again.");
     expect(events[0].text).toEqual({ key: "chat.notice.elicitationUrlDeclinedWithUrl", params: { server: "github", url: "https://example.com/auth" } });
     expect(events[1].message).not.toContain("javascript:");
     expect(events[2].message).not.toContain("http://");
@@ -97,7 +97,7 @@ describe("claudeElicitations", () => {
   it.each([false, true])("keeps the generic server out of raw params in URL notices (%s)", (withUrl) => {
     const { elicit, events } = harness();
     elicit.frame(ask("url", { mcp_server_name: "", mode: "url", url: withUrl ? "https://example.com" : "http://example.com" }));
-    expect(events[0].message).toBe(`An MCP server asked you to open a link to continue${withUrl ? ": https://example.com" : ""}. OpenMausBot can't open it from here, so the request was declined. Open the link yourself, then ask the bot to try again.`);
+    expect(events[0].message).toBe(`An MCP server asked you to open a link to continue${withUrl ? ": https://example.com" : ""}. Otávio Bot can't open it from here, so the request was declined. Open the link yourself, then ask the bot to try again.`);
     expect(events[0].text).toEqual({ key: `chat.notice.elicitationUrlDeclinedGeneric${withUrl ? "WithUrl" : ""}`, params: withUrl ? { url: "https://example.com" } : {} });
   });
 
