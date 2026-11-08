@@ -62,6 +62,7 @@ const baseStorage = {
 vi.stubGlobal("localStorage", baseStorage);
 
 beforeEach(() => {
+  vi.stubEnv("VITE_POSTHOG_TOKEN", "phc_test");
   store.clear();
   ph.loads = 0;
   ph.fail = false;
@@ -75,7 +76,17 @@ beforeEach(() => {
   ph.optIns = [];
 });
 // Restored in afterEach: an inline restore would be skipped when an assertion fails mid-test.
-afterEach(() => vi.stubGlobal("localStorage", baseStorage));
+afterEach(() => {
+  vi.stubGlobal("localStorage", baseStorage);
+  vi.unstubAllEnvs();
+});
+
+it("loads nothing and sends nothing when the build sets no analytics key", async () => {
+  vi.stubEnv("VITE_POSTHOG_TOKEN", "");
+  await initAnalytics();
+  expect(ph.loads).toBe(0);
+  expect(ph.calls).toEqual([]);
+});
 
 // resetModules keeps the mocked posthog-js cached, so it is registered again and `loads` counts this graph only.
 async function freshAnalytics() {
