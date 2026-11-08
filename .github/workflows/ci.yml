@@ -204,6 +204,11 @@ jobs:
         # before Vitest starts so a cold download cannot consume the fixture
         # timeout.
         run: node --input-type=commonjs -e "require('electron')"
+      - name: Match the Boat Linux lane, which removes bubblewrap
+        # ubuntu-24.04 runners now ship a working bwrap, so a Team Cloud would run its turns in a box the
+        # fixtures were never written for; the Boat lane above removes it for the same reason.
+        if: runner.os == 'Linux'
+        run: sudo rm -f /usr/bin/bwrap
       - name: Run tests
         # The github-actions reporter turns each failure into an annotation
         # on the PR, so the failing test and its assertion are readable
