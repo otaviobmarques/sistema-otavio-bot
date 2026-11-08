@@ -374,7 +374,7 @@ describe("profileMenuItems", () => {
     phone: [{ key: "phone-app", label: "Get the phone app", onSelect: noop }],
     usage: true,
     update: null,
-    account: "Otávio Bot Cloud",
+    account: "OpenMausBot Cloud",
     onUsage: noop, onSettings: noop, onShortcuts: noop, onAbout: noop, onHelp: noop, onFeedback: noop, onAccount: noop,
     ...patch,
   });
@@ -384,7 +384,7 @@ describe("profileMenuItems", () => {
     expect(items.map((item) => item.key)).toEqual(["usage", "phone-app", "support", "settings", "account"]);
     expect(items.filter((item) => item.separatorBefore).map((item) => item.key)).toEqual(["account"]);
     expect(items.find((item) => item.key === "support")!.submenu!.map((item) => item.key)).toEqual(["help", "feedback", "shortcuts", "about"]);
-    expect(items.find((item) => item.key === "account")!.label).toBe("Otávio Bot Cloud");
+    expect(items.find((item) => item.key === "account")!.label).toBe("OpenMausBot Cloud");
   });
 
   it("only offers what this window has: no usage on a remote server, no account without one", () => {
