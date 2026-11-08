@@ -61,7 +61,7 @@ pair    a new pairing code for the running server, with its link and QR
 devices lists paired devices; "devices revoke ID" signs one out
 status  the running server, the address others reach it at, and whether
         that address answers as this server
-login   signs this machine in to an Otávio Bot account (an emailed code)
+login   signs this machine in to an OpenMausBot account (an emailed code)
         and reserves its public address for --tunnel
 logout  releases that address and signs out
 access  who may sign in with an emailed code at /pair: an address or

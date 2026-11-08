@@ -1,9 +1,6 @@
 // Electron has no role for the macOS Preferences… item, so it is built explicitly.
-import { Menu } from "electron";
+import { Menu, app } from "electron";
 import nativeText from "./native-text.cjs";
-
-// app.name stays the packaged productName, which names the data folder; people read the product's own name.
-const DISPLAY_NAME = "Otávio Bot";
 
 const role = (t, name, key, params) => ({ role: name, label: t(key, params) });
 
@@ -126,17 +123,17 @@ export function buildApplicationMenu({ environments, activeId, onSwitch, onAddFr
   const atLogin = openAtLogin ? [{ id: "open-at-login", label: t("native.menu.openAtLogin"), type: "checkbox", checked: openAtLogin.checked, click: () => openAtLogin.onToggle(!openAtLogin.checked) }] : [];
   const roles = roleMenus(t, isMac);
   const appMenu = {
-    label: DISPLAY_NAME,
+    label: app.name,
     submenu: [
-      role(t, "about", "native.role.about", { app: DISPLAY_NAME }),
+      role(t, "about", "native.role.about", { app: app.name }),
       { label: t("native.menu.preferences"), accelerator: "CmdOrCtrl+,", click: () => onOpenSettings() },
       ...atLogin,
       { type: "separator" },
-      role(t, "hide", "native.role.hide", { app: DISPLAY_NAME }),
+      role(t, "hide", "native.role.hide", { app: app.name }),
       role(t, "hideOthers", "native.role.hideOthers"),
       role(t, "unhide", "native.role.unhide"),
       { type: "separator" },
-      role(t, "quit", "native.role.quitApp", { app: DISPLAY_NAME }),
+      role(t, "quit", "native.role.quitApp", { app: app.name }),
     ],
   };
   const template = [

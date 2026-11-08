@@ -152,7 +152,7 @@ test("a rejected AppImage relaunch is reported without quitting the desktop", (t
   const { AppImageUpdater, BaseUpdater } = createRequire(import.meta.url)("./vendor/electron-updater.cjs");
   const workspace = mkdtempSync(join(tmpdir(), "omb-appimage-relaunch-failed-"));
   t.after(() => rmSync(workspace, { recursive: true, force: true }));
-  const launched = join(workspace, "Otávio Bot.AppImage");
+  const launched = join(workspace, "OpenMausBot.AppImage");
   const staged = join(workspace, "pending.AppImage");
   writeFileSync(launched, "old");
   writeFileSync(staged, "new");

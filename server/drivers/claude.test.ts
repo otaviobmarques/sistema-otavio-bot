@@ -1609,7 +1609,7 @@ describe("ClaudeDriver turns (fake CLI)", () => {
       return { bot, thread, file };
     };
 
-    it("reaches a turn in a thread's own folder, beside Otávio Bot's own settings", async () => {
+    it("reaches a turn in a thread's own folder, beside OpenMausBot's own settings", async () => {
       const dump = join(scratch, "bot-settings.json");
       process.env.FAKE_CLAUDE_DUMP = dump;
       await create();
@@ -1692,7 +1692,7 @@ describe("ClaudeDriver turns (fake CLI)", () => {
     expect(seen.argv).toContain("--strict-mcp-config");
     expect(seen.argv[seen.argv.indexOf("--setting-sources") + 1]).toBe("project");
     expect(seen.settings.claudeMdExcludes).toEqual([join(homedir(), ".claude", "CLAUDE.md")]);
-    // A bot's memory is Otávio Bot's: the CLI's per-folder one would split notes by thread and break the cached prompt.
+    // A bot's memory is OpenMausBot's: the CLI's per-folder one would split notes by thread and break the cached prompt.
     expect(seen.settings.env.CLAUDE_CODE_DISABLE_AUTO_MEMORY).toBe("1");
   });
 
@@ -1857,7 +1857,7 @@ describe("ClaudeDriver turns (fake CLI)", () => {
     expect(after.settings.env.ANTHROPIC_API_KEY).toBe("synthetic-new");
   });
 
-  it("loads third-party MCP tools on demand and keeps Otávio Bot's own servers loaded", async () => {
+  it("loads third-party MCP tools on demand and keeps OpenMausBot's own servers loaded", async () => {
     await create();
     const dump = join(scratch, "tool-search.json");
     process.env.FAKE_CLAUDE_DUMP = dump;
@@ -2613,7 +2613,7 @@ describe("ClaudeDriver turns (fake CLI)", () => {
       await expect(pendingAnswer).resolves.toMatchObject({ id: "before-stop", behavior: "deny" });
       const lateAnswer = nextAnswer();
       conn.write(JSON.stringify({ t: "ask", id: "after-stop", tool: "Bash", input: { command: "echo too late" } }) + "\n");
-      await expect(lateAnswer).resolves.toMatchObject({ id: "after-stop", behavior: "deny", message: "Otávio Bot: the turn ended" });
+      await expect(lateAnswer).resolves.toMatchObject({ id: "after-stop", behavior: "deny", message: "OpenMausBot: the turn ended" });
       expect(recorder.events.filter((e) => e.type === "request.opened")).toHaveLength(openedBefore);
       await expect(instance.adapter.respondToRequest(threadId, "after-stop", { behavior: "allow" })).resolves.toBe("unavailable");
     } finally {
@@ -3100,7 +3100,7 @@ describe("ClaudeDriver turns (fake CLI)", () => {
     expect(dumpedPid(dump)).not.toBe(failedLaunch);
   });
 
-  it("reports which of the turn's own MCP servers did not connect, and none of Otávio Bot's", async () => {
+  it("reports which of the turn's own MCP servers did not connect, and none of OpenMausBot's", async () => {
     await create(undefined, { FAKE_CLAUDE_MCP_FAILED: "agents,blender,stranger" });
     const custom = { blender: { command: "/usr/bin/python3", args: ["/srv/blender.py"], env: {} }, notes: { command: "npx", args: ["notes-mcp"], env: {} } };
     const turn = await instance.adapter.sendTurn({ threadId: "t-custom-failed", text: "one", integrations: { custom } });
@@ -3204,7 +3204,7 @@ describe("ClaudeDriver turns (fake CLI)", () => {
     await expect(answer).resolves.toMatchObject({
       id: "ask-between",
       behavior: "deny",
-      message: "Otávio Bot: the turn ended",
+      message: "OpenMausBot: the turn ended",
     });
     expect(recorder.events.filter((e) => e.type === "request.opened")).toHaveLength(opensBefore);
     await expect(
@@ -3716,7 +3716,7 @@ describe("ClaudeDriver turns (fake CLI)", () => {
     expect(await nextAnswer()).toMatchObject({
       id: "dup-1",
       behavior: "deny",
-      message: "Otávio Bot: duplicate ask id — skipping this request.",
+      message: "OpenMausBot: duplicate ask id — skipping this request.",
     });
     expect(recorder.events.filter((e) => e.type === "request.opened" && e.requestId === "dup-1")).toHaveLength(1);
 
@@ -3745,7 +3745,7 @@ describe("ClaudeDriver turns (fake CLI)", () => {
     expect(await conn2Answer).toMatchObject({
       id: "dup-2",
       behavior: "deny",
-      message: "Otávio Bot: duplicate ask id — skipping this request.",
+      message: "OpenMausBot: duplicate ask id — skipping this request.",
     });
     expect(recorder.events.filter((e) => e.type === "request.opened" && e.requestId === "dup-2")).toHaveLength(1);
 
@@ -3798,7 +3798,7 @@ describe("ClaudeDriver turns (fake CLI)", () => {
     expect(await nextAnswer()).toMatchObject({
       id: "dup-4",
       behavior: "deny",
-      message: "Otávio Bot: duplicate ask id — skipping this request.",
+      message: "OpenMausBot: duplicate ask id — skipping this request.",
     });
     expect(recorder.events.filter((e) => e.type === "request.opened" && e.requestId === "dup-4")).toHaveLength(1);
 
@@ -3835,7 +3835,7 @@ describe("ClaudeDriver turns (fake CLI)", () => {
     expect(await reply).toMatchObject({
       id: "ask-late",
       behavior: "deny",
-      message: "Otávio Bot: the turn ended",
+      message: "OpenMausBot: the turn ended",
     });
     expect(recorder.events.filter((e) => e.type === "request.opened")).toHaveLength(opensBefore);
     await expect(instance.adapter.respondToRequest("t-perm-late", "ask-late", { behavior: "allow" })).resolves.toBe(
@@ -3868,7 +3868,7 @@ describe("ClaudeDriver turns (fake CLI)", () => {
     expect(await reply).toMatchObject({
       id: "q-late",
       behavior: "answer",
-      message: "Otávio Bot: the turn is ending — wrap up.",
+      message: "OpenMausBot: the turn is ending — wrap up.",
     });
     expect(recorder.events.filter((e) => e.type === "request.opened")).toHaveLength(opensBefore);
     await expect(

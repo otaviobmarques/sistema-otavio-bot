@@ -608,7 +608,7 @@ export class WebhookManager {
       payload,
       contentType: "application/json",
       eventName,
-      userAgent: "Otávio Bot webhook tester",
+      userAgent: "OpenMausBot webhook tester",
       deliveryId: `test-${randomUUID()}`,
     }, true);
   }

@@ -1024,7 +1024,7 @@ process.stdin.on("data", (chunk) => {
             delivery: "async",
             questions: process.env.FAKE_CODEX_ASYNC_QUESTIONS
               ? JSON.parse(process.env.FAKE_CODEX_ASYNC_QUESTIONS)
-              : [{ title: "Which source should I use?", options: ["Directly in Otávio Bot", "The official server in Executor"] }],
+              : [{ title: "Which source should I use?", options: ["Directly in OpenMausBot", "The official server in Executor"] }],
           };
           notify("item/started", { item, startedAtMs: Date.now() });
           notify("item/completed", { item, completedAtMs: Date.now() });

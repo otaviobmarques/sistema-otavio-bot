@@ -271,7 +271,7 @@ describe("the phone entries", () => {
 
   it("never offers the iOS-only entry it replaced", () => {
     for (const target of ["computer", "server"] as const) {
-      expect(items(target, null).list.map((item) => item.label)).not.toContain("Get Otávio Bot for iOS");
+      expect(items(target, null).list.map((item) => item.label)).not.toContain("Get OpenMausBot for iOS");
     }
   });
 
@@ -521,7 +521,7 @@ describe("Simple mode's account menu", () => {
 
   it("puts the move's row first, in its own group, above a raised update", () => {
     const move = [{ key: "cloud-move", label: "Try My Cloud move again", title: "My Cloud did not answer.", onSelect: noop }];
-    const update = { key: "update", label: "Otávio Bot 0.2.0 ready, restart", onSelect: noop };
+    const update = { key: "update", label: "OpenMausBot 0.2.0 ready, restart", onSelect: noop };
     expect(groups(build({ move }))).toEqual([
       ["cloud-move"],
       ["automations", "team-map"],
