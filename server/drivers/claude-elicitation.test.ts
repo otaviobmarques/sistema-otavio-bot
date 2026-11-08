@@ -57,7 +57,7 @@ describe("claudeElicitations", () => {
     const { elicit, written, events } = harness();
     expect(elicit.frame(ask("e4", { requested_schema: { type: "object", properties: { token: { type: "string" } } } }))).toBe(true);
     expect(written).toEqual([sent("e4", { action: "decline" })]);
-    expect(events).toEqual([{ type: "runtime.notice", message: 'github asked you to fill in a field ("Allow access to your repos?"). OpenMausBot can\'t show that form yet, so the request was declined.',
+    expect(events).toEqual([{ type: "runtime.notice", message: 'github asked you to fill in a field ("Allow access to your repos?"). Otávio Bot can\'t show that form yet, so the request was declined.',
       text: { key: "chat.notice.elicitationFormDeclinedOneMessage", params: { server: "github", message: "Allow access to your repos?" } } }]);
   });
 
@@ -65,7 +65,7 @@ describe("claudeElicitations", () => {
     const { elicit, written, events } = harness();
     expect(elicit.frame(ask("e4b", { requested_schema: { type: "object", properties: {}, required: ["token"] } }))).toBe(true);
     expect(written).toEqual([sent("e4b", { action: "decline" })]);
-    expect(events).toEqual([{ type: "runtime.notice", message: 'github asked you to fill in a field ("Allow access to your repos?"). OpenMausBot can\'t show that form yet, so the request was declined.',
+    expect(events).toEqual([{ type: "runtime.notice", message: 'github asked you to fill in a field ("Allow access to your repos?"). Otávio Bot can\'t show that form yet, so the request was declined.',
       text: { key: "chat.notice.elicitationFormDeclinedOneMessage", params: { server: "github", message: "Allow access to your repos?" } } }]);
   });
 
@@ -107,7 +107,7 @@ describe("claudeElicitations", () => {
         const { elicit, events } = harness();
         elicit.frame(ask("form", { display_name: server, mcp_server_name: "", message,
           requested_schema: { properties: Object.fromEntries(Array.from({ length: fields }, (_, i) => [`field${i}`, { type: "string" }])) } }));
-        expect(events[0].message).toBe(`${server || "An MCP server"} asked you to fill in ${fields === 1 ? "a field" : `${fields} fields`}${message ? ` ("${message}")` : ""}. OpenMausBot can't show that form yet, so the request was declined.`);
+        expect(events[0].message).toBe(`${server || "An MCP server"} asked you to fill in ${fields === 1 ? "a field" : `${fields} fields`}${message ? ` ("${message}")` : ""}. Otávio Bot can't show that form yet, so the request was declined.`);
         expect(events[0].text).toEqual({ key: `chat.notice.elicitationFormDeclined${server ? "" : "Generic"}${fields === 1 ? "One" : "Many"}${message ? "Message" : ""}`, params: {
           ...(server ? { server } : {}), ...(fields === 1 ? {} : { fields }), ...(message ? { message } : {}),
         } });

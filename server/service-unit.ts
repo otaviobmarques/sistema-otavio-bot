@@ -222,7 +222,7 @@ export function sentinelSystemdService(spec: SentinelServiceSpec): string {
   return [
     "# Written by `openmausbot service install --sentinel`. Started by its timer.",
     "[Unit]",
-    "Description=OpenMausBot Sentinel health scan",
+    "Description=Otávio Bot Sentinel health scan",
     "",
     "[Service]",
     "Type=oneshot",
@@ -239,7 +239,7 @@ export function sentinelSystemdTimer(): string {
   return [
     "# Written by `openmausbot service install --sentinel`.",
     "[Unit]",
-    "Description=Run the OpenMausBot Sentinel health scan every two minutes",
+    "Description=Run the Otávio Bot Sentinel health scan every two minutes",
     "",
     "[Timer]",
     `OnBootSec=${SENTINEL_INTERVAL_SECONDS}s`,

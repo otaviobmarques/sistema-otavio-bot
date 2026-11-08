@@ -22,7 +22,7 @@ describe("browser unread indicator", () => {
 
   it("prefixes the title with the count, replaces an older count, and drops it at zero", () => {
     expect(titleWithUnread("OpenMausBot", 3)).toBe("(3) OpenMausBot");
-    expect(titleWithUnread("(3) OpenMausBot", 5)).toBe("(5) OpenMausBot");
+    expect(titleWithUnread("(3) Otávio Bot", 5)).toBe("(5) Otávio Bot");
     expect(titleWithUnread("(5) Acme", 0)).toBe("Acme");
     expect(titleWithUnread("Acme", 0)).toBe("Acme");
   });
@@ -35,7 +35,7 @@ describe("browser unread indicator", () => {
     vi.stubGlobal("navigator", { setAppBadge, clearAppBadge });
 
     showBrowserUnread(2);
-    expect(doc.title).toBe("(2) OpenMausBot");
+    expect(doc.title).toBe("(2) Otávio Bot");
     expect(setAppBadge).toHaveBeenCalledWith(2);
 
     showBrowserUnread(0);
@@ -58,10 +58,10 @@ describe("browser unread indicator", () => {
     vi.stubGlobal("document", doc);
     vi.stubGlobal("navigator", {});
     showBrowserUnread(1);
-    expect(doc.title).toBe("(1) OpenMausBot");
+    expect(doc.title).toBe("(1) Otávio Bot");
 
     vi.stubGlobal("navigator", { setAppBadge: () => Promise.reject(new Error("NotAllowedError")) });
     showBrowserUnread(4);
-    expect(doc.title).toBe("(4) OpenMausBot");
+    expect(doc.title).toBe("(4) Otávio Bot");
   });
 });
