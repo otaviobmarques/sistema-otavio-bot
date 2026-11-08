@@ -381,6 +381,7 @@ jobs:
       - name: Every required job passed
         env:
           NEEDS: ${{ toJSON(needs) }}
+          EVENT: ${{ github.event_name }}
         run: |
           node --input-type=module -e '
             const needs = JSON.parse(process.env.NEEDS);
@@ -390,7 +391,8 @@ jobs:
             try { selected = JSON.parse(needs.static.outputs.jobs); } catch { selected = null; }
             if (!Array.isArray(selected) || !selected.every((job) => typeof job === "string")) throw new Error("Missing CI selection");
             const bad = Object.entries(needs).filter(([job, { result }]) => {
-              const expected = job === "static" || selected.includes(job) ? "success" : "skipped";
+              const onDemand = ["windows-cua", "electron-smokes"].includes(job) && process.env.EVENT !== "workflow_dispatch";
+              const expected = job === "static" || (selected.includes(job) && !onDemand) ? "success" : "skipped";
               return result !== expected;
             });
             if (bad.length) { console.error(`\n${bad.length} required job(s) did not pass: ${bad.map(([job]) => job).join(", ")}`); process.exit(1); }

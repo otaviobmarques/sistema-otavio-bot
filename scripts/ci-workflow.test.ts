@@ -9,13 +9,13 @@ import { interpolate } from "./testing/github-expression.ts";
 const workflow = parse(readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8"));
 const requiredRuntimeJobs = ["build", "vitest", "behavior-evals", "packaged-server", "windows-cua", "electron-smokes"];
 
-function runGate(needs: Record<string, unknown>) {
+function runGate(needs: Record<string, unknown>, event = "workflow_dispatch") {
   // Execute the actual gate, not a duplicate of its success/failure logic.
   const command = workflow.jobs.gate.steps[0].run as string;
   const script = command.match(/node --input-type=module -e '([\s\S]+)'/);
   expect(script).not.toBeNull();
   const check = spawnSync(process.execPath, ["--input-type=module", "-e", script![1]], {
-    env: { ...process.env, NEEDS: JSON.stringify(needs) },
+    env: { ...process.env, NEEDS: JSON.stringify(needs), EVENT: event },
     encoding: "utf8",
     timeout: 5_000,
   });
@@ -193,6 +193,13 @@ describe("CI concurrency", () => {
       expect(step.env?.OMB_VITEST_RETRY_LOG).toBe("${{ runner.temp }}/vitest-retries.jsonl");
     }
     expect(readFileSync(new URL("../vite.config.ts", import.meta.url), "utf8")).toContain('runner: "./scripts/testing/ci-retry-runner.ts"');
+  });
+
+  it("expects the on-demand Windows and macOS jobs skipped outside a manual run, and fails if one ran and failed", () => {
+    const onDemand = { "windows-cua": { result: "skipped" }, "electron-smokes": { result: "skipped" } };
+    expect(runGate({ ...gateNeeds(SELECTABLE_JOBS), ...onDemand }, "pull_request").status).toBe(0);
+    expect(runGate({ ...gateNeeds(SELECTABLE_JOBS), ...onDemand, "windows-cua": { result: "failure" } }, "pull_request").status).toBe(1);
+    expect(runGate({ ...gateNeeds(SELECTABLE_JOBS), ...onDemand }).status).toBe(1);
   });
 
   it.each(requiredRuntimeJobs)("fails closed for every required %s outcome when selected", (job) => {
