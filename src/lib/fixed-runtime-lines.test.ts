@@ -95,8 +95,8 @@ describe("report receipts", () => {
   it.each([false, true])("keeps contact variants and English parity (later=%s)", (later) => {
     for (const contact of [undefined, "reply@example.test"]) {
       const make = later ? laterLine : sentLine;
-      expect(make("report-42", contact, "en")).toBe(`Sent to the MausBot team (report report-42)${later ? " after an earlier try did not go through" : ""}. Milind and Omkar get it by email${contact ? ` and will reply to ${contact}` : ""}.`);
-      expect(make("report-42", contact, "pt-br")).toContain("Enviado à equipe do MausBot (relatório report-42)");
+      expect(make("report-42", contact, "en")).toBe(`Bug report report-42 saved on this computer${later ? " after an earlier try did not go through" : ""}, in the bug-reports folder of the app's data. You can send the file to whoever looks after your Otávio Bot${contact ? `; it includes ${contact} so they can reply` : ""}.`);
+      expect(make("report-42", contact, "pt-br")).toContain("Relatório report-42 salvo neste computador, na pasta bug-reports dos dados do app");
       if (contact) expect(make("report-42", contact, "pt-br")).toContain(contact);
     }
   });

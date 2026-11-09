@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { CheckCheck, Loader2, Network, Share2, SlidersHorizontal, SquarePen, Trash2, UserRound, Users } from "lucide-react";
+import { Building2, Check, CheckCheck, Loader2, Network, Share2, SlidersHorizontal, SquarePen, Trash2, UserRound, Users } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { departmentUnread, markDepartmentRead } from "@/lib/folder-read";
 import { t } from "@/lib/i18n";
+import { companyOf, moveDepartmentToCompany, useCompanies } from "@/state/companies";
 import { api, useStore } from "@/state/store";
 import { MENU_ITEM } from "./menu-recipe";
 
@@ -31,6 +32,33 @@ function MarkDepartmentRead({ name, className, onDone }: { name: string; classNa
   </button>;
 }
 
+/** Which company holds the department: opens into one choice per company, and none. */
+function DepartmentCompany({ name, className, onDone }: { name: string; className: string; onDone: () => void }) {
+  const { dispatch } = useStore();
+  const companies = useCompanies();
+  const [open, setOpen] = useState(false);
+  if (!companies?.length) return null;
+  const holder = companyOf(companies, name);
+  const choose = (companyId: string | null) => {
+    onDone();
+    if (companyId === (holder?.id ?? null)) return;
+    void moveDepartmentToCompany(name, companyId).catch((error: unknown) => dispatch({ type: "error", message: error instanceof Error ? error.message : String(error) }));
+  };
+  const choice = (id: string | null, label: string, color?: string) => (
+    <button key={id ?? ""} type="button" role="menuitemradio" aria-checked={(holder?.id ?? null) === id} data-team-company={id ?? ""} className={cn(className, "pl-9")} onClick={() => choose(id)}>
+      {color ? <span aria-hidden="true" className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: color }} /> : <span aria-hidden="true" className="size-2.5 shrink-0" />}
+      <span className="min-w-0 flex-1 truncate">{label}</span>
+      {(holder?.id ?? null) === id && <Check size={14} aria-hidden="true" />}
+    </button>
+  );
+  return <>
+    <button type="button" role="menuitem" aria-expanded={open} data-team-company-menu="" className={className} onClick={() => setOpen(!open)}>
+      <Building2 size={16} /><span className="min-w-0 flex-1 truncate">{t("companies.departmentMenu", { name: holder?.name ?? t("building.noCompany") })}</span>
+    </button>
+    {open && <>{companies.map((company) => choice(company.id, company.name, company.color))}{choice(null, t("building.noCompany"))}</>}
+  </>;
+}
+
 export function TeamMenuItems({ onAddBots, onRename, onShare, onDelete, onSetForAll, onSetOwner, onSeeReports, department, onRead }: {
   /** The department this menu is for: with it, the menu offers Mark all as read. */
   department?: string;
@@ -48,6 +76,7 @@ export function TeamMenuItems({ onAddBots, onRename, onShare, onDelete, onSetFor
     <>
       <button type="button" role="menuitem" autoFocus className={item} onClick={onAddBots}><Users size={16} />{t("team.addBots")}</button>
       {department !== undefined && <MarkDepartmentRead name={department} className={cn(item, "disabled:opacity-60")} onDone={onRead ?? (() => {})} />}
+      {department && <DepartmentCompany name={department} className={item} onDone={onRead ?? (() => {})} />}
       {onSetOwner && <button type="button" role="menuitem" className={item} onClick={onSetOwner}><UserRound size={16} />{t("lookedAfter.setForAll")}</button>}
       {onSeeReports && <button type="button" role="menuitem" className={item} onClick={onSeeReports}><Network size={16} />{t("lookedAfter.seeWho")}</button>}
       {onSetForAll && <button type="button" role="menuitem" className={item} onClick={onSetForAll}><SlidersHorizontal size={16} />{t("teamSettings.menu")}</button>}
