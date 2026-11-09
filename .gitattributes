@@ -50,3 +50,7 @@ relay/test/vectors/** text eol=lf
 # a CRLF checkout on Windows fails every match for a reason that has nothing to do with the edge.
 deploy/fly/Caddyfile* text eol=lf
 deploy/fly/*.caddy text eol=lf
+# The VPS deployment files run on Linux: a CRLF shebang or YAML key breaks them there.
+deploy/*.sh text eol=lf
+deploy/*.yml text eol=lf
+deploy/Caddyfile* text eol=lf

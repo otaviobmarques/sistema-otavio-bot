@@ -6,7 +6,8 @@ import { parse } from "yaml";
 // The owner's VPS (docs/otavio-bot/VPS-24H.md): the fork's image, its compose
 // stacks with and without another proxy in front, the scripts the guide runs,
 // and the workflows that test and publish the image.
-const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
+// A Windows checkout can turn LF into CRLF (core.autocrlf), so compare the text with LF line endings.
+const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8").replace(/\r\n/g, "\n");
 const yaml = (path: string) => parse(read(path), { logLevel: "silent" });
 const IMAGE = "ghcr.io/otaviobmarques/sistema-otavio-bot";
 const SCRIPTS = ["deploy/ligar-desktops.sh", "deploy/backup.sh", "deploy/restaurar-backup.sh", "deploy/instalar-backup-diario.sh"];
