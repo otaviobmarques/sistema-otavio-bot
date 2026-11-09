@@ -114,14 +114,16 @@ function boot(engaged = true, options: { scene?: Scene; start?: number; loaded?:
   };
 }
 
-/** The heights reported once the frame has stopped changing, or after 20 rounds of a frame that never does. */
+/** The heights reported once three rounds in a row add none (one quiet round can be a slow CI machine), or after 30
+ * rounds of a frame that never stops changing. */
 async function settled(page: ReturnType<typeof boot>) {
   await expect.poll(() => page.seen.heights.length).toBeGreaterThan(0);
-  let count = -1;
-  for (let round = 0; round < 20 && count !== page.seen.heights.length; round++) {
-    count = page.seen.heights.length;
+  let count = page.seen.heights.length;
+  for (let round = 0, quiet = 0; round < 30 && quiet < 3; round++) {
     page.reflow();
     await new Promise((resolve) => setTimeout(resolve, 30));
+    quiet = page.seen.heights.length === count ? quiet + 1 : 0;
+    count = page.seen.heights.length;
   }
   return page.seen.heights;
 }
