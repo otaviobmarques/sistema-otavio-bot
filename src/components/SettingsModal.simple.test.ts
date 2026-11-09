@@ -6,6 +6,10 @@ import type { AppSettingsSection } from "@/state/store";
 import type { Switch } from "./SettingsPrimitives";
 import { SECTIONS, SIMPLE_FOLDED, SIMPLE_HIDDEN_SECTIONS, SIMPLE_PAGES, SettingsModal, revealSettingsBlock } from "./SettingsModal";
 import { SIMPLE_ADVANCED_ONLY, SimpleLooksPage } from "./SettingsSimplePages";
+import { setCloudOffersForTest } from "@/lib/cloud-offers";
+
+// These tests cover the upstream Cloud account page, so they run with Cloud offers on.
+setCloudOffersForTest(true);
 
 const fixture = vi.hoisted(() => ({
   section: "general" as AppSettingsSection,

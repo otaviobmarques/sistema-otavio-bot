@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { ArrowLeft, ArrowRight, Check, X } from "lucide-react";
 import cloudHomeDark from "@/assets/whats-new/cloud-home-dark.webp";
 import cloudHomeLight from "@/assets/whats-new/cloud-home-light.webp";
+import { cloudOffersEnabled } from "@/lib/cloud-offers";
 import { cn } from "@/lib/cn";
 import { useColorScheme } from "@/lib/color-scheme";
 import { t } from "@/lib/i18n";
@@ -45,9 +46,15 @@ function Picture({ slide, active }: { slide: WhatsNewSlide; active: boolean }) {
  * Add a Cloud for a slide: Get Pro, and Start a Team for someone with a plan of their own, whom the website's Get Team
  * would only tell to write in.
  */
-export function WhatsNewPopup({ view, report, onBuy, onDone }: {
+type WhatsNewProps = {
   view: WhatsNewView; report: (action: WhatsNewAction, slide: WhatsNewSlide) => void; onBuy: (slide: WhatsNewSlide) => void; onDone: () => void;
-}) {
+};
+
+export function WhatsNewPopup(props: WhatsNewProps) {
+  return cloudOffersEnabled() ? <WhatsNewSlides {...props} /> : null;
+}
+
+function WhatsNewSlides({ view, report, onBuy, onDone }: WhatsNewProps) {
   const [at, setAt] = useState(0);
   const slide = view.slides[at] ?? view.slides[0]!, count = view.slides.length;
   const [seen] = useState(() => new Set<WhatsNewSlide>());

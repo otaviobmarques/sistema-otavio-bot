@@ -42,6 +42,9 @@ import { track } from "@/lib/analytics";
 import { ADVANCED_MODE_KEY, setAdvancedMode } from "@/lib/interface-mode";
 import { SIMPLE_MODE_PROMPT_KEY } from "@/lib/simple-mode-prompt";
 import { api } from "@/state/store";
+import { setCloudOffersForTest } from "@/lib/cloud-offers";
+
+setCloudOffersForTest(true);
 
 const DAY = 86_400_000, NOW = new Date(2026, 9, 9, 12).getTime();
 const plans = [
@@ -937,6 +940,24 @@ describe("the product-updates question after the update", () => {
     f.state.config.onboarding.hintsSeen = [...withTourFinished(undefined), "cloud-setup-hidden"]; showWindow(MY_CLOUD);
     expect(await launch()).toContain(QUESTION);
     expect(answer()).toBeNull();
+  });
+
+  it("with Cloud offers off: no trial card, What's new, Boat credit or this question, in any launch; the star still comes", async () => {
+    setCloudOffersForTest(false);
+    try {
+      returning(); desk.saved = null; storage.delete(WHATS_NEW_NOTICE); storage.delete(BOAT_OFFER_NOTICE); storage.delete(STAR_NOTICE);
+      const seen: string[] = [];
+      for (let launches = 0; launches < 4; launches++) {
+        const html = await relaunch();
+        seen.push(html);
+        for (const gone of [INTRO, POPUP, QUESTION, "$50 of Boat credit for you", "Start free trial", "Get Pro"]) expect(html, gone).not.toContain(gone);
+        if (html.includes(STAR)) { press("Not now"); await flush(); }
+      }
+      expect(seen.join("")).toContain(STAR);
+      expect(bridges.cloud.offer).not.toHaveBeenCalled();
+    } finally {
+      setCloudOffersForTest(true);
+    }
   });
 });
 

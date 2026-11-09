@@ -10,6 +10,9 @@ vi.mock("@/components/EngineLibrary", () => ({ engineReady: () => true }));
 const { otherDialogOpen, useOtherDialogOpen } = await import("./notice-dialogs");
 const { WhatsNewPopup } = await import("./whats-new/WhatsNewPopup");
 const { Spotlight } = await import("./onboarding/Spotlight");
+import { setCloudOffersForTest } from "@/lib/cloud-offers";
+
+setCloudOffersForTest(true);
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 const VIEW: WhatsNewView = { slides: ["pro", "team"], audience: "none", signedIn: false, staging: false,

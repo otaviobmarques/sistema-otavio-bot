@@ -50,6 +50,9 @@ const { followupLine, INTRO_TIMING, introLines, whoConnectsAi } = await import("
 const { setTeamPeople } = await import("@/state/team-people");
 const { chipAction, setupAction } = await import("./HelperSetup");
 const { SIMPLE_BOT_BUBBLE } = await import("./chat-bubble");
+import { setCloudOffersForTest } from "@/lib/cloud-offers";
+
+setCloudOffersForTest(true);
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 const claude = (ready: boolean): InstanceInfo => ({ instanceId: "claude", driverKind: "claudeAgent", displayName: "Claude",

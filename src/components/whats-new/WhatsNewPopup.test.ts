@@ -7,6 +7,9 @@ import type { WhatsNewAction, WhatsNewSlide, WhatsNewView } from "@/lib/whats-ne
 
 vi.mock("@/components/Avatar", () => ({ MausAvatar: ({ color }: { color: string }) => createElement("i", { "data-maus": color }) }));
 const { WhatsNewPopup } = await import("./WhatsNewPopup");
+import { setCloudOffersForTest } from "@/lib/cloud-offers";
+
+setCloudOffersForTest(true);
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 const BOTH: WhatsNewView = { slides: ["pro", "team"], audience: "none", signedIn: true, staging: false,

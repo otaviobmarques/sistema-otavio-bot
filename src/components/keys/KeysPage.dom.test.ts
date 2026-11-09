@@ -35,6 +35,9 @@ const { BOAT_OFFER_NOTICE } = await import("@/lib/notices");
 const { applyBrand, DEFAULT_BRAND } = await import("@/lib/brand");
 const { LiveKeyNeeded } = await import("../LiveKeyNeeded");
 const { openKeySettings } = await import("./key-focus");
+import { setCloudOffersForTest } from "@/lib/cloud-offers";
+
+setCloudOffersForTest(true);
 
 let host: HTMLDivElement;
 let root: Root;
@@ -124,6 +127,20 @@ describe("the keys page", () => {
     expect(openAi.textContent).toContain("Optional");
     expect([...openAi.querySelectorAll("input")].map((input) => input.placeholder)).toContain("sk-…");
     expect(row("liveCalls")).not.toBeNull();
+  });
+
+  it("with Cloud offers off, hides the paid Boat key row unless a Boat key is already saved", () => {
+    setCloudOffersForTest(false);
+    try {
+      page();
+      type(host.querySelector<HTMLInputElement>("[data-keys-search]")!, "Computers and browser");
+      expect(rowsShown()).toEqual(["vps", "onePassword"]);
+      setConfig({ ...fx.config, box: { configured: true, last4: "c3d4" } });
+      page();
+      expect(rowsShown()).toContain("box");
+    } finally {
+      setCloudOffersForTest(true);
+    }
   });
 
   it("opens a section that holds a saved key, and counts what is connected", () => {

@@ -23,7 +23,7 @@ import {
   Zap,
 } from "lucide-react";
 
-import { accountMenuItems, AccountsSheet, cloudRowLabel, useAccounts } from "./AccountMenu";
+import { accountMenuItems, AccountsSheet, cloudRow, useAccounts } from "./AccountMenu";
 import { AccountMoveStatus, useAccountMove, type AccountMoveKind } from "./AccountMove";
 import { InitialsAvatar } from "./Avatar";
 import { DiscordIcon } from "./DiscordIcon";
@@ -605,7 +605,7 @@ export function SidebarProfileMenu({ iconOnly = false, rail = false, circle = fa
     update: update?.item ?? null,
     updateTop: simple ? simpleUpdateTop(update) : null,
     move: move.items,
-    account: cloudAccount ? cloudRowLabel(accounts.view) : null,
+    account: cloudAccount ? cloudRow(accounts.view, state.config?.cloudHome === true) : null,
     accounts: accountMenuItems(accounts),
     ...(account ? { simple: {
       tools: toolMenuItems({
