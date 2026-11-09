@@ -2,15 +2,20 @@ import { createHash } from "node:crypto";
 import { appendFileSync, mkdirSync, mkdtempSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, sep } from "node:path";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, onTestFinished, vi } from "vitest";
 
 // Counts disk touches for the cost test: the count is what the design promises, whatever the machine's speed.
-const fsCalls = vi.hoisted(() => ({ lstat: 0, opendir: 0, read: 0, failOpening: "" }));
+const fsCalls = vi.hoisted(() => ({ lstat: 0, opendir: 0, read: 0, failOpening: "", stampedAtNs: undefined as bigint | undefined }));
 vi.mock("node:fs", async (importOriginal) => {
   const fs = await importOriginal<typeof import("node:fs")>();
   return {
     ...fs,
-    lstatSync: ((...args: Parameters<typeof fs.lstatSync>) => { fsCalls.lstat++; return fs.lstatSync(...args); }) as typeof fs.lstatSync,
+    lstatSync: ((...args: Parameters<typeof fs.lstatSync>) => {
+      fsCalls.lstat++;
+      const stat = fs.lstatSync(...args);
+      if (fsCalls.stampedAtNs !== undefined && stat && "mtimeNs" in stat) Object.assign(stat, { mtimeNs: fsCalls.stampedAtNs, ctimeNs: fsCalls.stampedAtNs });
+      return stat;
+    }) as typeof fs.lstatSync,
     opendirSync: ((...args: Parameters<typeof fs.opendirSync>) => {
       fsCalls.opendir++;
       if (fsCalls.failOpening && String(args[0]) === fsCalls.failOpening) throw Object.assign(new Error("EMFILE: too many open files"), { code: "EMFILE" });
@@ -68,8 +73,7 @@ describe("a bot's memory and a lent Mac (server/lending-memory.ts)", () => {
     expect(rewritten.mtimeNs).toBe(mtimeNs);
     expect(memoryFingerprint(ws)).not.toBe(before);
   });
-  // NTFS can report a folder's mtime late, so the listing cache can miss a just-added link (flaky on Windows CI).
-  it.skipIf(process.platform === "win32")("a link is judged by where it points, and swapping one in is a change", () => {
+  it("a link is judged by where it points, and swapping one in is a change", () => {
     const ws = workspace();
     const outside = join(dir, "guest.md");
     writeFileSync(outside, "- a guest's instruction\n");
@@ -307,6 +311,22 @@ describe("a bot's memory and a lent Mac (server/lending-memory.ts)", () => {
     expect(memoryFiles(ws, [other])[join(other, ".claude")]).toBe(`link:${join(real, "claude-dir")}`);
     expect(memoryFiles(ws, [third])[join(third, ".claude", "skills")]).toBe(`link:${join(real, "skills")}`);
   });
+  it("sees changes the disk stamps with the same time as the look before them", () => {
+    const ws = workspace();
+    const project = join(dir, "projects", "site");
+    mkdirSync(project, { recursive: true });
+    fsCalls.stampedAtNs = BigInt(Date.now()) * 1_000_000n;
+    try {
+      const before = memoryFingerprint(ws, [project]);
+      writeFileSync(join(project, "AGENTS.md"), "fine\n");
+      const added = memoryFingerprint(ws, [project]);
+      expect(added).not.toBe(before);
+      writeFileSync(join(project, "AGENTS.md"), "evil\n");
+      expect(memoryFingerprint(ws, [project])).not.toBe(added);
+    } finally {
+      fsCalls.stampedAtNs = undefined;
+    }
+  });
   it("a folder that could not be read is not remembered as empty", () => {
     const ws = workspace();
     const project = join(dir, "projects", "site");
@@ -324,6 +344,8 @@ describe("a bot's memory and a lent Mac (server/lending-memory.ts)", () => {
     for (let i = 0; i < 3_000; i += 1) mkdirSync(join(tasks, "bot1", `t${i}`), { recursive: true });
     for (let i = 0; i < 3_000; i += 300) writeFileSync(join(tasks, "bot1", `t${i}`, "AGENTS.md"), `folder ${i}`);
     const snapshot = () => botMemoryFiles(bot, { workspace: () => ws, taskWorkspaces: tasks });
+    vi.useFakeTimers({ toFake: ["Date"], now: Date.now() + 60_000 });
+    onTestFinished(() => { vi.useRealTimers(); });
     const cold = snapshot();
     expect(Object.keys(cold).filter((name) => name.endsWith("AGENTS.md"))).toHaveLength(10);
     Object.assign(fsCalls, { lstat: 0, opendir: 0, read: 0 });

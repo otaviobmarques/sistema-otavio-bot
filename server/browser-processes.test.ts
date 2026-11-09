@@ -459,6 +459,9 @@ describe("a browser on Windows", () => {
       await vi.waitFor(() => expect(existsSync(ready)).toBe(true), { timeout: 15_000 });
       const killed = () => vi.mocked(execFile).mock.calls.filter(([file]) => file === "taskkill");
       vi.mocked(execFile).mockClear();
+      // A loaded Windows runner can take longer than the code's 5 s for tasklist; without a deadline it is only slower.
+      vi.mocked(execFile).mockImplementation(((file: string, args: string[], options: object, done: never) =>
+        (actualExecFile as unknown as typeof execFile)(file, args, { ...options, timeout: 0 }, done)) as unknown as typeof execFile);
       const listed = () => vi.mocked(execFile).mock.calls.filter(([file, args]) => file === "powershell.exe" && String((args as string[]).at(-1)).includes("OMB_BROWSER_PROFILE"));
       await releaseBrowserProfile(dir, process.execPath, process.execPath);
       await releaseBrowserProfile(dir, process.execPath, process.execPath);

@@ -122,6 +122,8 @@ const botBusy = async (botId: string) => {
   return state.bots.find((bot: { id: string }) => bot.id === botId)?.busy;
 };
 
+const turnEnded = (botId: string) => expect.poll(() => botBusy(botId), { timeout: 15_000 }).toBe(false);
+
 const botPeers = async (botId: string) => {
   const state = (await api("GET", "/api/bots?messages=0")).body;
   return state.bots.find((bot: { id: string }) => bot.id === botId)?.peers;
@@ -135,7 +137,7 @@ const botMessages = async (botId: string): Promise<any[]> => {
 /** /api/internal/coordinate-bots refuses a source thread with no task, so the bot runs one turn first. */
 const warmUp = async (botId: string) => {
   expect((await api("POST", `/api/bots/${botId}/messages`, { text: "Warm up" })).status).toBe(202);
-  await expect.poll(() => botBusy(botId), { timeout: 15_000 }).toBe(false);
+  await turnEnded(botId);
 };
 
 const mintCapability = async (botId: string, threadId: string): Promise<string> => {
@@ -227,7 +229,7 @@ describe("peer allow-list", () => {
       expect(outcome.status, JSON.stringify(outcome.body)).toBe(200);
       expect(outcome.body.error).toBeUndefined();
       expect(outcome.body.receipts).toEqual([expect.objectContaining({ botId: specialist.id, outcome: "queued" })]);
-      await expect.poll(() => botBusy(specialist.id), { timeout: 15_000 }).toBe(false);
+      await turnEnded(specialist.id);
       expect((await api("PATCH", `/api/bots/${clive.id}`, { managedSections: ["Engineering"], acknowledgePeerScope: true })).status).toBe(400);
       await api("PATCH", `/api/bots/${clive.id}`, { chiefOfStaff: true });
       expect((await api("PATCH", `/api/bots/${clive.id}`, { managedSections: ["Engineering"] })).status).toBe(400);
@@ -275,7 +277,7 @@ describe("peer allow-list", () => {
 
       const providerToken = String(dump.mcpConfig?.mcpServers?.agents?.env?.OMB_COMMS_TOKEN ?? "");
       expect(providerToken).toMatch(/^[a-f0-9]{48}$/);
-      await expect.poll(() => botBusy(asker.id)).toBe(false);
+      await turnEnded(asker.id);
       const token = await mintCapability(asker.id, asker.threadId);
 
       expect(await peerNames(asker.id, token)).toEqual(["Patch", "Quill"]);
@@ -286,7 +288,7 @@ describe("peer allow-list", () => {
         { authorization: `Bearer ${token}` },
       );
       expect(openAsk.status).toBe(200);
-      await expect.poll(() => botBusy(patch.id)).toBe(false);
+      await turnEnded(patch.id);
 
       expect((await api("PATCH", `/api/bots/${asker.id}`, { peers: [quill.id] })).status).toBe(200);
       expect(await peerNames(asker.id, token)).toEqual(["Quill"]);
@@ -316,7 +318,7 @@ describe("peer allow-list", () => {
       );
       expect(allowedAsk.status).toBe(200);
       expect(allowedAsk.body.error).toBeUndefined();
-      await expect.poll(() => botBusy(quill.id)).toBe(false);
+      await turnEnded(quill.id);
 
       const allowedDelegation = await api(
         "POST",
