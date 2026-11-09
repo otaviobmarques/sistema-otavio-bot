@@ -7,6 +7,7 @@ import { useStore } from "@/state/store";
 import { Card, Switch } from "./SettingsPrimitives";
 import type { SkillsLibrarySkillWire } from "../../shared/wire";
 import { Select } from "./Select";
+import { skillSourceLabel, TaughtSkillBadge, TeachTaskButton } from "./teach/TeachTaskButton";
 
 export function filterLibrarySkills(
   skills: readonly SkillsLibrarySkillWire[],
@@ -24,7 +25,7 @@ export function filterLibrarySkills(
 export function LibrarySkillMeta({ skill }: { skill: SkillsLibrarySkillWire }) {
   return (
     <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-ink-secondary">
-      <span className="truncate" title={skill.source}>{t("skills.source", { source: skill.source })}</span>
+      <span className="truncate" title={skill.source}>{t("skills.source", { source: skillSourceLabel(skill.source) })}</span>
       <span>{skill.version ? t("skills.library.version", { version: skill.version }) : t("skills.library.noVersion")}</span>
       <span>{t("skills.library.importedAt", { date: new Date(skill.importedAt).toLocaleDateString(intlLocale()) })}</span>
       {skill.tags.map((tag) => (
@@ -209,6 +210,10 @@ export function SkillsSection() {
     <div className="flex flex-col gap-4">
       <Card title={t("skills.library.title")} subtitle={t("skills.library.subtitle")}>
         <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <TeachTaskButton onSaved={() => void refresh()} />
+            <span className="text-[12px] text-ink-secondary">{t("teach.openHint")}</span>
+          </div>
           <div className="flex items-center gap-2">
             <Search size={15} className="shrink-0 text-ink-secondary" />
             <input
@@ -261,7 +266,7 @@ export function SkillsSection() {
                 <div key={skill.name} className="px-3 py-2.5">
                   <div className="flex items-center gap-2">
                     <button type="button" onClick={() => void view(skill)} className="min-w-0 flex-1 text-left" aria-label={t("skills.library.view", { skill: skill.name })}>
-                      <div className="truncate font-mono text-[13px] text-ink">{skill.name}</div>
+                      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5"><div className="max-w-full truncate font-mono text-[13px] text-ink">{skill.name}</div><TaughtSkillBadge source={skill.source} /></div>
                       <div className="mt-0.5 line-clamp-2 text-[12px] text-ink-secondary">{skill.description}</div>
                     </button>
                     <Switch

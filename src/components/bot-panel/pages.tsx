@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { FolderOpen, Plus, Server } from "lucide-react";
+import { FolderOpen, Plus, Server, Video } from "lucide-react";
 
 import { appSwitchPatch } from "@/lib/bot-app-access";
 import { skillsLibraryEnabled } from "@/lib/feature-flags";
@@ -18,6 +18,7 @@ import { RoutineEditor } from "../RoutinesPage";
 import { useWorkingFolder } from "../bot-settings/AccessSection";
 import { useBotEditor } from "../bot-settings/BotEditorContext";
 import { SkillReviewDialog, skillSwitchOn, useManagedSkills, type ManagedSkill } from "../bot-settings/SkillsSection";
+import { isTaughtSkill, TaughtSkillBadge, TeachTaskButton } from "../teach/TeachTaskButton";
 import { useBotApps, type BotApp } from "../bot-settings/useBotApps";
 import type { useBotSettingsDerived } from "../bot-settings/useBotSettingsDerived";
 import { RoutineList } from "../routines/RoutineList";
@@ -311,7 +312,7 @@ export function SkillsPage({ bot }: PageContext) {
             key={skill.name}
             data-panel-row={`skill:${skill.name}`}
             title={skill.name}
-            hint={skill.description || skill.source}
+            hint={isTaughtSkill(skill.source) ? <>{skill.description || skill.source}<div className="mt-1"><TaughtSkillBadge source={skill.source} /></div></> : skill.description || skill.source}
             label={t("botSettings.simple.skillToggle", { name: skill.name })}
             color={bot.color}
             checked={skillSwitchOn(skill)}
@@ -334,6 +335,9 @@ export function SkillsPage({ bot }: PageContext) {
           onSubmit={() => void importSkill()}
         />
         {imported.map((line) => <NoteRow key={line}>{line}</NoteRow>)}
+        <TeachTaskButton botId={bot.id} onSaved={() => void skills.refresh()} render={(open, label) => (
+          <LinkRow data-panel-link="teach-task" icon={Video} onClick={open}>{label}</LinkRow>
+        )} />
         <LinkRow data-panel-link="browse-skills" onClick={browse}>{t("botPanel.skills.browse")}</LinkRow>
       </Card>
       {skills.reviewing && (
