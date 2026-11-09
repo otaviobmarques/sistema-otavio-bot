@@ -110,3 +110,11 @@ Teams' display-name rule. Copyright 2025-2026 Vexa.ai Inc. and the Vexa
 contributors, used under the Apache License, Version 2.0
 (third_party/vexa/LICENSE). The adapted parts were rewritten in our own code;
 no Vexa file is included unmodified.
+
+The owner's WhatsApp link (server/whatsapp/) loads Baileys
+(@whiskeysockets/baileys 7.0.0-rc14, https://github.com/WhiskeySockets/Baileys),
+Copyright (c) 2025 Rajeh Taher/WhiskeySockets, used under the MIT License, at
+first connect. Baileys depends on libsignal 6.0.0
+(https://github.com/WhiskeySockets/libsignal-node), which is licensed under the
+GNU General Public License, version 3: a distribution that includes it must
+follow the GPL-3.0 for that component, including offering its source.

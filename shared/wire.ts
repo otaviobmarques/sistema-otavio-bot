@@ -443,8 +443,8 @@ export type CardAnswerer = (
   | { kind: "worker" } | { kind: "bot"; name: string }
 ) & {
   /** "call": decided by voice on a Live call; "reaction": by a 👍 or 👎 on the
-   * card. Absent: tapped. */
-  via?: "call" | "reaction";
+   * card; "whatsapp": by the owner's reply on WhatsApp. Absent: tapped. */
+  via?: "call" | "reaction" | "whatsapp";
 };
 
 /** Opens every compaction summary written without a model (recent excerpts only); the chat labels stored records by it. */

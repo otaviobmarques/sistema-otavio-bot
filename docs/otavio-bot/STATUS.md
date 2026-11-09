@@ -40,7 +40,7 @@ Critério de pronto da Fase 1: três bots trabalhando em paralelo num projeto se
 ## Decisões pendentes (do plano)
 
 - Nome final: Otávio Bot ou Tavinho. Marca: Domma ou pessoal.
-- WhatsApp por QR Code (rápido, com risco de banimento) ou pela API oficial (estável, paga).
+- ~~WhatsApp por QR Code ou pela API oficial~~: decidido QR Code, com chip separado para o bot. Aprovações pelo WhatsApp em [`WHATSAPP.md`](WHATSAPP.md).
 - Onde ficam os computadores dos bots na Fase 2: só no Docker do seu PC ou já num VPS.
 - Produto interno ou SaaS da Domma desde o começo.
 - Confirmar nos termos atuais da Anthropic e da OpenAI o uso automatizado das assinaturas pelos CLIs.

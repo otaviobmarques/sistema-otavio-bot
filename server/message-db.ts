@@ -12,7 +12,7 @@ import { ensureMemoryIndex } from "./message-db-memory-index.ts";
 import { attentionSelect } from "./message-db-attention.ts";
 import { MessageSearchWorker } from "./message-search-worker.ts";
 import { searchMessagesInDatabase, type SearchHit } from "./message-search-query.ts";
-import type { Notification, NotificationLogEntry } from "../shared/notification.ts";
+import type { Notification, NotificationLogEntry } from "../shared/notification.ts"; import { notifyTaps } from "./notification-taps.ts";
 export type { SearchHit } from "./message-search-query.ts";
 
 const DB_FILE = () => join(DATA_DIR, "messages.db");
@@ -318,6 +318,7 @@ export function logNotification(notification: Notification): NotificationLogEntr
   } catch (error) {
     console.error("[notify] could not save the notification to the feed:", error);
   }
+  notifyTaps(notification);
   return entry;
 }
 

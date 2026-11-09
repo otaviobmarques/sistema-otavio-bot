@@ -19,6 +19,7 @@ export type ActivityEntry =
       summaryParams?: ActivityRow["summaryParams"];
       threadId: string;
       requestId?: string;
+      via?: "call" | "reaction" | "whatsapp";
     }
   | {
       type: "admin";
@@ -65,7 +66,8 @@ export function describeEntry(entry: ActivityEntry): string {
     const decisionKey = `activity.decision.${entry.what}`;
     const decision = known(decisionKey) ? t(decisionKey) : entry.what;
     const line = entry.tool ? t("activity.approvalLine", { decision, tool: entry.tool }) : decision;
-    return entry.bot ? `${line} ${t("activity.approvalIn", { bot: entry.bot })}` : line;
+    const where = entry.bot ? `${line} ${t("activity.approvalIn", { bot: entry.bot })}` : line;
+    return entry.via === "whatsapp" ? `${where} · ${t("activity.viaWhatsApp")}` : where;
   }
   const actionKey = `activity.action.${entry.action}`;
   const action = known(actionKey) ? t(actionKey) : entry.action;

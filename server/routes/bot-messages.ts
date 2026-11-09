@@ -14,6 +14,7 @@ import { dismissQuestionCard } from "../card-dismissal.ts";
 import { AppMessageRate, appContextBlock, prepareAppMessage } from "../chat-apps.ts";
 import { prepareWidgetPress, reopenCancelledPress } from "../chat-widgets.ts";
 import type { ModelSelection, RequestOutcome, SteerOutcome } from "../contracts.ts";
+import type { DecisionVia } from "../decision-log.ts";
 import { parseDataContext, type DataContext } from "../data-context.ts";
 import { OPEN_PAGE_BAD, openPageBlock } from "../open-page.ts";
 import { preparePointed } from "../pointed.ts";
@@ -39,6 +40,7 @@ import { parseMentionPicks } from "../../shared/room-mentions.ts";
 import { pinnedClientThreadGuard } from "./pinned-client-thread.ts";
 import { refusalBody, userError } from "../user-errors.ts";
 import { PASS, type RouteHandler } from "./table.ts";
+import { json } from "../harness/http.ts";
 
 type RunningInstance = ReturnType<ProviderRegistry["get"]>;
 
@@ -94,7 +96,7 @@ export interface BotMessageRouteDeps {
   policyModelRefusal(instance: { instanceId: string; driverKind: string }): string | undefined;
   clearUnattended(threadId: string): void;
   drainQueuedSends(): void;
-  answeringCardAs(auth: RequestAuth, threadId: string, requestId: string, work: () => Promise<unknown>): Promise<void>;
+  answeringCardAs(auth: RequestAuth, threadId: string, requestId: string, work: () => Promise<unknown>, via?: DecisionVia): Promise<void>;
   resolveAndSendTrust(res: ServerResponse, threadId: string, requestId: string, behavior: Behavior): boolean;
   resolveAndSendTeamSetup(res: ServerResponse, args: { botId: string; threadId: string; requestId: string; behavior: string }, ownerReview: boolean): Promise<boolean>;
   resolveAndSendMcp(res: ServerResponse, args: { botId: string; threadId: string; requestId: string; behavior: string }, ownerReview: boolean): Promise<boolean>;
@@ -159,7 +161,7 @@ const guardedSendSchema = z.object({
   }).strict().refine((who) => Boolean(who.email || who.name)).optional(),
 }).strict().refine((send) => (send.text === undefined) !== (send.reaction === undefined));
 
-export function createBotMessageRoutes(deps: BotMessageRouteDeps): RouteHandler {
+export function createBotMessageRoutes(deps: BotMessageRouteDeps) {
   const {
     store, registry, handoffs, liveTurn, phoneSecretSubmissions, directTurnDispatchClaims, groupSpeakers,
     desktopManaged: DESKTOP_MANAGED, cloudHome: CLOUD_HOME, DirectSendRefused,
@@ -180,6 +182,132 @@ export function createBotMessageRoutes(deps: BotMessageRouteDeps): RouteHandler 
   /** widget -> sendId of a press on its way in: a second tap before acceptance must not send a second answer. */
   const pressesInFlight = new Map<string, string | undefined>();
   const appMessageRate = new AppMessageRate();
+  /** The answer to a card in a conversation, as a tap in the app sends it to POST /api/threads/<id>/respond. */
+  const respondInThread = async ({ req, res, auth, threadParam, body, via }: { req: IncomingMessage; res: ServerResponse; auth: RequestAuth; threadParam: string; body: any; via?: DecisionVia }) => {
+    const behavior = requestBehavior(body.behavior);
+    const reviewedSha256 = typeof body.reviewedSha256 === "string" ? body.reviewedSha256 : undefined;
+    if (!behavior) return json(res, 400, { error: "behavior must be allow, deny, or answer" });
+    const requestId = String(body.requestId);
+    const threadId = answeredIn(threadParam, requestId);
+    const refusal = cardAnswerRefusal(auth, threadParam, requestId, behavior) ?? (threadId === threadParam ? null : cardAnswerRefusal(auth, threadId, requestId, behavior));
+    if (refusal) return json(res, 403, { error: refusal });
+    if (body.rememberCommand === true) {
+      const refusal = commandRememberRefusal(auth, threadId, requestId, behavior);
+      if (refusal) return json(res, 403, { error: refusal });
+    }
+    return await answeringCardAs(auth, threadId, requestId, async () => {
+      const access = deps.resolveAccessRequest?.(threadId, requestId, behavior, body.message);
+      if (access) return json(res, access.status, access.body);
+      if (resolveAndSendTrust(res, threadId, requestId, behavior)) return;
+      const skillCard = store.messagesFor(threadId).find(
+        (message) => message.card?.requestId === requestId && message.card.skillRequest,
+      );
+      if (skillCard?.card?.skillRequest) {
+        const skillBotId = skillCard.from?.botId ?? store.botByThread(threadId)?.id;
+        if (!skillBotId) return json(res, 400, { error: "this skill request has no valid owner" });
+        const skillOwner = store.bot(skillBotId);
+        if (sendSkillResolution(res, resolveSkillRequest({
+          botId: skillBotId,
+          botName: skillOwner?.name,
+          threadId,
+          requestId,
+          behavior,
+          reviewedSha256,
+        }))) return;
+      }
+      const routineCard = store.messagesFor(threadId).find(
+        (message) => message.card?.requestId === requestId && message.card.routineRequest,
+      );
+      if (routineCard?.card?.routineRequest) {
+        // Derive the owner from the conversation, never from the payload being authorized.
+        const routineBotId = routineCard.from?.botId ?? store.botByThread(threadId)?.id;
+        if (!routineBotId) return json(res, 400, { error: "this routine request has no valid owner" });
+        const routineOwner = store.bot(routineBotId);
+        if (resolveAndSendRoutine(res, {
+          botId: routineBotId,
+          botName: routineOwner?.name,
+          threadId,
+          requestId,
+          behavior,
+        })) return;
+      }
+      const setupCard = store.messagesFor(threadId).find((message) => message.card?.requestId === requestId && message.card.teamSetupRequest);
+      if (setupCard) {
+        const setupBotId = setupCard.from?.botId ?? store.botByThread(threadId)?.id;
+        if (!setupBotId) return json(res, 400, { error: "This team setup has no valid owner" });
+        if (await resolveAndSendTeamSetup(res, { botId: setupBotId, threadId, requestId, behavior }, ownerReview(auth, req))) return;
+      }
+      const mcpCard = store.messagesFor(threadId).find((message) => message.card?.requestId === requestId && message.card.mcpRequest);
+      if (mcpCard) {
+        const mcpBotId = mcpCard.from?.botId ?? store.botByThread(threadId)?.id;
+        if (!mcpBotId) return json(res, 400, { error: "This MCP server card has no valid owner" });
+        if (await resolveAndSendMcp(res, { botId: mcpBotId, threadId, requestId, behavior }, ownerReview(auth, req))) return;
+      }
+      const profileCard = store.messagesFor(threadId).find(
+        (message) => message.card?.requestId === requestId && message.card.profileRequest,
+      );
+      if (profileCard?.card?.profileRequest) {
+        const profileBotId = profileCard.from?.botId ?? store.botByThread(threadId)?.id;
+        if (!profileBotId) return json(res, 400, { error: "this profile request has no valid owner" });
+        const profileOwner = store.bot(profileBotId);
+        if (resolveAndSendProfile(res, {
+          botId: profileBotId,
+          botName: profileOwner?.name,
+          threadId,
+          requestId,
+          behavior,
+        })) return;
+      }
+      const modelCard = store.messagesFor(threadId).find(
+        (message) => message.card?.requestId === requestId && message.card.modelRequest,
+      );
+      if (modelCard?.card?.modelRequest) {
+        const modelBotId = modelCard.from?.botId ?? store.botByThread(threadId)?.id;
+        if (!modelBotId) return json(res, 400, { error: "this model request has no valid owner" });
+        const modelOwner = store.bot(modelBotId);
+        if (resolveAndSendModel(res, {
+          botId: modelBotId,
+          botName: modelOwner?.name,
+          threadId,
+          requestId,
+          behavior,
+        })) return;
+      }
+      const own = await harnessCardOutcome(threadId, requestId, behavior, body.message);
+      if (own) return json(res, 200, { ok: true, outcome: own });
+      const group = store.groupByThread(threadId);
+      const pending = store.messagesFor(threadId).find((message) => message.card?.requestId === requestId);
+      const dismissed = dismissQuestionCard(store, threadId, pending, body);
+      if (dismissed) return json(res, dismissed.status, dismissed.body);
+      const persistentQuestion = isPersistentQuestionCard(pending?.card);
+      const owner = group
+        ? persistentQuestion
+          ? (pending?.from ? store.bot(pending.from.botId) : undefined)
+          : (groupSpeakers.get(threadId) ? store.bot(groupSpeakers.get(threadId)!.botId) : undefined) ??
+            (pending?.from ? store.bot(pending.from.botId) : undefined)
+        : store.botByThread(threadId);
+      // A surviving question belongs to its original asker, never a later speaker.
+      if (group && persistentQuestion && !owner) {
+        return json(res, 409, userError("serverError.chat.askerGone"));
+      }
+      if (!owner && !pending) return json(res, 404, { error: "nothing is waiting on an answer in this conversation" });
+      const requestOwner = owner ? botForThread(owner.id, threadId) : null;
+      const outcome = await answerRequest(threadId, requestOwner?.modelSelection.instanceId ?? "", requestId, behavior, body.message, owner ? { id: owner.id, name: owner.name } : undefined, body.always === true, body.rememberCommand === true);
+      if (outcome === "unavailable" && isPersistentQuestionCard(pending?.card) && behavior === "answer") {
+        if (!pending?.card) return json(res, 404, userError("serverError.chat.questionGone"));
+        const answer = typeof body.message === "string" ? body.message.trim() : "";
+        if (!answer) return json(res, 400, { error: "a question answer is required" });
+        if (!owner) return json(res, 409, userError("serverError.chat.askerGone"));
+        try {
+          const reply = await deliverLateQuestionAnswer(auth, threadId, requestId, answer, pending, owner);
+          return json(res, 200, { ok: true, outcome: "answered", late: true, ...(reply.queued ? { queued: true } : {}) });
+        } catch (error) {
+          return json(res, 409, { error: error instanceof Error ? error.message : "the late answer could not be queued" });
+        }
+      }
+      return json(res, 200, { ok: true, outcome });
+    }, via);
+  };
   const route: RouteHandler = async (ctx) => {
     const { req, res, path, method, auth, json, readBody } = ctx;
     let m: RegExpMatchArray | null = null;
@@ -611,132 +739,7 @@ export function createBotMessageRoutes(deps: BotMessageRouteDeps): RouteHandler 
       });
     }
     m = path.match(/^\/api\/threads\/([\w-]+)\/respond$/);
-    if (m && method === "POST") {
-      const body = await readBody(req);
-      const behavior = requestBehavior(body.behavior);
-      const reviewedSha256 = typeof body.reviewedSha256 === "string" ? body.reviewedSha256 : undefined;
-      if (!behavior) return json(res, 400, { error: "behavior must be allow, deny, or answer" });
-      const requestId = String(body.requestId);
-      const threadId = answeredIn(m[1], requestId);
-      const refusal = cardAnswerRefusal(auth, m[1], requestId, behavior) ?? (threadId === m[1] ? null : cardAnswerRefusal(auth, threadId, requestId, behavior));
-      if (refusal) return json(res, 403, { error: refusal });
-      if (body.rememberCommand === true) {
-        const refusal = commandRememberRefusal(auth, threadId, requestId, behavior);
-        if (refusal) return json(res, 403, { error: refusal });
-      }
-      return await answeringCardAs(auth, threadId, requestId, async () => {
-        const access = deps.resolveAccessRequest?.(threadId, requestId, behavior, body.message);
-        if (access) return json(res, access.status, access.body);
-        if (resolveAndSendTrust(res, threadId, requestId, behavior)) return;
-        const skillCard = store.messagesFor(threadId).find(
-          (message) => message.card?.requestId === requestId && message.card.skillRequest,
-        );
-        if (skillCard?.card?.skillRequest) {
-          const skillBotId = skillCard.from?.botId ?? store.botByThread(threadId)?.id;
-          if (!skillBotId) return json(res, 400, { error: "this skill request has no valid owner" });
-          const skillOwner = store.bot(skillBotId);
-          if (sendSkillResolution(res, resolveSkillRequest({
-            botId: skillBotId,
-            botName: skillOwner?.name,
-            threadId,
-            requestId,
-            behavior,
-            reviewedSha256,
-          }))) return;
-        }
-        const routineCard = store.messagesFor(threadId).find(
-          (message) => message.card?.requestId === requestId && message.card.routineRequest,
-        );
-        if (routineCard?.card?.routineRequest) {
-          // Derive the owner from the conversation, never from the payload being authorized.
-          const routineBotId = routineCard.from?.botId ?? store.botByThread(threadId)?.id;
-          if (!routineBotId) return json(res, 400, { error: "this routine request has no valid owner" });
-          const routineOwner = store.bot(routineBotId);
-          if (resolveAndSendRoutine(res, {
-            botId: routineBotId,
-            botName: routineOwner?.name,
-            threadId,
-            requestId,
-            behavior,
-          })) return;
-        }
-        const setupCard = store.messagesFor(threadId).find((message) => message.card?.requestId === requestId && message.card.teamSetupRequest);
-        if (setupCard) {
-          const setupBotId = setupCard.from?.botId ?? store.botByThread(threadId)?.id;
-          if (!setupBotId) return json(res, 400, { error: "This team setup has no valid owner" });
-          if (await resolveAndSendTeamSetup(res, { botId: setupBotId, threadId, requestId, behavior }, ownerReview(auth, req))) return;
-        }
-        const mcpCard = store.messagesFor(threadId).find((message) => message.card?.requestId === requestId && message.card.mcpRequest);
-        if (mcpCard) {
-          const mcpBotId = mcpCard.from?.botId ?? store.botByThread(threadId)?.id;
-          if (!mcpBotId) return json(res, 400, { error: "This MCP server card has no valid owner" });
-          if (await resolveAndSendMcp(res, { botId: mcpBotId, threadId, requestId, behavior }, ownerReview(auth, req))) return;
-        }
-        const profileCard = store.messagesFor(threadId).find(
-          (message) => message.card?.requestId === requestId && message.card.profileRequest,
-        );
-        if (profileCard?.card?.profileRequest) {
-          const profileBotId = profileCard.from?.botId ?? store.botByThread(threadId)?.id;
-          if (!profileBotId) return json(res, 400, { error: "this profile request has no valid owner" });
-          const profileOwner = store.bot(profileBotId);
-          if (resolveAndSendProfile(res, {
-            botId: profileBotId,
-            botName: profileOwner?.name,
-            threadId,
-            requestId,
-            behavior,
-          })) return;
-        }
-        const modelCard = store.messagesFor(threadId).find(
-          (message) => message.card?.requestId === requestId && message.card.modelRequest,
-        );
-        if (modelCard?.card?.modelRequest) {
-          const modelBotId = modelCard.from?.botId ?? store.botByThread(threadId)?.id;
-          if (!modelBotId) return json(res, 400, { error: "this model request has no valid owner" });
-          const modelOwner = store.bot(modelBotId);
-          if (resolveAndSendModel(res, {
-            botId: modelBotId,
-            botName: modelOwner?.name,
-            threadId,
-            requestId,
-            behavior,
-          })) return;
-        }
-        const own = await harnessCardOutcome(threadId, requestId, behavior, body.message);
-        if (own) return json(res, 200, { ok: true, outcome: own });
-        const group = store.groupByThread(threadId);
-        const pending = store.messagesFor(threadId).find((message) => message.card?.requestId === requestId);
-        const dismissed = dismissQuestionCard(store, threadId, pending, body);
-        if (dismissed) return json(res, dismissed.status, dismissed.body);
-        const persistentQuestion = isPersistentQuestionCard(pending?.card);
-        const owner = group
-          ? persistentQuestion
-            ? (pending?.from ? store.bot(pending.from.botId) : undefined)
-            : (groupSpeakers.get(threadId) ? store.bot(groupSpeakers.get(threadId)!.botId) : undefined) ??
-              (pending?.from ? store.bot(pending.from.botId) : undefined)
-          : store.botByThread(threadId);
-        // A surviving question belongs to its original asker, never a later speaker.
-        if (group && persistentQuestion && !owner) {
-          return json(res, 409, userError("serverError.chat.askerGone"));
-        }
-        if (!owner && !pending) return json(res, 404, { error: "nothing is waiting on an answer in this conversation" });
-        const requestOwner = owner ? botForThread(owner.id, threadId) : null;
-        const outcome = await answerRequest(threadId, requestOwner?.modelSelection.instanceId ?? "", requestId, behavior, body.message, owner ? { id: owner.id, name: owner.name } : undefined, body.always === true, body.rememberCommand === true);
-        if (outcome === "unavailable" && isPersistentQuestionCard(pending?.card) && behavior === "answer") {
-          if (!pending?.card) return json(res, 404, userError("serverError.chat.questionGone"));
-          const answer = typeof body.message === "string" ? body.message.trim() : "";
-          if (!answer) return json(res, 400, { error: "a question answer is required" });
-          if (!owner) return json(res, 409, userError("serverError.chat.askerGone"));
-          try {
-            const reply = await deliverLateQuestionAnswer(auth, threadId, requestId, answer, pending, owner);
-            return json(res, 200, { ok: true, outcome: "answered", late: true, ...(reply.queued ? { queued: true } : {}) });
-          } catch (error) {
-            return json(res, 409, { error: error instanceof Error ? error.message : "the late answer could not be queued" });
-          }
-        }
-        return json(res, 200, { ok: true, outcome });
-      });
-    }
+    if (m && method === "POST") return await respondInThread({ req, res, auth, threadParam: m[1], body: await readBody(req) });
     m = path.match(/^\/api\/bots\/([\w-]+)\/interrupt$/);
     if (m && method === "POST") {
       const bot = store.bot(m[1]);
@@ -801,5 +804,35 @@ export function createBotMessageRoutes(deps: BotMessageRouteDeps): RouteHandler 
     }
     return PASS;
   };
-  return route;
+  return Object.assign(route, {
+    /** Answers a card exactly as the app's tap does, every check included, from outside HTTP (the owner's WhatsApp
+     * reply): the same handler, with its reply captured instead of sent. */
+    async answerThreadCard(input: { auth: RequestAuth; threadId: string; requestId: string; behavior: Behavior; message?: string; via: DecisionVia }): Promise<{ status: number; body: unknown }> {
+      const reply = capturedReply();
+      await respondInThread({ req: reply.req, res: reply.res, auth: input.auth, threadParam: input.threadId, body: { requestId: input.requestId, behavior: input.behavior, ...(input.message ? { message: input.message } : {}) }, via: input.via });
+      return reply.result();
+    },
+  });
+}
+
+/** A response that keeps what a handler answered: its status and JSON body. */
+function capturedReply() {
+  let status = 500;
+  let text = "";
+  const res = {
+    headersSent: false, writableEnded: false,
+    writeHead(code: number) { status = code; res.headersSent = true; return res; },
+    end(data?: string) { text = data ?? ""; res.writableEnded = true; return res; },
+    setHeader() { return res; }, getHeader() { return undefined; }, hasHeader() { return false; },
+    req: { method: "POST", headers: {} },
+  };
+  return {
+    req: res.req as unknown as IncomingMessage,
+    res: res as unknown as ServerResponse,
+    result: () => {
+      let body: unknown = null;
+      try { body = text ? JSON.parse(text) : null; } catch {}
+      return { status, body };
+    },
+  };
 }
