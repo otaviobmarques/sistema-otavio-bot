@@ -12,7 +12,7 @@ import type { NotificationLogEntry, NotifyKind } from "../../shared/notification
 import { plainPreviewText } from "../../shared/plain-preview";
 import { Select } from "./Select";
 
-const KIND_LOOK: Record<NotifyKind, { Icon: LucideIcon; className: string; status: LocaleKey }> = {
+export const KIND_LOOK: Record<NotifyKind, { Icon: LucideIcon; className: string; status: LocaleKey }> = {
   done: { Icon: CheckCircle2, className: "text-success", status: "notifications.status.done" },
   "delegation-settled": { Icon: CheckCircle2, className: "text-success", status: "notifications.status.done" },
   approval: { Icon: HandHelping, className: "text-warning", status: "notifications.status.approval" },
