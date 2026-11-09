@@ -3431,5 +3431,14 @@
   "botPanel.heavy": "Dieser Bot lädt bei jedem Zug sehr viel.",
   "botPanel.tidyMemory": "Gedächtnis aufräumen",
   "memory.journal.instructions": "die Anweisungen",
-  "memory.journal.actor.teamSetup": "Die Team-Einrichtung"
+  "memory.journal.actor.teamSetup": "Die Team-Einrichtung",
+  "server.company.budgetWarnTitle": "{company} hat {percent} % ihres KI-Budgets verbraucht",
+  "server.company.budgetWarnBody": "{spent} von {budget} in diesem Monat. Bei 100 % halten ihre Bots an und bitten dich, den Monat freizugeben.",
+  "server.company.budgetCapTitle": "{company} hat ihr monatliches KI-Budget erreicht",
+  "server.company.budgetCapBody": "{spent} von {budget} in diesem Monat. Ihre Bots sind pausiert: Gib den Monat im Posteingang frei oder erhöhe das Budget im Gebäude.",
+  "server.company.budgetPaused": "Die Bots von {company} sind pausiert: Das KI-Budget dieses Monats ist aufgebraucht ({spent} von {budget}). Gib den Monat im Posteingang oder im Sitzungssaal frei oder erhöhe das Budget im Gebäude.",
+  "server.company.budgetCardTitle": "Darf {company} diesen Monat weiter ausgeben?",
+  "server.company.budgetCardBody": "{company} hat im {month} {spent} von {budget} ausgegeben, daher sind ihre Bots pausiert. Mit der Freigabe arbeiten sie bis Monatsende über das Budget hinaus; sende die pausierte Nachricht danach noch einmal.",
+  "server.company.budgetRelease": "Bis Monatsende freigeben",
+  "server.company.budgetKeep": "Pausiert lassen"
 }

@@ -2,10 +2,11 @@ import { readFileSync, rmSync } from "node:fs";
 import type { ServerResponse } from "node:http";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import type { Company } from "../../shared/companies.ts";
+import { companySpendOf, type Company, type CompanySpend } from "../../shared/companies.ts";
 import { frameForMember } from "../bot-visibility.ts";
 import { requiredScope } from "../request-auth.ts";
 import { changeEmptySection, ensureSections, readSections, SECTION_CONTEXTS_FILE } from "../section-context.ts";
+import { releaseCompanyBudget } from "../companies.ts";
 import { createCompanyRoutes } from "./companies.ts";
 import { PASS } from "./table.ts";
 
@@ -16,6 +17,7 @@ function world(visible: readonly string[] | null = null) {
   const routes = createCompanyRoutes({
     visibleSections: () => visible ?? readSections(),
     changed: (companies) => { told.push(companies); },
+    spend: (): CompanySpend[] => told.at(-1)?.map((company) => companySpendOf(company, 10, "2026-11")) ?? [],
   });
   const call = async (method: string, path: string, body?: unknown) => {
     let status = 0, answer: Record<string, unknown> | undefined;
@@ -53,7 +55,7 @@ describe("companies over HTTP", () => {
     const saved = JSON.parse(readFileSync(SECTION_CONTEXTS_FILE, "utf8"));
     expect(saved.sections).toEqual(["Tráfego pago", "Criação", "Edição"]);
     expect(saved.companies).toEqual([{ id: created.answer.company!.id, name: "RedBox", sector: "Agência de Marketing", mission: "Campanhas com CPA menor.",
-      color: "#FF2D33", monthlyBudgetBrl: 500, departmentIds: ["Tráfego pago", "Criação"] }]);
+      color: "#FF2D33", monthlyBudgetBrl: 500, usdToBrl: null, rules: [], budgetReleasedMonth: null, departmentIds: ["Tráfego pago", "Criação"] }]);
     expect(told).toEqual([created.answer.companies]);
     expect((await call("GET", "/api/companies")).answer.companies).toEqual(created.answer.companies);
   });
@@ -100,6 +102,40 @@ describe("companies over HTTP", () => {
     expect(told).toHaveLength(1);
     expect((await call("PATCH", "/api/companies/nope", { name: "Y" })).status).toBe(404);
     expect((await call("GET", "/api/elsewhere")).out).toBe(PASS);
+  });
+
+  it("keeps approval rules and the dollar rate, giving a new rule its id and only a bulk send its threshold", async () => {
+    const { call } = world();
+    const created = await call("POST", "/api/companies", { ...RED, usdToBrl: 5.1, rules: [{ trigger: "bulk-send" }, { trigger: "deploy", threshold: 3 }] });
+    expect(created.status).toBe(201);
+    const company = created.answer.company!;
+    expect(company.usdToBrl).toBe(5.1);
+    expect(company.rules).toEqual([
+      { id: expect.stringMatching(/^rule_[0-9a-f]{12}$/), trigger: "bulk-send", threshold: 50 },
+      { id: expect.stringMatching(/^rule_[0-9a-f]{12}$/), trigger: "deploy" },
+    ]);
+    const kept = company.rules[0]!;
+    const edited = await call("PATCH", `/api/companies/${company.id}`, { rules: [{ ...kept, threshold: 20 }, { trigger: "publish" }], usdToBrl: null });
+    expect(edited.answer.company!.rules.map((rule) => [rule.id === kept.id, rule.trigger, rule.threshold])).toEqual([[true, "bulk-send", 20], [false, "publish", undefined]]);
+    expect(edited.answer.company!.usdToBrl).toBeNull();
+    for (const patch of [{ rules: [{ trigger: "launch-rockets" }] }, { usdToBrl: 0 }, { rules: [{ trigger: "bulk-send", threshold: -1 }] }, { budgetReleasedMonth: "2026-11" }]) {
+      expect((await call("PATCH", `/api/companies/${company.id}`, patch)).status, JSON.stringify(patch)).toBe(400);
+    }
+  });
+
+  it("lists each company's spend for those the viewer sees, and remembers a released month", async () => {
+    const { call } = world(["Edição"]);
+    const red = (await call("POST", "/api/companies", { ...RED, departmentIds: ["Tráfego pago"] })).answer.company!;
+    const vertice = (await call("POST", "/api/companies", { name: "Vertice", monthlyBudgetBrl: 50, departmentIds: ["Edição"] })).answer.company!;
+    const listed = await call("GET", "/api/companies/spend");
+    expect(listed.status).toBe(200);
+    expect((listed.answer as unknown as { spend: CompanySpend[] }).spend).toEqual([
+      { companyId: vertice.id, month: "2026-11", spentUsd: 10, spentBrl: 55, budgetBrl: 50, usdToBrl: 5.5, percent: 110, level: "exceeded", released: false },
+    ]);
+    expect(requiredScope("GET", "/api/companies/spend")).toBe("admin");
+    const released = releaseCompanyBudget(red.id, "2026-11");
+    expect(released.ok && released.company?.budgetReleasedMonth).toBe("2026-11");
+    expect(releaseCompanyBudget("co_0000000000000000", "2026-11").ok).toBe(false);
   });
 
   it("follows a department's rename and drops a deleted one", async () => {

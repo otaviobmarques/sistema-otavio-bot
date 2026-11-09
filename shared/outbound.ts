@@ -61,7 +61,7 @@ export const KNOWN_READ_SLUGS: ReadonlySet<string> = new Set([
 /** The action part of a tool name, as upper-case word tokens. Composio's
  * TOOLKIT_ACTION drops its toolkit; an MCP server's mcp__server__action
  * drops its server; a bare built-in like Bash stays as it is. */
-function actionTokens(name: string): string[] {
+export function actionTokens(name: string): string[] {
   let action = name;
   if (name.startsWith("mcp__")) {
     const [, server = "", ...rest] = name.split("__");

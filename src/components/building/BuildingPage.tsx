@@ -7,6 +7,7 @@ import { t } from "@/lib/i18n";
 import { useOwnerOrAdmin } from "@/lib/use-owner-or-admin";
 import { useShowThreads } from "@/lib/thread-preferences";
 import { useCompanies } from "@/state/companies";
+import { useCompanySpend } from "@/state/company-spend";
 import { openInbox, useInboxSupport } from "@/state/inbox";
 import { openBotRow, openThread, useStore, type Bot } from "@/state/store";
 import { useCaptionChrome } from "../DesktopCapabilities";
@@ -45,6 +46,7 @@ export function BuildingPage() {
   const showThreads = useShowThreads();
   const desks = useDesks();
   const companies = useCompanies();
+  const spend = useCompanySpend();
   const mayManage = useOwnerOrAdmin() !== false;
   const inboxSupport = useInboxSupport();
   const [managing, setManaging] = useState(false);
@@ -103,7 +105,7 @@ export function BuildingPage() {
             <PenthouseFloor desks={desks} onOpen={() => dispatch({ type: "showBoardRoom" })} />
             {floors.map((floor, index) => (
               <CompanyFloor key={floor.company?.id ?? "none"} floor={floor} index={index} floorCount={companyFloors}
-                status={desks.status} instances={state.instances} onOpen={openBot} />
+                status={desks.status} instances={state.instances} spend={floor.company ? spend.get(floor.company.id) : undefined} onOpen={openBot} />
             ))}
             <GroundFloor onInbox={inboxSupport === "no" ? undefined : () => openInbox()} />
           </section>

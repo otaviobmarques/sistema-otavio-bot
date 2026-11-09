@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/lib/use-owner-or-admin", () => ({ useOwnerOrAdmin: () => true }));
 vi.mock("../../state/api", () => ({ api: vi.fn(async () => null) }));
 
+import { api } from "@/state/api";
 import { initialState, StoreContext, type AppState, type Bot } from "@/state/store";
 import { setCompanies } from "@/state/companies";
 import { setInboxView } from "@/state/inbox";
@@ -70,7 +71,7 @@ describe("the Building", () => {
   });
 
   it("has the presidency on top, a floor per company with its departments, the rest in No company, and the reception below", async () => {
-    setCompanies([{ id: "co_1", name: "RedBox", sector: "Agência de Marketing", mission: "Campanhas com CPA menor.", color: "#FF2D33", monthlyBudgetBrl: 500, order: 0,
+    setCompanies([{ id: "co_1", name: "RedBox", sector: "Agência de Marketing", mission: "Campanhas com CPA menor.", color: "#FF2D33", monthlyBudgetBrl: 500, usdToBrl: null, budgetReleasedMonth: null, rules: [], order: 0,
       departmentIds: ["RedBox - Agência de Marketing"] }]);
     await mount(createElement(BuildingPage));
     expect(document.querySelector("h1")!.textContent).toBe("Otávio's building");
@@ -81,6 +82,23 @@ describe("the Building", () => {
     expect(floors[1]!.querySelector<HTMLElement>("[data-floor-stripe]")!.dataset.floorStripe).toBe("#FF2D33");
     expect(floors[1]!.querySelector<HTMLElement>("[data-company-budget]")!.textContent).toContain("500");
     expect(floors[0]!.querySelector<HTMLElement>("[data-building-board]")!.dataset.buildingBoard).toBe("2");
+  });
+
+  it("shows each floor's spend against its budget as a meter, and how many approval rules it has", async () => {
+    vi.mocked(api).mockImplementation(async (path: string) => (path === "/api/companies/spend"
+      ? { spend: [{ companyId: "co_1", month: "2026-11", spentUsd: 80, spentBrl: 440, budgetBrl: 500, usdToBrl: 5.5, percent: 88, level: "warn", released: false }] }
+      : null) as never);
+    setCompanies([{ id: "co_1", name: "RedBox", sector: "", mission: "", color: "#FF2D33", monthlyBudgetBrl: 500, usdToBrl: null, budgetReleasedMonth: null, order: 0,
+      rules: [{ id: "r1", trigger: "bulk-send", threshold: 50 }, { id: "r2", trigger: "deploy" }], departmentIds: ["RedBox - Agência de Marketing"] }]);
+    await mount(createElement(BuildingPage));
+    await act(async () => { await Promise.resolve(); });
+    const meter = document.querySelector<HTMLElement>('[data-company-spend="co_1"]')!;
+    expect(meter.dataset.companySpendTone).toBe("warn");
+    expect(meter.textContent!.replace(/\s/g, " ")).toContain("R$440.00 of R$500");
+    expect(meter.querySelector('[role="meter"]')!.getAttribute("aria-valuenow")).toBe("88");
+    expect(meter.textContent).toContain("88% of the budget used");
+    expect(document.querySelector<HTMLElement>("[data-company-rules]")!.textContent).toBe("2 approval rules");
+    vi.mocked(api).mockImplementation(async () => null);
   });
 });
 

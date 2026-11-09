@@ -6,17 +6,20 @@ import {
   COMPANY_MISSION_MAX,
   COMPANY_NAME_MAX,
   COMPANY_SECTOR_MAX,
+  DEFAULT_USD_TO_BRL,
   type Company,
   type CompanyInput,
 } from "../../../shared/companies";
 import { cn } from "@/lib/cn";
-import { t } from "@/lib/i18n";
+import { intlLocale, t } from "@/lib/i18n";
 import { imeComposing } from "@/lib/send-key";
 import { createCompany, deleteCompany, orderCompanies, updateCompany, useCompanies } from "@/state/companies";
 import { useStore } from "@/state/store";
 import { departmentNames } from "../bot-sections";
 import { Field, inputCls } from "../bot-settings/field";
 import { ConfirmDialog } from "../ConfirmDialog";
+import { moneyLabel } from "./building-floors";
+import { CompanyRulesEditor, ruleDraftsOf, rulesFromDrafts, type RuleDraft } from "./CompanyRulesEditor";
 
 const SWATCHES = ["#FF2D33", "#00E5A0", "#7B61FF", "#FF8A1F", "#2F80ED", "#F2C94C"];
 const NEW = "new";
@@ -27,12 +30,15 @@ interface Draft {
   mission: string;
   color: string;
   budget: string;
+  rate: string;
+  rules: RuleDraft[];
   departmentIds: string[];
 }
 
 const draftOf = (company: Company | undefined): Draft => company
-  ? { name: company.name, sector: company.sector, mission: company.mission, color: company.color, budget: company.monthlyBudgetBrl === null ? "" : String(company.monthlyBudgetBrl), departmentIds: company.departmentIds }
-  : { name: "", sector: "", mission: "", color: COMPANY_DEFAULT_COLOR, budget: "", departmentIds: [] };
+  ? { name: company.name, sector: company.sector, mission: company.mission, color: company.color, budget: company.monthlyBudgetBrl === null ? "" : String(company.monthlyBudgetBrl),
+    rate: company.usdToBrl === null ? "" : String(company.usdToBrl), rules: ruleDraftsOf(company.rules), departmentIds: company.departmentIds }
+  : { name: "", sector: "", mission: "", color: COMPANY_DEFAULT_COLOR, budget: "", rate: "", rules: [], departmentIds: [] };
 
 /** The budget field as the server takes it: empty is no budget; anything but a number of zero or more is refused. */
 export function budgetFromField(text: string): number | null | undefined {
@@ -40,6 +46,12 @@ export function budgetFromField(text: string): number | null | undefined {
   if (!trimmed) return null;
   const value = Number(trimmed);
   return Number.isFinite(value) && value >= 0 ? value : undefined;
+}
+
+/** The dollar rate field: empty is the default rate; anything but a number above zero is refused. */
+export function rateFromField(text: string): number | null | undefined {
+  const value = budgetFromField(text);
+  return value === 0 ? undefined : value;
 }
 
 const failure = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
@@ -68,7 +80,9 @@ export function CompaniesDialog({ onClose, initial }: { onClose: () => void; ini
     setError("");
   };
   const budget = budgetFromField(draft.budget);
-  const ready = draft.name.trim() !== "" && budget !== undefined && !saving;
+  const rate = rateFromField(draft.rate);
+  const rules = rulesFromDrafts(draft.rules);
+  const ready = draft.name.trim() !== "" && budget !== undefined && rate !== undefined && rules !== undefined && !saving;
 
   const run = async (work: () => Promise<unknown>) => {
     setSaving(true);
@@ -83,7 +97,8 @@ export function CompaniesDialog({ onClose, initial }: { onClose: () => void; ini
   };
   const save = () => {
     if (!ready) return;
-    const input: CompanyInput = { name: draft.name.trim(), sector: draft.sector.trim(), mission: draft.mission.trim(), color: draft.color, monthlyBudgetBrl: budget ?? null, departmentIds: draft.departmentIds };
+    const input: CompanyInput = { name: draft.name.trim(), sector: draft.sector.trim(), mission: draft.mission.trim(), color: draft.color, monthlyBudgetBrl: budget ?? null,
+      usdToBrl: rate ?? null, rules: rules ?? [], departmentIds: draft.departmentIds };
     void run(async () => {
       const saved = company ? await updateCompany(company.id, input) : await createCompany(input);
       if (saved) { setSelected(saved.id); setDraft(draftOf(saved)); }
@@ -177,6 +192,14 @@ export function CompaniesDialog({ onClose, initial }: { onClose: () => void; ini
                   onChange={(event) => setDraft({ ...draft, budget: event.target.value })} className={inputCls} />
               </Field>
             </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <span className="max-sm:hidden" />
+              <Field label={t("companies.rate")}>
+                <input value={draft.rate} inputMode="decimal" disabled={saving} placeholder={t("companies.rateHint", { rate: moneyLabel(DEFAULT_USD_TO_BRL, intlLocale()) })} aria-invalid={rate === undefined}
+                  onChange={(event) => setDraft({ ...draft, rate: event.target.value })} className={inputCls} />
+              </Field>
+            </div>
+            <CompanyRulesEditor rules={draft.rules} disabled={saving} onChange={(next) => setDraft((previous) => ({ ...previous, rules: next }))} />
             <fieldset disabled={saving}>
               <legend className="mb-1.5 text-[13px] text-ink-secondary">{t("companies.departments")}</legend>
               {departments.length === 0

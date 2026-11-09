@@ -8,8 +8,14 @@ import {
   COMPANY_MAX,
   COMPANY_MISSION_MAX,
   COMPANY_NAME_MAX,
+  COMPANY_RULE_MAX,
+  COMPANY_RULE_THRESHOLD_MAX,
+  COMPANY_RULE_TRIGGERS,
   COMPANY_SECTOR_MAX,
+  DEFAULT_BULK_SEND_THRESHOLD,
+  USD_TO_BRL_MAX,
   type Company,
+  type CompanyRule,
 } from "../shared/companies.ts";
 import { changeCompanies, readCompanies, type CompanyRecord } from "./section-context.ts";
 import { userError, type UserError, type UserErrorKey } from "./user-errors.ts";
@@ -17,12 +23,25 @@ import { userError, type UserError, type UserErrorKey } from "./user-errors.ts";
 const plainLine = (max: number) => z.string().trim().max(max).refine((text) => ![...text].some((char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127));
 const departmentIds = z.array(z.string().trim().min(1).max(60)).max(200);
 
+/** A rule as the editor sends it: a new one has no id yet, and only a bulk send has a threshold. */
+const ruleInput = z.object({
+  id: z.string().regex(/^[\w-]{1,64}$/).optional(),
+  trigger: z.enum(COMPANY_RULE_TRIGGERS),
+  threshold: z.number().int().min(0).max(COMPANY_RULE_THRESHOLD_MAX).optional(),
+}).strict().transform((rule): CompanyRule => ({
+  id: rule.id ?? `rule_${randomUUID().replaceAll("-", "").slice(0, 12)}`,
+  trigger: rule.trigger,
+  ...(rule.trigger === "bulk-send" ? { threshold: rule.threshold ?? DEFAULT_BULK_SEND_THRESHOLD } : {}),
+}));
+
 const companyFields = {
   name: plainLine(COMPANY_NAME_MAX).pipe(z.string().min(1)),
   sector: plainLine(COMPANY_SECTOR_MAX),
   mission: plainLine(COMPANY_MISSION_MAX),
   color: z.string().regex(COMPANY_COLOR).transform((color) => color.toUpperCase()),
   monthlyBudgetBrl: z.number().finite().min(0).max(COMPANY_BUDGET_MAX_BRL).nullable(),
+  usdToBrl: z.number().finite().positive().max(USD_TO_BRL_MAX).nullable(),
+  rules: z.array(ruleInput).max(COMPANY_RULE_MAX),
   departmentIds,
 };
 
@@ -32,6 +51,8 @@ export const companyCreateSchema = z.object({
   mission: companyFields.mission.default(""),
   color: companyFields.color.default(COMPANY_DEFAULT_COLOR),
   monthlyBudgetBrl: companyFields.monthlyBudgetBrl.default(null),
+  usdToBrl: companyFields.usdToBrl.default(null),
+  rules: companyFields.rules.default([]),
   departmentIds: departmentIds.default([]),
 }).strict();
 
@@ -86,7 +107,7 @@ export function createCompany(input: z.infer<typeof companyCreateSchema>): Compa
     if (companies.some((company) => sameName(company.name, input.name))) return "serverError.company.duplicate";
     if (unknownDepartment(input.departmentIds, sections)) return "serverError.company.departmentMissing";
     const { departmentIds: departments, ...fields } = input;
-    return withDepartments([...companies, { id, ...fields, departmentIds: [] }], id, departments);
+    return withDepartments([...companies, { id, ...fields, budgetReleasedMonth: null, departmentIds: [] }], id, departments);
   }, id);
 }
 
@@ -129,4 +150,11 @@ export function moveDepartment(department: string, companyId: string | null): Co
     if (!target) return "serverError.company.notFound";
     return withDepartments(companies, companyId, [...target.departmentIds.filter((one) => one !== department), department]);
   }, companyId ?? undefined);
+}
+
+/** Lets the company's bots keep spending past its budget until `month` (`YYYY-MM`) ends. */
+export function releaseCompanyBudget(id: string, month: string): CompanyOutcome {
+  return change((companies) => companies.some((company) => company.id === id)
+    ? companies.map((company) => company.id === id ? { ...company, budgetReleasedMonth: month } : company)
+    : "serverError.company.notFound", id);
 }

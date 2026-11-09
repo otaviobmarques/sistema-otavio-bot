@@ -1,5 +1,5 @@
 import { memo, useState, type ReactNode } from "react";
-import { ChevronDown, Send, ShieldCheck, TriangleAlert } from "lucide-react";
+import { Building2, ChevronDown, Send, ShieldCheck, TriangleAlert } from "lucide-react";
 import { useStore, type Bot, type Message } from "@/state/store";
 import { cn } from "@/lib/cn";
 import { t, tFromServer } from "@/lib/i18n";
@@ -13,6 +13,7 @@ import { useOwnerOrAdmin } from "@/lib/use-owner-or-admin";
 import { useInboxOrigin } from "./InboxLine";
 import { yourComputerAsk } from "@/lib/your-computer";
 import { computerAskWords } from "@/lib/computer-ask";
+import { companyApprovalLine } from "@/lib/company-approval";
 import { DESKTOP_DOWNLOAD_URL } from "../../shared/computer-ask";
 
 interface ApprovalLabels {
@@ -136,6 +137,7 @@ function approvalWords(pending: Pending, botName?: string): { line: string; summ
   if (outbound) return { line: outbound.headline, ...(outbound.summary ? { summary: outbound.summary } : {}), detail };
   if (ask) return { line: ask.line, detail };
   if (card?.mcpRequest || card?.lendingLift) return { line: card.title, inline: detail, detail };
+  if (card?.companyApproval?.kind === "budget") return { line: card.title, note: detail, detail: "" };
   if (isDurable(pending)) return { line: label(pending), detail };
   const action = COMMAND_TOOLS.has(pending.tool) ? t("approval.tool.runCommand") : toolLabel(pending.tool);
   return { line: botName ? t("approval.card.namedWantsTo", { name: botName, action }) : label(pending), inline: detail, detail };
@@ -174,6 +176,7 @@ export const PendingApprovalPanel = memo(function PendingApprovalPanel({
   const detailsId = `approval-details-${pending.requestId}`;
   const hidden = detail && detail !== inline ? detail : "";
   const skill = pending.message.card?.skillRequest;
+  const company = companyApprovalLine(pending.message.card);
   return (
     <div
       role="region"
@@ -217,6 +220,11 @@ export const PendingApprovalPanel = memo(function PendingApprovalPanel({
         )}
       </div>
       {summary && <p dir="auto" className="mt-1.5 break-words text-[15px] font-medium leading-[22px] text-ink">{summary}</p>}
+      {company && (
+        <p data-company-approval={pending.message.card?.companyApproval?.companyId} className="mt-1.5 flex items-center gap-1.5 text-[13px] font-medium leading-[18px] text-ink-secondary">
+          <Building2 size={13} aria-hidden="true" className="shrink-0" /><span className="min-w-0 break-words">{company}</span>
+        </p>
+      )}
       {inline && <AskDetail text={inline} mono label={t("approval.aria.reviewDetails")} />}
       {note && <p dir="auto" data-computer-ask-reason className="mt-1 break-words text-[13px] leading-[18px] text-ink-secondary">{note}</p>}
       {heldNote && (outbound ? (

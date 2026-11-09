@@ -17,9 +17,13 @@ export interface SpendState {
 
 const DEFAULT_WARN_AT_PERCENT = 80;
 const CACHE_MS = 15_000;
-const cache = new Map<string, { at: number; month: string; fileUsd: number; keys: Set<string> }>();
+/** What a bot spent this month in one department, `section` being the department its rows were booked in. */
+export interface SpendSlice { botId: string; section: string | undefined; costUsd: number }
+interface MonthRead { at: number; month: string; fileUsd: number; keys: Set<string>; slices: Map<string, SpendSlice> }
+const cache = new Map<string, MonthRead>();
+type Unwritten = { month: string; costUsd: number; botId: string; section: string | undefined };
 // Rows whose async ledger append may not have landed yet: a long turn would otherwise re-read the month without its own row.
-const unwritten = new Map<string, Map<string, { month: string; costUsd: number }>>();
+const unwritten = new Map<string, Map<string, Unwritten>>();
 
 function monthOf(now: Date): string {
   return now.toISOString().slice(0, 7);
@@ -27,34 +31,55 @@ function monthOf(now: Date): string {
 
 const costOf = (value: unknown): number => (typeof value === "number" && Number.isFinite(value) && value > 0 ? value : 0);
 
-export function monthToDateSpend(dataDir: string, now = new Date()): number {
+function addSlice(slices: Map<string, SpendSlice>, botId: string, section: string | undefined, costUsd: number): void {
+  const key = JSON.stringify([botId, section ?? null]);
+  const slice = slices.get(key);
+  if (slice) slice.costUsd += costUsd;
+  else slices.set(key, { botId, section, costUsd });
+}
+
+function monthRead(dataDir: string, now: Date): MonthRead {
   const month = monthOf(now);
   let read = cache.get(dataDir);
   if (!read || read.month !== month || now.getTime() - read.at >= CACHE_MS) {
     const from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
     const rows = readUsage(dataDir, { from, to: now });
-    read = { at: now.getTime(), month, fileUsd: rows.reduce((sum, row) => sum + costOf(row.costUsd), 0), keys: new Set(rows.map(usageRowKey)) };
+    const slices = new Map<string, SpendSlice>();
+    for (const row of rows) if (costOf(row.costUsd)) addSlice(slices, row.botId, row.section, costOf(row.costUsd));
+    read = { at: now.getTime(), month, fileUsd: rows.reduce((sum, row) => sum + costOf(row.costUsd), 0), keys: new Set(rows.map(usageRowKey)), slices };
     cache.set(dataDir, read);
   }
-  let pending = 0;
-  for (const [key, entry] of unwritten.get(dataDir) ?? []) {
-    if (entry.month === month && !read.keys.has(key)) pending += entry.costUsd;
-  }
-  return read.fileUsd + pending;
+  return read;
+}
+
+const pendingOf = (dataDir: string, read: MonthRead): Unwritten[] =>
+  [...unwritten.get(dataDir) ?? []].filter(([key, entry]) => entry.month === read.month && !read.keys.has(key)).map(([, entry]) => entry);
+
+export function monthToDateSpend(dataDir: string, now = new Date()): number {
+  const read = monthRead(dataDir, now);
+  return read.fileUsd + pendingOf(dataDir, read).reduce((sum, entry) => sum + entry.costUsd, 0);
+}
+
+/** This month's spend by bot and department, counting turns whose ledger row has not landed yet. */
+export function monthToDateSlices(dataDir: string, now = new Date()): SpendSlice[] {
+  const read = monthRead(dataDir, now);
+  const slices = new Map([...read.slices].map(([key, slice]) => [key, { ...slice }]));
+  for (const entry of pendingOf(dataDir, read)) addSlice(slices, entry.botId, entry.section, entry.costUsd);
+  return [...slices.values()];
 }
 
 export function noteSpend(
   dataDir: string,
-  row: { at: string; threadId: string; botId: string; costUsd: number | null | undefined },
+  row: { at: string; threadId: string; botId: string; costUsd: number | null | undefined; section?: string },
   written: Promise<boolean>,
 ): void {
   const costUsd = costOf(row.costUsd);
   if (!costUsd) return;
   const key = usageRowKey(row);
   const month = row.at.slice(0, 7);
-  const entries = unwritten.get(dataDir) ?? new Map<string, { month: string; costUsd: number }>();
+  const entries = unwritten.get(dataDir) ?? new Map<string, Unwritten>();
   unwritten.set(dataDir, entries);
-  entries.set(key, { month, costUsd });
+  entries.set(key, { month, costUsd, botId: row.botId, section: row.section });
   void written.then((landed) => {
     entries.delete(key);
     if (entries.size === 0 && unwritten.get(dataDir) === entries) unwritten.delete(dataDir);
@@ -62,6 +87,7 @@ export function noteSpend(
     if (landed && read && read.month === month && !read.keys.has(key)) {
       read.fileUsd += costUsd;
       read.keys.add(key);
+      addSlice(read.slices, row.botId, row.section, costUsd);
     }
   });
 }
