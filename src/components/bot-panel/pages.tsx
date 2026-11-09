@@ -312,7 +312,7 @@ export function SkillsPage({ bot }: PageContext) {
             key={skill.name}
             data-panel-row={`skill:${skill.name}`}
             title={skill.name}
-            hint={<>{skill.description || skill.source}{isTaughtSkill(skill.source) && <div className="mt-1"><TaughtSkillBadge source={skill.source} /></div>}</>}
+            hint={isTaughtSkill(skill.source) ? <>{skill.description || skill.source}<div className="mt-1"><TaughtSkillBadge source={skill.source} /></div></> : skill.description || skill.source}
             label={t("botSettings.simple.skillToggle", { name: skill.name })}
             color={bot.color}
             checked={skillSwitchOn(skill)}
