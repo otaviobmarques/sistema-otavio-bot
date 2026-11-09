@@ -1,4 +1,4 @@
-import type { Company } from "../../../shared/companies";
+import type { Company, CompanySpend } from "../../../shared/companies";
 import type { BuildingRoom } from "./building-view";
 
 /** A floor of the Building: one company with its departments as rooms, or the floor of rooms in no company. */
@@ -32,4 +32,17 @@ export const floorNumber = (index: number, floorCount: number): number => floorC
 
 export function budgetLabel(amount: number, locale: string): string {
   return new Intl.NumberFormat(locale, { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(amount);
+}
+
+/** Spend shows its cents: a turn costs a few of them. */
+export function moneyLabel(amount: number, locale: string): string {
+  return new Intl.NumberFormat(locale, { style: "currency", currency: "BRL", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
+}
+
+/** How a floor's budget meter reads: released is a spent budget the owner let run on. */
+export type BudgetTone = "ok" | "warn" | "paused" | "released";
+
+export function budgetTone(spend: Pick<CompanySpend, "level" | "released">): BudgetTone {
+  if (spend.level === "exceeded") return spend.released ? "released" : "paused";
+  return spend.level === "warn" ? "warn" : "ok";
 }

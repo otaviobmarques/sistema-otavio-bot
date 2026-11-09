@@ -19,7 +19,7 @@ afterEach(() => {
 
 const calls = [{ slug: "GMAIL_SEND_EMAIL", arguments: { to: "ana@example.com", subject: "Hello" } }];
 
-function setup(bot: HoldBot) {
+function setup(bot: HoldBot, companyRule?: OutboundHoldDeps["companyRule"]) {
   const dataDir = mkdtempSync(join(tmpdir(), "outbound-hold-"));
   dirs.push(dataDir);
   const appended: Array<{ threadId: string; message: { id: string; card?: Record<string, unknown> } & Record<string, unknown> }> = [];
@@ -57,6 +57,7 @@ function setup(bot: HoldBot) {
     connectorThread: () => ({ group: undefined }),
     activeGroupTurnForBot: () => null,
     notify: (notification) => notified.push(notification),
+    ...(companyRule ? { companyRule } : {}),
   };
   const input = { bot, threadId: "t1", tool: "GMAIL_SEND_EMAIL", calls, opaque: false, fullAccess: false };
   return { hold: createOutboundHold(deps), dataDir, appended, patches, activity, notified, outboundRequests, input };
@@ -192,5 +193,33 @@ describe("Full access with no sending rule of its own", () => {
     expect(allowing.appended).toHaveLength(1);
     allowing.outboundRequests.resolve({ threadId: "t1", requestId: allowing.appended[0].message.card!.requestId as string, behavior: "deny" });
     await expect(pending).resolves.toMatchObject({ ok: false });
+  });
+});
+
+describe("a company rule", () => {
+  const ruled = { kind: "rule" as const, companyId: "co_red", company: "RedBox", rules: [{ id: "r1", trigger: "bulk-send" as const, threshold: 0 }] };
+
+  it("puts a card on a send its bot would make without asking, naming the company and its rule", async () => {
+    const seen: unknown[] = [];
+    const held = setup(bot({ policy: "allow" }), (botId, sent, opaque) => { seen.push([botId, sent, opaque]); return ruled; });
+    const pending = send(held, { fullAccess: true });
+    expect(seen).toEqual([["b1", calls, false]]);
+    expect(held.appended).toHaveLength(1);
+    expect(held.appended[0].message.card).toMatchObject({ outboundRequest: { tool: "GMAIL_SEND_EMAIL" }, companyApproval: ruled });
+    held.outboundRequests.resolve({ threadId: "t1", requestId: held.appended[0].message.card!.requestId as string, behavior: "allow" });
+    await expect(pending).resolves.toEqual({ ok: true, approved: true });
+    await flushDecisionLog(held.dataDir);
+    expect(readDecisions(held.dataDir, 10)).toEqual([expect.objectContaining({ decision: "card-shown", source: "outbound", rule: "company:co_red:bulk-send" })]);
+  });
+
+  it("is refused when the owner declines, and changes nothing when no rule holds the send", async () => {
+    const declined = setup(bot(undefined), () => ruled);
+    const pending = send(declined, { fullAccess: true });
+    declined.outboundRequests.resolve({ threadId: "t1", requestId: declined.appended[0].message.card!.requestId as string, behavior: "deny" });
+    await expect(pending).resolves.toMatchObject({ ok: false, text: expect.stringMatching(/the user declined/) });
+
+    const free = setup(bot(undefined), () => null);
+    await expect(send(free, { fullAccess: true })).resolves.toEqual({ ok: true, approved: false });
+    expect(free.appended).toEqual([]);
   });
 });

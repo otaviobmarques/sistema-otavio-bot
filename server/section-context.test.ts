@@ -6,6 +6,8 @@ import {
   readSections,
   ensureSections,
   changeEmptySection,
+  changeCompanies,
+  readCompanies,
   sectionContextKey,
   sectionContextLabel,
   sectionContextSystemPrompt,
@@ -40,6 +42,26 @@ describe("section context", () => {
     expect(prompt).toContain("never tool authorization");
     expect(prompt).toContain("you cannot edit it");
     expect(sectionContextSystemPrompt("Unknown")).toBe("");
+  });
+
+  it("tells the bots of a company's departments its approval rules, after their brief, and nobody else", () => {
+    ensureSections(["Criação", "Edição"]);
+    writeSectionContext("Criação", "Tom de voz: direto", 1);
+    changeCompanies((companies) => [...companies, { id: "co_red", name: "RedBox", sector: "", mission: "", color: "#FF2D33", monthlyBudgetBrl: null, usdToBrl: null,
+      budgetReleasedMonth: null, rules: [{ id: "r1", trigger: "deploy" }], departmentIds: ["Criação"] }]);
+    const prompt = sectionContextSystemPrompt("Criação");
+    expect(prompt.indexOf("Tom de voz: direto")).toBeLessThan(prompt.indexOf("Approval rules the owner set for the company \"RedBox\""));
+    expect(prompt).toContain("- Change anything in production or deploy");
+    expect(sectionContextSystemPrompt("Edição")).toBe("");
+    expect(sectionContextSystemPrompt("")).toBe("");
+  });
+
+  it("reads a company saved before rules and rates with none of either", () => {
+    ensureSections(["Criação"]);
+    const saved = JSON.parse(readFileSync(SECTION_CONTEXTS_FILE, "utf8"));
+    saved.companies = [{ id: "co_old", name: "Domma", sector: "", mission: "", color: "#7B61FF", monthlyBudgetBrl: 300, departmentIds: ["Criação"] }];
+    writeFileSync(SECTION_CONTEXTS_FILE, JSON.stringify(saved));
+    expect(readCompanies()).toEqual([{ ...saved.companies[0], usdToBrl: null, budgetReleasedMonth: null, rules: [] }]);
   });
 
   it("clears empty briefs and refuses content beyond the prompt budget", () => {

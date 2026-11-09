@@ -1,4 +1,4 @@
-import { companiesSeenWith, type Company } from "../../shared/companies.ts";
+import { companiesSeenWith, type Company, type CompanySpend } from "../../shared/companies.ts";
 import {
   companyCreateSchema,
   companyOrderSchema,
@@ -24,11 +24,14 @@ export interface CompanyRouteDeps {
   visibleSections(auth: RequestAuth): readonly string[];
   /** Tells every open page the companies changed. */
   changed(companies: Company[]): void;
+  /** Each company's spend this month against its budget. */
+  spend(): CompanySpend[];
 }
 
 /** GET /api/companies lists the companies, top floor first. POST creates one; PATCH and DELETE /api/companies/<id> change
  * or remove one (its departments stay, in no company); PUT /api/companies/order reorders the floors and PUT
- * /api/companies/departments moves one department into a company or out of all of them. */
+ * /api/companies/departments moves one department into a company or out of all of them. GET /api/companies/spend lists
+ * what each company the viewer sees spent this month against its budget. */
 export function createCompanyRoutes(deps: CompanyRouteDeps): RouteHandler {
   return async ({ req, res, path, method, auth, json, readBody }) => {
     if (path !== COMPANIES_PATH && !path.startsWith(`${COMPANIES_PATH}/`)) return PASS;
@@ -51,6 +54,11 @@ export function createCompanyRoutes(deps: CompanyRouteDeps): RouteHandler {
       if (method !== "POST") return json(res, 405, { error: "method not allowed" });
       const parsed = companyCreateSchema.safeParse(await body());
       return parsed.success ? answer(createCompany(parsed.data), 201) : invalid();
+    }
+    if (path === `${COMPANIES_PATH}/spend`) {
+      if (method !== "GET") return json(res, 405, { error: "method not allowed" });
+      const seen = new Set(companiesSeenWith(listCompanies(), deps.visibleSections(auth)).map((company) => company.id));
+      return json(res, 200, { spend: deps.spend().filter((one) => seen.has(one.companyId)) });
     }
     if (path === `${COMPANIES_PATH}/order`) {
       if (method !== "PUT") return json(res, 405, { error: "method not allowed" });
