@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import { accessFromVisibility, entryMatches, higherLevel, sharedLevel, type BotAccess, type BotAccessLevel } from "../shared/bot-access.ts";
 import { botOwner, type OwnedBot } from "../shared/bot-owner.ts";
+import { companiesSeenWith, type Company } from "../shared/companies.ts";
 import type { BotVisibility } from "../shared/wire.ts";
 import { audienceIncludes, type Audience } from "./audience.ts";
 import { SHARED_CHAT_TITLE } from "../shared/wire.ts";
@@ -503,6 +504,10 @@ export function frameForMember(payload: Record<string, unknown>, ctx: FrameConte
     case "sections": {
       const sections = Array.isArray(payload.sections) ? payload.sections.filter((s): s is string => typeof s === "string") : [];
       return { ...payload, sections: visible.sections(sections) };
+    }
+    case "companies": {
+      const companies = (Array.isArray(payload.companies) ? payload.companies : []) as Company[];
+      return { ...payload, companies: companiesSeenWith(companies, visible.sections(companies.flatMap((company) => company.departmentIds))) };
     }
     case "bot.queued": {
       const queues = field("queues");
