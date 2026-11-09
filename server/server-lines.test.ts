@@ -5,8 +5,9 @@ import { serverLine } from "./server-lines.ts";
 
 describe("serverLine", () => {
   it("writes the line in the language given, with its values filled in", () => {
-    expect(serverLine("de", "server.reports.sent", { report: "r-1" })).toBe("An das MausBot-Team gesendet (Bericht r-1). Milind und Omkar bekommen ihn per E-Mail.");
-    expect(serverLine(undefined, "server.reports.sent", { report: "r-1" })).toBe("Sent to the MausBot team (report r-1). Milind and Omkar get it by email.");
+    expect(serverLine("pt-br", "server.reports.sent", { report: "r-1" })).toBe("Relatório r-1 salvo neste computador, na pasta bug-reports dos dados do app. Você pode mandar o arquivo para quem cuida do seu Otávio Bot.");
+    expect(serverLine("de", "server.reports.sent", { report: "r-1" })).toBe("Fehlerbericht r-1 auf diesem Computer gespeichert, im Ordner bug-reports in den Daten der App. Du kannst die Datei an die Person schicken, die sich um deinen Otávio Bot kümmert.");
+    expect(serverLine(undefined, "server.reports.sent", { report: "r-1" })).toBe("Bug report r-1 saved on this computer, in the bug-reports folder of the app's data. You can send the file to whoever looks after your Otávio Bot.");
     expect(serverLine("en", "server.reports.when.minutes", { count: 5 })).toBe("in about 5 minutes");
   });
 
