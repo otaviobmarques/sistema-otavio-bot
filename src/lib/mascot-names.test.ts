@@ -1,23 +1,26 @@
 import { afterEach, describe, expect, it } from "vitest";
 
-import { BOT_BODY_IDS } from "../../shared/bot-body";
+import { FIGURINHA_ACCESSORIES, FIGURINHA_EYES, FIGURINHA_HEADS } from "../../shared/figurinha";
 import { en, locales } from "@/locales";
+import { FIGURINHA_ACCESSORY_LABEL, FIGURINHA_EYES_LABEL, FIGURINHA_HEAD_LABEL } from "./figurinha";
 import { setLocale } from "./i18n";
 import { MAUS_COLOR_NAMES, PICKABLE_STATES } from "./mascot";
-import { bodyName, colorName, expressionName, silhouetteName } from "./mascot-names";
+import { colorName, expressionName } from "./mascot-names";
 
 afterEach(() => {
   setLocale("en");
 });
 
-describe("mascot names", () => {
+describe("look names", () => {
   const keys = [
-    ...BOT_BODY_IDS.map((id) => `mascot.body.${id}`),
+    ...FIGURINHA_HEADS.map((id) => FIGURINHA_HEAD_LABEL[id]),
+    ...FIGURINHA_EYES.map((id) => FIGURINHA_EYES_LABEL[id]),
+    ...FIGURINHA_ACCESSORIES.map((id) => FIGURINHA_ACCESSORY_LABEL[id]),
     ...MAUS_COLOR_NAMES.map((color) => `mascot.color.${color}`),
     ...PICKABLE_STATES.map((state) => `mascot.expression.${state}`),
   ];
 
-  it("has an English and a Brazilian Portuguese name for every body, colour and face the pickers show", () => {
+  it("has an English and a Brazilian Portuguese name for every head, eyes, accessory, colour and face the pickers show", () => {
     for (const key of keys) {
       expect(Object.hasOwn(en, key), key).toBe(true);
       expect(Object.hasOwn(locales["pt-br"]!, key), key).toBe(true);
@@ -25,13 +28,12 @@ describe("mascot names", () => {
   });
 
   it("reads the names in the app language", () => {
-    expect([bodyName("pumpkin"), colorName("red"), expressionName("happy"), silhouetteName("Ghost")]).toEqual(["Pumpkin", "red", "happy", "Ghost"]);
+    expect([colorName("red"), expressionName("happy")]).toEqual(["red", "happy"]);
     setLocale("pt-br");
-    expect([bodyName("pumpkin"), colorName("red"), expressionName("happy"), silhouetteName("Ghost")]).toEqual(["Abóbora", "vermelha", "feliz", "Fantasma"]);
+    expect([colorName("red"), expressionName("happy")]).toEqual(["vermelha", "feliz"]);
   });
 
-  it("falls back to the id or name it was given when the catalog has none", () => {
+  it("falls back to the id it was given when the catalog has none", () => {
     expect(expressionName("unknown-face")).toBe("unknown-face");
-    expect(silhouetteName("Not a body")).toBe("Not a body");
   });
 });

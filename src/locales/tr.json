@@ -1082,7 +1082,6 @@
   "settings.newBotEffort.aria": "Yeni botlar için çaba seviyesi",
   "settings.newBotEffort.error": "Yeni botlar için çaba seviyesi kaydedilemedi.",
   "settings.toolCalls.title": "Araç çağrıları",
-  "settings.toolCalls.subtitle": "Bir botun çalıştırdığı her aracı dökümde gösterin. Varsayılan olarak kapalıdır — maskot zaten çalışmanın yapıldığını gösterir.",
   "settings.toolCalls.show": "Araç çağrılarını göster",
   "settings.toolCalls.detail": "Bash, arama ve diğer araçlar için adlandırılmış butonlar. Hatalar ve bottan bota mesajlar görünmeye devam eder.",
   "settings.toolCalls.aria": "Sohbette araç çağrılarını göster",

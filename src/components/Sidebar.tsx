@@ -94,6 +94,7 @@ import { AvatarActivityDot, RowDot, RowStatusText, rowSurface } from "./SidebarR
 
 
 import { SidebarAttentionPanel } from "./SidebarAttentionPanel";
+import { SidebarDestaques, sidebarDestaques, withoutDestaques } from "./SidebarDestaques";
 import { SidebarPinnedThreadsPanel } from "./SidebarPinnedThreadsPanel";
 import { useLiveMedia } from "@/lib/live-call-media";
 import { LiveCallPill, liveBadgeFor } from "./LiveCallPill";
@@ -1101,22 +1102,18 @@ export function Sidebar({ open, onClose, collapseToIcons = false }: {
     );
   const visibleGroups = state.groups.filter((g) => !q || g.name.toLowerCase().includes(q) || g.tasks?.some((task) => task.title.toLowerCase().includes(q)));
   const viewerEmail = useViewerEmail();
+  const destaques = q ? [] : sidebarDestaques(matchingBots, visibleMessages, state.instances, advanced);
   const parts = partitionSidebarBots(botDrag.preview(matchingBots), { universalPins, viewerEmail, welcoming: useWelcomingBot() });
   const saved = simpleDesk ? withPrimaryTile(parts, myDefaultBot(state.bots, viewerEmail)?.id) : { ...parts, primary: null };
   // Shown order only: drag and Alt+Up/Down keep working on the saved order, so a reorder never stores this one.
-  const { primary, unsectionedChief, pinnedBots, sectionChiefs, sectionedBots, unsectionedBots } = { ...saved, ...activeBotsFirst(saved, (bot) => {
+  const { primary, unsectionedChief, pinnedBots, sectionChiefs, sectionedBots, unsectionedBots } = withoutDestaques({ ...saved, ...activeBotsFirst(saved, (bot) => {
     const { waiting, working } = sidebarBotStatus(bot, state.pendingQueued);
     return waiting || working;
-  }) };
+  }) }, destaques);
   const { botChats, sectionedRooms, unsectionedRooms } = partitionSidebarGroups(visibleGroups);
 
   const sectionNames: string[] = [...(state.sections ?? []).filter((name) => !q || name.toLowerCase().includes(q.toLowerCase())), ...botDrag.pending];
-  for (const bot of sectionedBots) {
-    if (!sectionNames.includes(bot.section!)) sectionNames.push(bot.section!);
-  }
-  for (const bot of sectionChiefs) {
-    if (!sectionNames.includes(bot.section!)) sectionNames.push(bot.section!);
-  }
+  for (const bot of [...sectionedBots, ...sectionChiefs]) if (!sectionNames.includes(bot.section!)) sectionNames.push(bot.section!);
   for (const group of sectionedRooms) {
     if (!sectionNames.includes(group.section!)) sectionNames.push(group.section!);
   }
@@ -1380,7 +1377,7 @@ export function Sidebar({ open, onClose, collapseToIcons = false }: {
           {matchingBots.length === 0 && visibleGroups.length === 0 && q && q.length < MIN_QUERY && (
             <div className="px-3 py-6 text-center text-[13px] text-ink-secondary">{t("sidebar.noMatch", { query })}</div>
           )}
-          {!q && <NeedsYouButton compact={rail} />}{!q && <SidebarPeople compact={rail} />}
+          {!q && <NeedsYouButton compact={rail} />}{!q && <SidebarPeople compact={rail} />}<SidebarDestaques entries={destaques} state={state} icons={density === "icons"} large={!advanced} now={now} dispatch={dispatch} onMenu={setMenu} onOpened={phone ? onClose : undefined} />
           {unsectionedChief && (phone ? (
             <PhoneHero bot={unsectionedChief} selected={botRow(unsectionedChief).selected} onOpen={() => openBotRow(dispatch, unsectionedChief, showThreads, botRow(unsectionedChief).selected)} onMenu={setMenu} />
           ) : (
