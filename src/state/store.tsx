@@ -992,17 +992,11 @@ export function reducer(state: AppState, action: Action): AppState {
       };
     case "showChat":
       return state.activeView === "chat" ? state : { ...state, activeView: "chat" };
-    case "showBuilding": case "showBoardRoom":
-      return {
-        ...state,
-        activeView: action.type === "showBuilding" ? "building" : "board-room",
-        settingsOpen: false, computerOpen: false, inspectorOpen: false, activityOpen: false, appSettingsOpen: false, pluginsOpen: false,
-      };
-    case "showTeamMap":
+    case "showTeamMap": case "showBuilding": case "showBoardRoom":
     case "showFiles": case "showWebPanel":
       return {
         ...state,
-        activeView: action.type === "showFiles" ? "files" : action.type === "showWebPanel" ? "web-panel" : "team-map",
+        activeView: action.type === "showFiles" ? "files" : action.type === "showWebPanel" ? "web-panel" : action.type === "showBuilding" ? "building" : action.type === "showBoardRoom" ? "board-room" : "team-map",
         filesSuggest: action.type === "showFiles" && action.suggest?.length ? action.suggest : null, webPanelId: action.type === "showWebPanel" ? action.id : state.webPanelId,
         settingsOpen: false, computerOpen: false, inspectorOpen: false, activityOpen: false, appSettingsOpen: false, pluginsOpen: false,
       };
