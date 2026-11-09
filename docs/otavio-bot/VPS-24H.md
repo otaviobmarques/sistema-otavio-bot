@@ -185,7 +185,34 @@ segurar ("bufferizar") as respostas, senão as conversas não atualizam ao vivo.
   apt install -y certbot python3-certbot-nginx && certbot --nginx -d bots.seudominio.com.br
   ```
 
-- **Se o proxy é um contêiner** (Traefik, nginx-proxy, Caddy de outro
+- **Se o proxy é um Traefik que acha os sites pelas etiquetas do Docker**
+  (o caso do VPS da Hostinger: contêiner `traefik-traefik-1`, rede
+  `traefik-edge`, certificado `letsencrypt`). Confira com:
+
+  ```sh
+  docker ps --format '{{.Names}} | {{.Networks}}' | grep -i traefik
+  ```
+
+  No `.env`, use esta linha de `COMPOSE_FILE` (no lugar da de cima):
+
+  ```
+  COMPOSE_FILE=docker-compose.yml:docker-compose.atras-de-proxy.yml:docker-compose.traefik.yml
+  ```
+
+  e suba de novo:
+
+  ```sh
+  cd /opt/otavio-bot/deploy && docker compose up -d
+  ```
+
+  O Otávio Bot entra na rede `traefik-edge` com etiquetas que dizem ao
+  Traefik "quem pedir `bots.seudominio.com.br` vem para cá"; o Traefik pede o
+  certificado HTTPS sozinho. Nenhuma porta do VPS é aberta e os outros sites
+  continuam como estão. Se a sua rede, a entrada ou o certificado do Traefik
+  tiverem outro nome, ajuste `TRAEFIK_NETWORK`, `TRAEFIK_ENTRYPOINT` e
+  `TRAEFIK_CERTRESOLVER` no `.env`.
+
+- **Se o proxy é outro contêiner** (nginx-proxy, Caddy de outro
   projeto): um contêiner não enxerga o `127.0.0.1` do VPS. No `.env`, tire o
   `#` também de `OTAVIO_PROXY_BIND=172.17.0.1`, rode de novo o
   `docker compose up -d` acima, e configure nesse proxy um site

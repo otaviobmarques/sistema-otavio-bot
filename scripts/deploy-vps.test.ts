@@ -81,9 +81,24 @@ describe("the Otávio Bot VPS deployment", () => {
     expect(caddyfile).toMatch(/reverse_proxy 127\.0\.0\.1:8799 \{[^}]*flush_interval -1/);
   });
 
+  it("behind a Traefik that reads Docker labels, joins its network and publishes no port", () => {
+    expect(read("deploy/docker-compose.traefik.yml")).toMatch(/ports: !override \[\]\n/);
+    const { services, networks } = yaml("deploy/docker-compose.traefik.yml");
+    expect(services.omb.networks).toEqual(["default", "traefik"]);
+    expect(networks.traefik).toEqual({ external: true, name: "${TRAEFIK_NETWORK:-traefik-edge}" });
+    expect(services.omb.labels).toMatchObject({
+      "traefik.enable": "true",
+      "traefik.docker.network": "${TRAEFIK_NETWORK:-traefik-edge}",
+      "traefik.http.routers.otavio-bot.rule": "Host(`${DOMAIN}`)",
+      "traefik.http.routers.otavio-bot.tls": "true",
+      "traefik.http.services.otavio-bot.loadbalancer.server.port": "8080",
+    });
+    expect(read("deploy/.env.example")).toMatch(/^# COMPOSE_FILE=docker-compose\.yml:docker-compose\.atras-de-proxy\.yml:docker-compose\.traefik\.yml$/m);
+  });
+
   it("documents every setting the stacks read, with no secret in the example", () => {
     const example = read("deploy/.env.example");
-    const used = new Set([...`${read("deploy/docker-compose.yml")}${read("deploy/docker-compose.atras-de-proxy.yml")}`.matchAll(/\$\{([A-Z_]+)/g)].map(match => match[1]));
+    const used = new Set([...`${read("deploy/docker-compose.yml")}${read("deploy/docker-compose.atras-de-proxy.yml")}${read("deploy/docker-compose.traefik.yml")}`.matchAll(/\$\{([A-Z_]+)/g)].map(match => match[1]));
     used.delete("COMPOSE_PROJECT_NAME");
     for (const name of used) expect(example, name).toMatch(new RegExp(`^#? ?${name}=`, "m"));
     for (const line of example.split("\n").filter(text => /^[A-Z_]+=/.test(text))) {

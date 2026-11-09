@@ -1,0 +1,28 @@
+# Otávio Bot behind a Traefik that already holds ports 80/443 and discovers
+# sites from Docker labels (providers.docker, exposedbydefault=false), as on the
+# owner's VPS. On top of docker-compose.yml and docker-compose.atras-de-proxy.yml:
+#
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.atras-de-proxy.yml:docker-compose.traefik.yml
+#
+# Traefik keeps the TLS certificate and reaches Caddy's :8080 over the shared
+# network; nothing is published on the host. Caddy trusts the forwarded headers
+# only from private addresses (Caddyfile.atras-de-proxy).
+services:
+  omb:
+    ports: !override []
+    networks:
+      - default
+      - traefik
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: ${TRAEFIK_NETWORK:-traefik-edge}
+      traefik.http.routers.otavio-bot.rule: Host(`${DOMAIN}`)
+      traefik.http.routers.otavio-bot.entrypoints: ${TRAEFIK_ENTRYPOINT:-websecure}
+      traefik.http.routers.otavio-bot.tls: "true"
+      traefik.http.routers.otavio-bot.tls.certresolver: ${TRAEFIK_CERTRESOLVER:-letsencrypt}
+      traefik.http.services.otavio-bot.loadbalancer.server.port: "8080"
+
+networks:
+  traefik:
+    external: true
+    name: ${TRAEFIK_NETWORK:-traefik-edge}
