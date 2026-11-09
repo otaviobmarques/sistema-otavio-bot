@@ -83,6 +83,9 @@ await build({
   logLevel: "info",
   plugins: [yamlEsmPlugin, serverLocalePlugin],
   banner: NODE_REQUIRE,
+  // Baileys (the owner's WhatsApp) imports these only to make media thumbnails and link previews, and goes on without
+  // them; a text-only link needs none, and sharp's native binding cannot be bundled.
+  external: ["sharp", "jimp", "link-preview-js", "audio-decode"],
 });
 
 // External MCP clients launch this as an independent stdio process, so release

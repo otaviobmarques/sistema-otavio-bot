@@ -102,6 +102,8 @@ export const USER_ERROR = {
   "serverError.company.departmentMissing": "That department no longer exists. Reload and try again.",
   "serverError.company.orderChanged": "The companies changed. Reload and try again.",
   "serverError.company.invalid": "Check the company: a name up to 60 characters, a color like #FF2D33 and a budget of zero or more",
+  "serverError.whatsapp.invalidNumber": "Type the number in international format, with the country code: +55 11 98765-4321",
+  "serverError.whatsapp.ownerOnly": "Only the owner or an admin can change WhatsApp",
   "serverError.backup.recursiveLink": "Cannot back up a symbolic link to the folder that contains it: {path}",
   "serverError.setup.noTools": "This bot's AI can't set it up by itself. Tell the bot what you'd like it to do instead.",
   "serverError.setup.missingConversation": "There is no such conversation.",

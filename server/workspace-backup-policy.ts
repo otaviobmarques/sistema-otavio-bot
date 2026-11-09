@@ -44,6 +44,8 @@ export function excludedWorkspaceAuthPath(path: string): boolean {
   if (/^connected-apps-installation\.json(?:$|\.\d+\.[0-9a-f-]+\.tmp$)/.test(path)) return true;
   // A Team Cloud's kept rules: a restored Cloud asks the Admin for the ones in force now.
   if (/^team-policy\.json(?:$|\.\d+\.[0-9a-f-]+\.tmp$)/.test(path)) return true;
+  // The owner's linked WhatsApp session: a copy elsewhere would be a second device on their number.
+  if (/^whatsapp\/session(?:\/|$)/.test(path)) return true;
   // A Team Cloud member's own installation, keys and sign-ins: theirs, never in the team's backup.
   if (/^people-connections(?:\/|$)/.test(path)) return true;
   return /^(?:(?:providers|caddy|chrome-profile|\.agent-browser)(?:\/|$)|workspace-credentials\.json$|external-runtimes\.json$|browser-engine-key$)/.test(path) ||

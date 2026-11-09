@@ -100,7 +100,7 @@ export function decisionRetentionDays(configured: number | undefined, env: NodeJ
   return DEFAULT_DECISION_RETENTION_DAYS;
 }
 
-export type DecisionVia = "call" | "reaction";
+export type DecisionVia = "call" | "reaction" | "whatsapp";
 const actorScope = new AsyncLocalStorage<{ actor: DecisionActor; via?: DecisionVia }>();
 
 export function withDecisionActor<T>(actor: DecisionActor, work: () => T, via?: DecisionVia): T {

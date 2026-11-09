@@ -367,6 +367,8 @@ export type ActivityEntry =
       summaryParams?: DecisionRow["summaryParams"];
       threadId: string;
       requestId?: string;
+      /** How the person answered when it was not a tap: by voice, a reaction, or a WhatsApp reply. */
+      via?: DecisionRow["via"];
     }
   | {
       type: "admin";
@@ -403,6 +405,7 @@ export function activityEntries(
       ...(clean.summary ? { summary: clean.summary, summaryCode: clean.summaryCode, summaryParams: clean.summaryParams } : {}),
       threadId: clean.threadId,
       ...(clean.requestId ? { requestId: clean.requestId } : {}),
+      ...(clean.via ? { via: clean.via } : {}),
     });
   }
   if (filter.what !== "approvals" && filter.what !== "decisions") {

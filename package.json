@@ -105,6 +105,7 @@
     "@resvg/resvg-js": "2.6.2",
     "@tanstack/react-virtual": "^3.14.13",
     "@trycua/cua-driver": "0.41.3",
+    "@whiskeysockets/baileys": "7.0.0-rc14",
     "ag-grid-community": "36.2.0",
     "ag-grid-react": "36.2.0",
     "ajv": "8.20.0",

@@ -515,7 +515,7 @@ export type AppSettingsSection =
   | "appearance"
   | "experimental"
   | "connections"
-  | "decisionModel" | "imageGeneration"
+  | "decisionModel" | "imageGeneration" | "whatsapp"
   | "engines"
   | "companion"
   | "remote"

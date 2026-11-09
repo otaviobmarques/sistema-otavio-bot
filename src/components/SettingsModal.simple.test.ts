@@ -135,7 +135,7 @@ describe("Settings in Simple mode", () => {
   it("draws five pages on the desktop, General, AI, Computer, Usage & billing and Updates, and none of the Advanced-only ones", () => {
     const html = render();
     expect(pages(html)).toEqual(["general", "ai", "computer", "billing", "updates"]);
-    expect(SIMPLE_PAGES.map((page) => page.id)).toEqual(["general", "botAccess", "ai", "computer", "billing", "updates"]);
+    expect(SIMPLE_PAGES.map((page) => page.id)).toEqual(["general", "botAccess", "ai", "computer", "billing", "whatsapp", "updates"]);
     expect(html).toMatch(/General<\/span>[\s\S]*AI<\/span>[\s\S]*Computer<\/span>[\s\S]*Usage &amp; billing<\/span>[\s\S]*Updates<\/span>/);
     expect(html).not.toContain("data-settings-group=");
     expect(html).not.toContain("data-settings-section=");
@@ -285,7 +285,7 @@ describe("Settings in Simple mode", () => {
     fixture.ownerOrAdmin = true;
     fixture.section = "people";
     const html = render();
-    expect(pages(html)).toEqual(["general", "ai", "computer", "billing", "updates"]);
+    expect(pages(html)).toEqual(["general", "ai", "computer", "billing", "whatsapp", "updates"]);
     expect(currentPage(html)).toBe("general");
     expect(placement(html, "MARKER:people;")).toBe("shown");
     expect(placement(html, "MARKER:activity;")).toBe("shown");
