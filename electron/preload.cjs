@@ -301,6 +301,11 @@ const bridge = {
   /** Arms exactly one display-media request from the current renderer frame. */
   beginScreenPreviewIntent: () => ipcRenderer.sendSync("screen:preview-intent"),
   screenFrame: () => ipcRenderer.invoke("screen:frame"),
+  /** Teach-a-task: the screens and windows to pick from, and one downscaled JPEG frame of the picked one (null once it is gone). */
+  teachCapture: {
+    sources: () => ipcRenderer.invoke("teach:sources"),
+    frame: (id) => ipcRenderer.invoke("teach:frame", id),
+  },
   /** Physical USB devices only; network ADB is deliberately excluded. */
   androidDevice: {
     status: () => ipcRenderer.invoke("android-device:status"),

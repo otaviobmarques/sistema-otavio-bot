@@ -1368,7 +1368,6 @@
   "settings.newBotEffort.aria": "Esfuerzo para bots nuevos",
   "settings.newBotEffort.error": "No se pudo guardar el esfuerzo para bots nuevos.",
   "settings.toolCalls.title": "Llamadas a herramientas",
-  "settings.toolCalls.subtitle": "Muestra en la transcripción cada herramienta que usa un bot. Desactivado por defecto: la mascota ya indica que hay trabajo en marcha.",
   "settings.toolCalls.show": "Mostrar llamadas a herramientas",
   "settings.toolCalls.detail": "Etiquetas con el nombre de Bash, la búsqueda y otras herramientas. Los errores y los mensajes entre bots siguen apareciendo.",
   "settings.toolCalls.aria": "Mostrar llamadas a herramientas en el chat",

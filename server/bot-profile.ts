@@ -11,6 +11,7 @@ import {
 import { BOT_PROFILE_LIMITS, fitsOnOneLine } from "../shared/bot-profile.ts";
 import { REPLY_STYLES } from "../shared/reply-style.ts";
 import { BOT_BODY_IDS, botBodySchema } from "../shared/bot-body.ts";
+import { figurinhaSchema } from "../shared/figurinha.ts";
 
 import type { BotRecord } from "./store.ts";
 
@@ -29,6 +30,7 @@ export const BOT_PROFILE_PATCH_FIELDS = [
   "avatarFocusY",
   "mascotBody",
   "mascotFaceColor",
+  "figurinha",
   "voice",
   "speakReplies",
   "replyStyle",
@@ -68,6 +70,7 @@ export const profilePatchSchema = z.object({
   avatarFocusY: z.number({ error: "avatarFocusY must be a number from 0 to 1" }).finite().min(0).max(1).optional(),
   mascotBody: botBodySchema.optional(),
   mascotFaceColor: mascotFaceColorSchema.nullable().optional(),
+  figurinha: figurinhaSchema.nullable().optional(),
   voice: z
     .string({ error: "voice must be a string" })
     .max(BOT_PROFILE_LIMITS.voice, { error: "voice must be at most 200 characters" })
@@ -93,6 +96,7 @@ export type BotProfilePatch = Partial<
     | "avatarFocusY"
     | "mascotBody"
     | "mascotFaceColor"
+    | "figurinha"
     | "voice"
     | "speakReplies"
     | "replyStyle"
@@ -108,7 +112,7 @@ export type BotProfilePatchResult =
 export function parseBotProfilePatch(input: BotProfilePatchInput, strict = false): BotProfilePatchResult {
   const parsed = (strict ? profilePatchSchema.strict() : profilePatchSchema).safeParse(input);
   if (!parsed.success) {
-    const unsupported = parsed.error.issues.find((issue) => issue.code === "unrecognized_keys");
+    const unsupported = parsed.error.issues.find((issue) => issue.code === "unrecognized_keys" && issue.path.length === 0);
     if (unsupported?.code === "unrecognized_keys") {
       return { ok: false, error: `unsupported profile field: ${unsupported.keys[0] ?? "unknown"}` };
     }
@@ -123,6 +127,9 @@ export function parseBotProfilePatch(input: BotProfilePatchInput, strict = false
     }
     if (issue?.path[0] === "mascotFaceColor") {
       return { ok: false, error: "mascotFaceColor must be white, black, or null" };
+    }
+    if (issue?.path[0] === "figurinha") {
+      return { ok: false, error: "figurinha must be null or an object of head, eyes and accessory" };
     }
     return { ok: false, error: issue?.message ?? "invalid profile patch" };
   }

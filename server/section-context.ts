@@ -5,7 +5,11 @@ import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import { z } from "zod";
 
-import { COMPANY_BUDGET_MAX_BRL, COMPANY_COLOR, COMPANY_MISSION_MAX, COMPANY_NAME_MAX, COMPANY_SECTOR_MAX, type Company } from "../shared/companies.ts";
+import {
+  COMPANY_BUDGET_MAX_BRL, COMPANY_COLOR, COMPANY_MISSION_MAX, COMPANY_NAME_MAX, COMPANY_RULE_MAX, COMPANY_RULE_THRESHOLD_MAX, COMPANY_RULE_TRIGGERS,
+  COMPANY_SECTOR_MAX, USD_TO_BRL_MAX, type Company,
+} from "../shared/companies.ts";
+import { companyRulesPrompt } from "../shared/company-rules.ts";
 import { writeFileAtomic } from "./atomic.ts";
 import { DATA_DIR } from "./config.ts";
 import { renamePublishedTeam } from "./published-teams.ts";
@@ -30,6 +34,12 @@ interface SectionContextFile {
 
 export type CompanyRecord = Omit<Company, "order">;
 
+export const companyRuleSchema = z.object({
+  id: z.string().regex(/^[\w-]{1,64}$/),
+  trigger: z.enum(COMPANY_RULE_TRIGGERS),
+  threshold: z.number().int().min(0).max(COMPANY_RULE_THRESHOLD_MAX).optional(),
+}).strict();
+
 const companyRecordSchema = z.object({
   id: z.string().regex(/^[\w-]{1,64}$/),
   name: z.string().min(1).max(COMPANY_NAME_MAX),
@@ -37,6 +47,9 @@ const companyRecordSchema = z.object({
   mission: z.string().max(COMPANY_MISSION_MAX),
   color: z.string().regex(COMPANY_COLOR),
   monthlyBudgetBrl: z.number().finite().min(0).max(COMPANY_BUDGET_MAX_BRL).nullable(),
+  usdToBrl: z.number().finite().positive().max(USD_TO_BRL_MAX).nullable().default(null),
+  budgetReleasedMonth: z.string().regex(/^\d{4}-\d{2}$/).nullable().default(null),
+  rules: z.array(companyRuleSchema).max(COMPANY_RULE_MAX).default([]),
   departmentIds: z.array(z.string()),
 });
 
@@ -203,6 +216,12 @@ export function writeSectionContext(section: string | null | undefined, text: st
 
 /** Contains no file path, so agents cannot discover or mutate the backing store through this prompt. */
 export function sectionContextSystemPrompt(section?: string | null): string {
+  const key = sectionContextKey(section);
+  const rules = key ? companyRulesPrompt(readCompanies().find((company) => company.departmentIds.includes(key))) : "";
+  return sharedContextPrompt(section) + rules;
+}
+
+function sharedContextPrompt(section?: string | null): string {
   const record = readSectionContext(section);
   if (!record?.text.trim()) return "";
   const label = sectionContextLabel(section);

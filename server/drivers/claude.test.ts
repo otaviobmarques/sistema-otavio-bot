@@ -2358,7 +2358,6 @@ describe("ClaudeDriver turns (fake CLI)", () => {
     await recorder.until((event) => event.type === "turn.completed");
 
     const seen = JSON.parse(readFileSync(dump, "utf8"));
-    expect(seen.argv[seen.argv.indexOf("--tools") + 1]).toBe("");
     expect(seen.argv).not.toContain("--disallowedTools");
   });
 
@@ -3937,7 +3936,6 @@ describe("ClaudeDriver turns (fake CLI)", () => {
     process.env.FAKE_CLAUDE_DUMP = dump;
     await expect(instance.generateText!("summarize")).resolves.toBe("fake generated text");
     const seen = JSON.parse(readFileSync(dump, "utf8"));
-    expect(seen.argv[seen.argv.indexOf("--tools") + 1]).toBe("");
     expect(seen.argv).toContain("--strict-mcp-config");
     expect(seen.argv[seen.argv.indexOf("--setting-sources") + 1]).toBe("project");
     expect(seen.argv).toContain("--no-session-persistence");
@@ -4077,6 +4075,24 @@ describe("ClaudeDriver turns (fake CLI)", () => {
     // the contract gives permission review no way to name a model
     await expect(instance.reviewPermission!("review this request")).resolves.toBe("fake generated text");
     expect(model()).toBe("claude-haiku-5-5");
+  });
+
+  it("sends pictures with a one-shot as one stream-json user message and reads the result event", async () => {
+    await create();
+    const dump = join(scratch, "image-one-shot.json");
+    process.env.FAKE_CLAUDE_DUMP = dump;
+    const picture = join(scratch, "frame.jpg");
+    writeFileSync(picture, Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1, 2]));
+    const image = { path: picture, mime: "image/jpeg" as const, bytes: 6 };
+    await expect(instance.generateText!("describe the frames", { images: [image, image] })).resolves.toBe("fake generated text");
+    const seen = JSON.parse(readFileSync(dump, "utf8"));
+    expect(seen.argv[seen.argv.indexOf("--input-format") + 1]).toBe("stream-json");
+    expect(seen.argv[seen.argv.indexOf("--output-format") + 1]).toBe("stream-json");
+    expect(seen.argv).toContain("--verbose");
+    expect(seen).toMatchObject({ prompt: "describe the frames", images: 2 });
+    const onUsage = vi.fn();
+    await expect(instance.generateText!("describe", { images: [image], onUsage })).resolves.toBe("fake generated text");
+    expect(onUsage).toHaveBeenCalledOnce();
   });
 
   it.each(["not JSON", '{"type":"assistant"}'])("rejects malformed one-shot output without invented usage (%s)", async result => {

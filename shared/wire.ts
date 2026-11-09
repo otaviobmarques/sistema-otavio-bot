@@ -20,7 +20,7 @@ import type { ServerTextLine, ServerTextParams } from "./server-text.ts";
 import type { WireTool } from "./wire-tool.ts";
 import type { ModelRequestCardData } from "./model-request.ts";
 import type { ConnectorCardData } from "./connector-card.ts"; import type { McpChangeRequest } from "./mcp-request.ts";
-import type { SkillRequestCardData } from "./skill-request.ts"; import type { OutsideWriteCardField } from "./outside-write.ts";
+import type { SkillRequestCardData } from "./skill-request.ts"; import type { OutsideWriteCardField } from "./outside-write.ts"; import type { CompanyApprovalCardField } from "./companies.ts";
 import type { QuestionRequestCardData } from "./ask-question.ts";
 import type { AutomationLine, RoutineRunCardData } from "./routine-run.ts";
 import type { WidgetPayload } from "./widget.ts";
@@ -298,8 +298,8 @@ export interface WireBot extends DefaultBotFields, BotAccessFields {
   color: MausColor;
   mascotExpression?: MausExpression | null;
   mascotBody?: BotBodyId | null;
-  /** Overrides both eyes and mouth. Absent or null preserves the body's default inks. */
-  mascotFaceColor?: MascotFaceColor | null;
+  /** Kept for looks saved before figurinhas, which draw their features in their own ink. */ mascotFaceColor?: MascotFaceColor | null;
+  /** The figurinha parts a person picked; a part left out, or the whole field absent, is derived from the bot id. */ figurinha?: import("./figurinha.ts").FigurinhaChoice | null;
   /** App-owned attachment served as this bot's custom profile image;
    * always present on the wire, null when the bot has none. */
   avatarUrl: string | null;
@@ -644,7 +644,7 @@ export function nextOpenThread<T extends OpenThreadCandidate>(tasks: readonly T[
   return [listed, open, own].map((candidates) => orderedThreadList(candidates)[0]).find((task) => task !== undefined);
 }
 
-export interface OptionCardData extends WaitCardField, ComputerAskField, AccessRequestCardField, OutsideWriteCardField {
+export interface OptionCardData extends WaitCardField, ComputerAskField, AccessRequestCardField, OutsideWriteCardField, CompanyApprovalCardField {
   /** The harness asks the owner to let this line of theirs use the lent computer (server/host/lending-lifts.ts). */ lendingLift?: { requestMessageId: string; memoryToken?: string; outside?: true; botOpened?: true; allowedAt?: number };
   /** calls: one per outbound call the card covers, in subtitle order. */
   outboundRequest?: { tool: string; app: string | null; calls?: Array<{ app: string | null; label: string }> };

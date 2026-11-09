@@ -29,6 +29,26 @@ export function backgroundCallArgs(input: {
   return args;
 }
 
+/** Claude CLI: `--input-format stream-json` requires `--output-format stream-json`, which requires `--verbose` with -p. */
+export function withImageInput(args: string[], images: readonly unknown[] | undefined): string[] {
+  if (!images?.length) return args;
+  const out = [...args];
+  const at = out.indexOf("--output-format");
+  if (at >= 0) out[at + 1] = "stream-json";
+  return [...out, "--input-format", "stream-json", "--verbose"];
+}
+
+/** The last `result` event of a stream-json run, as the JSON text `--output-format json` would have printed. */
+export function streamResultLine(stdout: string): string {
+  const lines = stdout.split("\n").map((line) => line.trim()).filter(Boolean);
+  for (let i = lines.length - 1; i >= 0; i -= 1) {
+    try {
+      if ((JSON.parse(lines[i]!) as { type?: unknown }).type === "result") return lines[i]!;
+    } catch {}
+  }
+  return "";
+}
+
 /** Runs in an empty temp folder so no project settings or files leak in; the caller removes it once settled. */
 export function spawnBackgroundCall(cli: string, args: string[], env: NodeJS.ProcessEnv) {
   const cwd = mkdtempSync(join(tmpdir(), "omb-claude-background-"));

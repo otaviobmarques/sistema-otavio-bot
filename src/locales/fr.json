@@ -578,7 +578,6 @@
   "settings.language.aria": "Langue de l'application",
   "settings.language.error": "Impossible d'enregistrer la langue.",
   "settings.toolCalls.title": "Appels d'outils",
-  "settings.toolCalls.subtitle": "Affiche dans la transcription chaque outil qu'un bot utilise. Désactivé par défaut — la mascotte montre déjà que le travail avance.",
   "settings.toolCalls.show": "Afficher les appels d'outils",
   "settings.toolCalls.detail": "Des étiquettes nommant Bash, la recherche et les autres outils. Les erreurs et les messages entre bots restent affichés.",
   "settings.toolCalls.aria": "Afficher les appels d'outils dans la conversation",

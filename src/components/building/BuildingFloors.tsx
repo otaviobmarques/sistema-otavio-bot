@@ -1,12 +1,12 @@
 import type { ReactNode } from "react";
-import { Gavel, Inbox } from "lucide-react";
-import type { Company } from "../../../shared/companies";
+import { Gavel, Inbox, ShieldCheck } from "lucide-react";
+import type { Company, CompanySpend } from "../../../shared/companies";
 import { cn } from "@/lib/cn";
 import { engineDisplayName } from "@/lib/engine-name";
 import { intlLocale, t } from "@/lib/i18n";
 import type { LocaleKey } from "@/locales";
 import type { Bot, InstanceInfo } from "@/state/store";
-import { budgetLabel, floorNumber, type BuildingFloor } from "./building-floors";
+import { budgetLabel, budgetTone, floorNumber, moneyLabel, type BudgetTone, type BuildingFloor } from "./building-floors";
 import type { BuildingRoom, DeskStatus } from "./building-view";
 import { DeskTile, StatusDot } from "./Desk";
 import type { Desks } from "./use-desks";
@@ -83,7 +83,36 @@ export function PenthouseFloor({ desks, onOpen }: { desks: Desks; onOpen: () => 
   );
 }
 
-function CompanySide({ company, level, bots }: { company: Company; level: number; bots: number }) {
+const METER_FILL: Record<BudgetTone, string> = { ok: "bg-accent", warn: "bg-warning", paused: "bg-danger", released: "bg-warning" };
+const METER_NOTE: Partial<Record<BudgetTone, { key: LocaleKey; className: string }>> = {
+  warn: { key: "building.budgetWarn", className: "text-warning" },
+  paused: { key: "building.budgetExceeded", className: "text-danger" },
+  released: { key: "building.budgetReleased", className: "text-warning" },
+};
+
+function BudgetMeter({ spend }: { spend: CompanySpend }) {
+  const locale = intlLocale();
+  const tone = budgetTone(spend);
+  const note = METER_NOTE[tone];
+  const spent = t("building.budgetSpent", { spent: moneyLabel(spend.spentBrl, locale), budget: budgetLabel(spend.budgetBrl ?? 0, locale) });
+  return (
+    <div data-company-spend={spend.companyId} data-company-spend-tone={tone} className="mt-2.5">
+      <div className="flex items-baseline justify-between gap-2 text-[12px]">
+        <span className="text-ink-tertiary">{t("building.budgetMonth")}</span>
+        <span className="shrink-0 font-medium tabular-nums text-ink">{spent}</span>
+      </div>
+      <div role="meter" aria-label={`${t("building.budgetMonth")}: ${spent}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100, spend.percent)}
+        className="mt-1 h-1.5 overflow-hidden rounded-full bg-ink/[0.08]">
+        <div className={cn("h-full rounded-full", METER_FILL[tone])} style={{ width: `${Math.min(100, spend.percent)}%` }} />
+      </div>
+      {note && <p className={cn("mt-1 text-[12px] leading-[17px]", note.className)}>{t(note.key, { percent: spend.percent })}</p>}
+      <p className="mt-0.5 text-[11px] text-ink-tertiary">{t("building.budgetRate", { rate: moneyLabel(spend.usdToBrl, locale) })}</p>
+    </div>
+  );
+}
+
+function CompanySide({ company, level, bots, spend }: { company: Company; level: number; bots: number; spend?: CompanySpend }) {
+  const metered = spend && company.monthlyBudgetBrl !== null ? spend : undefined;
   return (
     <>
       <div className={LEVEL}>{t("building.floorNumber", { number: level })}</div>
@@ -95,18 +124,23 @@ function CompanySide({ company, level, bots }: { company: Company; level: number
       {company.mission && <p title={company.mission} className="mt-1.5 line-clamp-3 text-[12px] leading-[18px] text-ink-tertiary">{company.mission}</p>}
       <div data-company-budget={company.monthlyBudgetBrl ?? ""} className="mt-1.5 text-[12px] text-ink-secondary">
         {counted(bots, "building.botCountOne", "building.botCount")}
-        {company.monthlyBudgetBrl !== null && <> · {t("building.budgetMonthly", { amount: budgetLabel(company.monthlyBudgetBrl, intlLocale()) })}</>}
+        {company.monthlyBudgetBrl !== null && !metered && <> · {t("building.budgetMonthly", { amount: budgetLabel(company.monthlyBudgetBrl, intlLocale()) })}</>}
       </div>
+      {metered && <BudgetMeter spend={metered} />}
+      {company.rules.length > 0 && <div data-company-rules={company.rules.length} className="mt-2 flex items-center gap-1.5 text-[12px] text-ink-secondary">
+        <ShieldCheck size={13} aria-hidden="true" className="shrink-0" />{counted(company.rules.length, "building.rulesCountOne", "building.rulesCount")}
+      </div>}
     </>
   );
 }
 
-export function CompanyFloor({ floor, index, floorCount, status, instances, onOpen }: {
+export function CompanyFloor({ floor, index, floorCount, status, instances, spend, onOpen }: {
   floor: BuildingFloor<Bot>;
   index: number;
   floorCount: number;
   status: ReadonlyMap<string, DeskStatus>;
   instances: readonly InstanceInfo[];
+  spend?: CompanySpend;
   onOpen: (bot: Bot) => void;
 }) {
   const bots = floor.rooms.reduce((sum, room) => sum + room.bots.length, 0);
@@ -114,7 +148,7 @@ export function CompanyFloor({ floor, index, floorCount, status, instances, onOp
   const label = company?.name ?? t("building.noCompany");
   return (
     <FloorRow id={company?.id ?? "none"} label={label} color={company?.color} side={company
-      ? <CompanySide company={company} level={floorNumber(index, floorCount)} bots={bots} />
+      ? <CompanySide company={company} level={floorNumber(index, floorCount)} bots={bots} spend={spend} />
       : <>
         <div className={LEVEL}>{t("building.noCompanyLevel")}</div>
         <h2 className="mt-0.5 text-[17px] font-semibold text-ink">{t("building.noCompany")}</h2>
