@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Building2 } from "lucide-react";
 import type { NotificationLogEntry } from "../../../shared/notification";
 import { plainPreviewText } from "../../../shared/plain-preview";
+import { setBuildingMode, useBuildingMode } from "@/lib/building-preferences";
 import { cn } from "@/lib/cn";
 import { t } from "@/lib/i18n";
 import { useOwnerOrAdmin } from "@/lib/use-owner-or-admin";
@@ -10,6 +11,7 @@ import { useCompanies } from "@/state/companies";
 import { useCompanySpend } from "@/state/company-spend";
 import { openInbox, useInboxSupport } from "@/state/inbox";
 import { openBotRow, openThread, useStore, type Bot } from "@/state/store";
+import { Segmented } from "../bot-panel/rows";
 import { useCaptionChrome } from "../DesktopCapabilities";
 import { departmentNames } from "../bot-sections";
 import { KIND_LOOK, postNotificationRead } from "../NotificationsPanel";
@@ -22,6 +24,8 @@ import { StatusDot, StatusLegend } from "./Desk";
 import { useDesks } from "./use-desks";
 
 const FEED_LINES = 8;
+
+const LiveBuilding = lazy(() => import("./live/LiveBuilding"));
 
 function FeedLine({ entry, now, onOpen }: { entry: NotificationLogEntry; now: number; onOpen: () => void }) {
   const look = KIND_LOOK[entry.kind] ?? KIND_LOOK.done;
@@ -50,6 +54,7 @@ export function BuildingPage() {
   const mayManage = useOwnerOrAdmin() !== false;
   const inboxSupport = useInboxSupport();
   const [managing, setManaging] = useState(false);
+  const mode = useBuildingMode();
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 30_000);
@@ -85,6 +90,10 @@ export function BuildingPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <div className="w-[190px]">
+            <Segmented attr="data-building-mode" label={t("building.live.mode")} value={mode} onChange={setBuildingMode}
+              options={[{ value: "floors", label: t("building.live.modeFloors") }, { value: "live", label: t("building.live.modeLive") }]} />
+          </div>
           <span data-building-working={working} className="flex items-center gap-2 rounded-full border border-hairline px-3 py-1 text-[12px] text-ink-secondary">
             <StatusDot status="working" />{counted(working, "building.workingCountOne", "building.workingCount")}
           </span>
@@ -101,14 +110,23 @@ export function BuildingPage() {
       </header>
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="grid gap-6 px-6 py-6 xl:grid-cols-[minmax(0,1fr)_300px]">
-          <section aria-label={title} className="min-w-0 overflow-hidden rounded-2xl border border-hairline/70 bg-panel/40">
-            <PenthouseFloor desks={desks} onOpen={() => dispatch({ type: "showBoardRoom" })} />
-            {floors.map((floor, index) => (
-              <CompanyFloor key={floor.company?.id ?? "none"} floor={floor} index={index} floorCount={companyFloors}
-                status={desks.status} instances={state.instances} spend={floor.company ? spend.get(floor.company.id) : undefined} onOpen={openBot} />
-            ))}
-            <GroundFloor onInbox={inboxSupport === "no" ? undefined : () => openInbox()} />
-          </section>
+          {mode === "live" ? (
+            <section aria-label={title} className="min-w-0">
+              <Suspense fallback={<div className="flex h-[420px] items-center justify-center rounded-2xl border border-hairline/70 bg-panel/40 text-[13px] text-ink-tertiary">{t("building.live.loading")}</div>}>
+                <LiveBuilding floors={floors} desks={desks} onBot={openBot} onBoardRoom={() => dispatch({ type: "showBoardRoom" })}
+                  onInbox={inboxSupport === "no" ? undefined : () => openInbox()} />
+              </Suspense>
+            </section>
+          ) : (
+            <section aria-label={title} className="min-w-0 overflow-hidden rounded-2xl border border-hairline/70 bg-panel/40">
+              <PenthouseFloor desks={desks} onOpen={() => dispatch({ type: "showBoardRoom" })} />
+              {floors.map((floor, index) => (
+                <CompanyFloor key={floor.company?.id ?? "none"} floor={floor} index={index} floorCount={companyFloors}
+                  status={desks.status} instances={state.instances} spend={floor.company ? spend.get(floor.company.id) : undefined} onOpen={openBot} />
+              ))}
+              <GroundFloor onInbox={inboxSupport === "no" ? undefined : () => openInbox()} />
+            </section>
+          )}
           <aside aria-label={t("building.feedTitle")} className="flex min-w-0 flex-col gap-6">
             <section>
               <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-tertiary">{t("building.feedTitle")}</h2>

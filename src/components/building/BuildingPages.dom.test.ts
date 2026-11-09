@@ -6,6 +6,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/lib/use-owner-or-admin", () => ({ useOwnerOrAdmin: () => true }));
 vi.mock("../../state/api", () => ({ api: vi.fn(async () => null) }));
 
+import { publishLiveFrame } from "@/lib/live-events";
+import { BUILDING_MODE_KEY, setBuildingMode } from "@/lib/building-preferences";
 import { api } from "@/state/api";
 import { initialState, StoreContext, type AppState, type Bot } from "@/state/store";
 import { setCompanies } from "@/state/companies";
@@ -45,6 +47,7 @@ afterEach(() => {
   act(() => root.unmount());
   setInboxView(null);
   setCompanies(null);
+  setBuildingMode("floors");
   document.body.innerHTML = "";
 });
 
@@ -99,6 +102,84 @@ describe("the Building", () => {
     expect(meter.textContent).toContain("88% of the budget used");
     expect(document.querySelector<HTMLElement>("[data-company-rules]")!.textContent).toBe("2 approval rules");
     vi.mocked(api).mockImplementation(async () => null);
+  });
+});
+
+let frames: FrameRequestCallback[] = [];
+let frameAt = 0;
+/** Plays the animation frames the live view asks for, `ms` of them, 50 ms apart. */
+const playFrames = async (ms: number) => {
+  for (let played = 0; played < ms; played += 50) {
+    frameAt += 50;
+    const due = frames;
+    frames = [];
+    await act(async () => { for (const frame of due) frame(frameAt); });
+  }
+};
+const loaded = async (until: () => boolean) => {
+  for (let i = 0; i < 100 && !until(); i++) await act(async () => { await new Promise((done) => setTimeout(done, 20)); });
+};
+const liveBot = (id: string) => document.querySelector<SVGElement>(`[data-live-bot="${id}"]`);
+
+describe("the live Building", () => {
+  beforeEach(() => {
+    frames = [];
+    vi.stubGlobal("requestAnimationFrame", (frame: FrameRequestCallback) => frames.push(frame));
+    vi.stubGlobal("cancelAnimationFrame", () => { frames = []; });
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("switches to the live cut-away, remembers it, and opens a bot's chat from its desk", async () => {
+    await mount(createElement(BuildingPage));
+    await act(async () => { document.querySelector<HTMLElement>('[data-building-mode="live"]')!.click(); });
+    await loaded(() => Boolean(liveBot("writer")));
+    expect(localStorage.getItem(BUILDING_MODE_KEY)).toBe("live");
+    expect(document.querySelector("[data-building-room]"), "the floor lists are gone").toBeNull();
+    expect(liveBot("writer")!.dataset.liveStatus).toBe("working");
+    expect(liveBot("reporter")!.dataset.liveStatus, "an approval in the inbox").toBe("waiting");
+    expect(liveBot("idle")!.dataset.liveStatus).toBe("idle");
+    expect(liveBot("writer")!.dataset.liveMode).toBe("seated");
+    await act(async () => { liveBot("writer")!.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    expect(dispatch).toHaveBeenCalledWith({ type: "select", id: "writer" });
+    await act(async () => { document.querySelector<HTMLElement>('[data-building-mode="floors"]')!.click(); });
+    expect(document.querySelector("[data-live-building]")).toBeNull();
+    expect(localStorage.getItem(BUILDING_MODE_KEY)).toBe("floors");
+  });
+
+  it("walks a bot to the teammate it asked, and runs no frames while the window is hidden", async () => {
+    setBuildingMode("live");
+    await mount(createElement(BuildingPage));
+    await loaded(() => Boolean(liveBot("scout")));
+    await act(async () => {
+      publishLiveFrame({ kind: "message", threadId: "writer-main", message: { id: "ask-1", role: "user", kind: "text", text: "Can you check the copy?", peerAsk: { botId: "scout", name: "Scout" } } } as never);
+    });
+    await playFrames(1500);
+    expect(liveBot("scout")!.dataset.liveMode).toBe("walking");
+    expect(liveBot("writer")!.dataset.liveMode, "the one asked stays at its desk").toBe("seated");
+
+    Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" });
+    await act(async () => { document.dispatchEvent(new Event("visibilitychange")); });
+    expect(document.querySelector("[data-live-paused]")).not.toBeNull();
+    expect(frames, "no frame is asked for while hidden").toEqual([]);
+    Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "visible" });
+    await act(async () => { document.dispatchEvent(new Event("visibilitychange")); });
+    expect(document.querySelector("[data-live-paused]")).toBeNull();
+    expect(frames.length).toBeGreaterThan(0);
+  });
+
+  it("holds still under reduced motion: the asker stays at its desk with a balloon", async () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({ matches: query.includes("reduce"), media: query, addEventListener: () => {}, removeEventListener: () => {} }));
+    setBuildingMode("live");
+    await mount(createElement(BuildingPage));
+    await loaded(() => Boolean(liveBot("scout")));
+    expect(document.querySelector("[data-live-reduced]")).not.toBeNull();
+    await act(async () => {
+      publishLiveFrame({ kind: "message", threadId: "writer-main", message: { id: "ask-2", role: "user", kind: "text", text: "Can you check the copy?", peerAsk: { botId: "scout", name: "Scout" } } } as never);
+    });
+    await act(async () => { await new Promise((done) => setTimeout(done, 2100)); });
+    expect(frames, "no animation frames at all").toEqual([]);
+    expect(liveBot("scout")!.dataset.liveMode).toBe("seated");
+    expect(document.querySelector("[data-live-building]")!.textContent).toContain("Can you check the copy?");
   });
 });
 
