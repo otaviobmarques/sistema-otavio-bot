@@ -20,10 +20,6 @@ on:
   # setting, which GitHub offers only once an organization owns the
   # repository (docs/ci.md); this trigger is what lets CI report on those runs.
   merge_group:
-  # The full lane every night on main's newest commit: every platform's shards
-  # and smokes, which pushes to main and merge groups leave out (docs/ci.md).
-  schedule:
-    - cron: "17 21 * * *"
 
 # least privilege: CI only reads the checkout, it never writes back
 permissions:
@@ -208,6 +204,11 @@ jobs:
         # before Vitest starts so a cold download cannot consume the fixture
         # timeout.
         run: node --input-type=commonjs -e "require('electron')"
+      - name: Match the Boat Linux lane, which removes bubblewrap
+        # ubuntu-24.04 runners now ship a working bwrap, so a Team Cloud would run its turns in a box the
+        # fixtures were never written for; the Boat lane above removes it for the same reason.
+        if: runner.os == 'Linux'
+        run: sudo rm -f /usr/bin/bwrap
       - name: Run tests
         # The github-actions reporter turns each failure into an annotation
         # on the PR, so the failing test and its assertion are readable
@@ -308,7 +309,8 @@ jobs:
 
   windows-cua:
     needs: static
-    if: contains(needs.static.outputs.jobs, '"windows-cua"')
+    # Otávio Bot is a private repository, where Windows and macOS minutes cost 2x and 10x: run only on demand.
+    if: github.event_name == 'workflow_dispatch' && contains(needs.static.outputs.jobs, '"windows-cua"')
     name: Windows CUA host smoke
     runs-on: windows-latest
     timeout-minutes: 15
@@ -329,7 +331,8 @@ jobs:
 
   electron-smokes:
     needs: static
-    if: contains(needs.static.outputs.jobs, '"electron-smokes"')
+    # Otávio Bot is a private repository, where Windows and macOS minutes cost 2x and 10x: run only on demand.
+    if: github.event_name == 'workflow_dispatch' && contains(needs.static.outputs.jobs, '"electron-smokes"')
     # Real Electron utility processes against disposable homes and fake CLIs.
     # Never the live app. Each script prints its own evidence lines. Every
     # PR's, push's and merge group's macOS checks live in this one job: macOS
@@ -378,6 +381,7 @@ jobs:
       - name: Every required job passed
         env:
           NEEDS: ${{ toJSON(needs) }}
+          EVENT: ${{ github.event_name }}
         run: |
           node --input-type=module -e '
             const needs = JSON.parse(process.env.NEEDS);
@@ -387,7 +391,8 @@ jobs:
             try { selected = JSON.parse(needs.static.outputs.jobs); } catch { selected = null; }
             if (!Array.isArray(selected) || !selected.every((job) => typeof job === "string")) throw new Error("Missing CI selection");
             const bad = Object.entries(needs).filter(([job, { result }]) => {
-              const expected = job === "static" || selected.includes(job) ? "success" : "skipped";
+              const onDemand = ["windows-cua", "electron-smokes"].includes(job) && process.env.EVENT !== "workflow_dispatch";
+              const expected = job === "static" || (selected.includes(job) && !onDemand) ? "success" : "skipped";
               return result !== expected;
             });
             if (bad.length) { console.error(`\n${bad.length} required job(s) did not pass: ${bad.map(([job]) => job).join(", ")}`); process.exit(1); }

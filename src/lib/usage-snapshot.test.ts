@@ -38,6 +38,7 @@ const memoryStorage = {
 };
 
 beforeEach(() => {
+  vi.stubEnv("VITE_POSTHOG_TOKEN", "phc_test");
   storage.clear();
   ph.captured = [];
   vi.stubGlobal("localStorage", memoryStorage);

@@ -1739,8 +1739,8 @@ describe("harness HTTP API", () => {
     try {
       const result = await new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve, reject) => {
         // On Windows without wmic the lease reads the other server's start time through Windows PowerShell, whose first
-        // start on a CI runner takes several seconds.
-        const timer = setTimeout(() => reject(new Error("competing server did not exit")), process.platform === "win32" ? 30_000 : 5_000);
+        // start on a CI runner takes several seconds; a GitHub-hosted Linux runner can take over 5 s to load the server.
+        const timer = setTimeout(() => reject(new Error("competing server did not exit")), process.platform === "win32" ? 30_000 : 20_000);
         timer.unref?.();
         contender.once("close", (code, signal) => {
           clearTimeout(timer);
