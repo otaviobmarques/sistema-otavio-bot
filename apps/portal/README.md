@@ -26,7 +26,9 @@ pnpm --filter @otaviobot/portal preview    # serve o build em http://localhost:5
 | Rota                 | Tela                                                         |
 | -------------------- | ------------------------------------------------------------ |
 | `/`                  | Prédio (painel): andares, salas, térreo, feed e gasto do mês |
-| `/ao-vivo`           | Prédio ao vivo: escritório animado, elevador, 1x/2x/4x       |
+| `/ao-vivo`           | Prédio ao vivo: fachada em corte, bots andando, elevador     |
+| `/ao-vivo/andar/:id` | Interior 3D isométrico de um andar (three.js, sob demanda)   |
+| `/ao-vivo/presidencia` | Cobertura: mesa redonda do conselho com os diretores       |
 | `/chat`, `/chat/:id` | Chat com Destaques, cartão de aprovação e computador ao lado |
 | `/computador/:botId` | Computador do bot: tela ao vivo, terminal, logins, políticas |
 | `/empresas/:id`      | Empresa e organograma, orçamento por bot, regras, heartbeats |
@@ -34,7 +36,7 @@ pnpm --filter @otaviobot/portal preview    # serve o build em http://localhost:5
 | `/contratar`         | Contratar bot: identidade, IA e modelo, figurinha, acessos   |
 | `/extensoes`         | Skills, servidores MCP, apps conectados, políticas, chaves   |
 | `/tavinho`           | HUD de voz do Tavinho                                        |
-| `/figurinhas`        | As doze figurinhas originais e os tamanhos 24, 36 e 48 px    |
+| `/figurinhas`        | As figurinhas dos bots e os tamanhos 24, 36 e 48 px          |
 
 Abaixo de 640 px de largura o Portal troca para o layout de celular, com abas embaixo (Prédio, Chat, Conselho, Tavinho).
 
@@ -51,6 +53,7 @@ Abaixo de 640 px de largura o Portal troca para o layout de celular, com abas em
 - `src/data/mock.ts`: todos os dados fictícios, tipados (empresas, bots, aprovações, auditoria, conversas, skills, MCP, apps).
 - `src/state/store.tsx`: contexto React com o estado e as ações do protótipo.
 - `src/components/Figurinha.tsx`: figurinhas geradas em SVG a partir de cabeça, olhos, boca, cor e acessório.
+- `src/live/`: prédio ao vivo. `sim.ts` diz onde cada bot está em cada instante (passeios, delegações, elevador); `BuildingView.tsx` desenha a fachada em SVG; `InteriorScene.ts` desenha o andar em 3D.
 - `src/pages/`: uma tela por rota.
 - `docs/screenshots/`: capturas das telas em 1440×900 e no celular.
 

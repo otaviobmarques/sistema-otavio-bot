@@ -1,11 +1,10 @@
-import { StrictMode } from "react";
+import { lazy, StrictMode, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes } from "react-router";
 import "./index.css";
 import { Shell } from "./components/Shell";
 import { PortalProvider } from "./state/store";
 import { PredioPage } from "./pages/Predio";
-import { AoVivoPage } from "./pages/AoVivo";
 import { ChatPage } from "./pages/Chat";
 import { ComputadorPage } from "./pages/Computador";
 import { EmpresasPage } from "./pages/Empresas";
@@ -15,6 +14,13 @@ import { ExtensoesPage } from "./pages/Extensoes";
 import { TavinhoPage } from "./pages/Tavinho";
 import { FigurinhasPage } from "./pages/Figurinhas";
 import { NotFoundPage } from "./pages/NotFound";
+
+const AoVivoPage = lazy(() => import("./pages/AoVivo"));
+const aoVivo = (
+  <Suspense fallback={<div className="min-h-screen bg-ink-900" />}>
+    <AoVivoPage />
+  </Suspense>
+);
 
 const root = document.getElementById("root");
 if (!root) throw new Error("elemento #root ausente");
@@ -38,7 +44,9 @@ createRoot(root).render(
             <Route path="*" element={<NotFoundPage />} />
           </Route>
           <Route element={<Shell bare />}>
-            <Route path="ao-vivo" element={<AoVivoPage />} />
+            <Route path="ao-vivo" element={aoVivo} />
+            <Route path="ao-vivo/andar/:companyId" element={aoVivo} />
+            <Route path="ao-vivo/presidencia" element={aoVivo} />
             <Route path="tavinho" element={<TavinhoPage />} />
           </Route>
         </Routes>

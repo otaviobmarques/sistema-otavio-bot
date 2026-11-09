@@ -2,22 +2,23 @@ import { Plus } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router";
 import { companies, type Bot } from "../data/mock";
 import { Bar, Dot } from "../components/ui";
-import { statusColor } from "../lib/colors";
+import { palette, statusColor } from "../lib/colors";
 import { usePortal } from "../state/store";
 
 export function EmpresasPage() {
   const { companyId } = useParams();
   const navigate = useNavigate();
   const { state, toast } = usePortal();
-  const company = companies.find((c) => c.id === (companyId ?? "master-laudo")) ?? companies[2]!;
-  const coBots = state.bots.filter((b) => b.companyId === company.id && b.hired);
-  const director = state.bots.find((b) => b.id === "tavinho");
+  const company = companies.find((c) => c.id === (companyId ?? "redbox")) ?? companies[0]!;
+  const coBots = state.bots.filter((b) => b.companyId === company.id && b.hired && b.departmentId !== "direcao");
+  const director = state.bots.find((b) => b.companyId === company.id && b.departmentId === "direcao");
+  const tavinho = state.bots.find((b) => b.id === "tavinho");
   const pendingHere = state.approvals.filter((a) => a.context === company.name).length;
   const active = coBots.filter((b) => b.status !== "ocioso").length;
-  const ordered = ["master-laudo", "redbox", "domma"].map((id) => companies.find((c) => c.id === id)!);
+  const ordered = companies;
   const budgetRows: { label: string; ia: string; spent: number; cap: number }[] = [
-    ...(director ? [{ label: "Diretor", ia: director.model, spent: director.budget.spent, cap: director.budget.cap }] : []),
-    ...coBots.map((b) => ({ label: b.role, ia: b.provider, spent: b.budget.spent, cap: b.budget.cap })),
+    ...(director ? [{ label: `${director.name} · ${director.role}`, ia: director.model, spent: director.budget.spent, cap: director.budget.cap }] : []),
+    ...coBots.map((b) => ({ label: `${b.name} · ${b.role}`, ia: b.provider, spent: b.budget.spent, cap: b.budget.cap })),
   ];
 
   return (
@@ -45,7 +46,11 @@ export function EmpresasPage() {
         <main className="px-7 py-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="max-w-[620px]">
-              <h1 className="text-[27px] font-semibold text-white">{company.name}</h1>
+              <h1 className="flex items-center gap-2.5 text-[27px] font-semibold text-white">
+                <span className="h-3 w-3 rounded-full" style={{ background: palette[company.color].accent }} />
+                {company.name}
+                <span className="font-sans text-[15px] font-normal text-muted">· {company.tagline}</span>
+              </h1>
               <p className="mt-1 text-[14.5px] leading-relaxed text-muted">
                 <strong className="font-semibold text-soft">Missão:</strong> {company.mission}
               </p>
@@ -63,8 +68,8 @@ export function EmpresasPage() {
           <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
             <Kpi
               label="Bots"
-              value={String(coBots.length + 1)}
-              sub={`${active + 1} ativos · ${coBots.length - active} ocioso${coBots.length - active === 1 ? "" : "s"}`}
+              value={String(coBots.length + (director ? 1 : 0))}
+              sub={`${active + (director ? 1 : 0)} ativos · ${coBots.length - active} ocioso${coBots.length - active === 1 ? "" : "s"}`}
             />
             <div className="card px-4 py-3.5">
               <div className="text-[12.5px] text-muted">Orçamento do mês</div>
@@ -94,13 +99,23 @@ export function EmpresasPage() {
                 <div className="text-[12.5px] text-muted">aprova contratações, estratégia e orçamento</div>
               </Link>
               <div className="h-5 w-px bg-line-strong" />
+              {tavinho && (
+                <OrgNode
+                  className="w-[285px] text-center"
+                  title="Tavinho · Diretor geral"
+                  sub={`${tavinho.model} · coordena as 4 empresas`}
+                  bot={tavinho}
+                  onClick={() => navigate(`/chat/sala-diretoria`)}
+                />
+              )}
+              <div className="h-5 w-px bg-line-strong" />
               {director && (
                 <OrgNode
                   className="w-[285px] text-center"
-                  title="Diretor · CEO-bot"
+                  title={`${director.name} · ${director.role} da ${company.name}`}
                   sub={`${director.model} · ${director.activity}`}
                   bot={director}
-                  onClick={() => navigate(`/chat/sala-diretoria`)}
+                  onClick={() => navigate(`/chat/${director.id}`)}
                 />
               )}
               <div className="h-5 w-px bg-line-strong" />
@@ -130,7 +145,7 @@ export function EmpresasPage() {
                           className="w-full rounded-xl border border-dashed border-line-strong px-4 py-2.5 text-center hover:bg-ink-750"
                         >
                           <div className="text-[14px] font-semibold text-tavinho-soft">+ Contratar</div>
-                          <div className="text-[12.5px] text-muted">ex.: {company.id === "master-laudo" ? "Tráfego pago (ou pedir à RedBox IA)" : "um bot novo para este time"}</div>
+                          <div className="text-[12.5px] text-muted">ex.: {company.id === "redbox" ? "um bot novo para este time" : "Tráfego pago (ou pedir à RedBox)"}</div>
                         </Link>
                       </div>
                     )}

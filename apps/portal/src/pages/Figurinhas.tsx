@@ -21,7 +21,7 @@ export function FigurinhasPage() {
         <div className="max-w-[860px]">
           <h1 className="text-[24px] font-semibold text-white">Figurinhas dos bots</h1>
           <p className="mt-1 text-[14px] leading-snug text-muted">
-            Personagens originais do Otávio Bot. Cor do fundo = departamento; formato da cabeça e olhos = personalidade; anel de status no canto. Cada bot tem nome e função.
+            Personagens originais do Otávio Bot. Cor do fundo = empresa (azul para a Diretoria); formato da cabeça e olhos = personalidade; anel de status no canto. Cada bot tem nome e função.
           </p>
         </div>
         <ul className="grid grid-cols-2 gap-x-3 gap-y-1 text-[12.5px] text-soft">
