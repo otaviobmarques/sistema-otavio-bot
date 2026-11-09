@@ -534,6 +534,8 @@ export interface TextGenerationOptions {
   timeoutMs?: number;
   /** For a bot's own engine whose driver picks a small model of its own. */
   fallback?: SmallModelFallback;
+  /** Pictures sent with the prompt. Only the Claude driver's one-off call reads them; every other driver ignores them. */
+  images?: readonly TurnImageInput[];
 }
 
 export interface SmallModelFallback {

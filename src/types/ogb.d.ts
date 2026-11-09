@@ -329,6 +329,15 @@ const __APP_VERSION__: string;
       /** Arms one user-initiated display capture request from this frame. */
       beginScreenPreviewIntent(): boolean;
       screenFrame(): Promise<string | null>;
+      /** Teach-a-task capture; absent on an older desktop app. */
+      teachCapture?: {
+        sources(): Promise<{
+          sources: Array<{ id: string; name: string; kind: "screen" | "window"; thumbnail: string | null }>;
+          unavailable: "platform" | "permission" | null;
+        }>;
+        /** Null once the screen or window is gone. `signature`: 16x10 grayscale, 0..255. */
+        frame(id: string): Promise<{ jpeg: string; signature: number[] } | null>;
+      };
       androidDevice?: {
         status(): Promise<AndroidDeviceStatus>;
         frame(serial: string): Promise<{ serial: string; dataUrl: string }>;
