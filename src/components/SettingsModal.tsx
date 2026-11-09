@@ -206,7 +206,7 @@ export function SettingsModal() {
   const baseSections = sectionsHere.filter((entry) => !remoteActive || entry.id === "companion" || entry.id === "appearance" || entry.id === "desktopWorkspaces")
     .filter((entry) => entry.id !== "desktopWorkspaces" || Boolean(window.ogb?.environments))
     .filter((entry) => entry.id !== "organization" || Boolean(window.ogb?.organization))
-    .filter((entry) => entry.id !== "cloudAccount" || Boolean(window.ogb?.cloudAccount || (window.ogb?.cloudPlan && state.config?.cloudHome === true)))
+    .filter((entry) => entry.id !== "cloudAccount" || ((cloudOffersEnabled() || state.config?.cloudHome === true) && Boolean(window.ogb?.cloudAccount || (window.ogb?.cloudPlan && state.config?.cloudHome === true))))
     .filter((entry) => entry.id !== "workspaces" || workspacesAvailable(state.config))
     .filter((entry) => entry.id !== "people" || (!window.ogb && state.config?.cloudHome !== true))
     .filter((entry) => entry.id !== "activity" || (!window.ogb && ownerOrAdmin === true))
@@ -336,7 +336,7 @@ export function SettingsModal() {
       case "organization":
         return window.ogb?.organization && !remoteActive ? <OrganizationSettings /> : null;
       case "cloudAccount":
-        return (window.ogb?.cloudAccount || (window.ogb?.cloudPlan && state.config?.cloudHome === true)) && !remoteActive
+        return (window.ogb?.cloudAccount || (window.ogb?.cloudPlan && state.config?.cloudHome === true)) && !remoteActive && (cloudOffersEnabled() || state.config?.cloudHome === true)
           ? <CloudAccountSettings linkRequest={state.appSettingsCloudLink} cloudHome={state.config?.cloudHome === true} teamHome={state.config?.team}
             onConnectPhone={() => dispatch(phonePairingSettingsAction())} onAddCloud={advanced && cloudOffersEnabled() ? () => dispatch({ type: "openCloudAdd", source: "app_settings" }) : undefined}
             onSignIn={cloudOffersEnabled() ? () => dispatch({ type: "openCloudAdd", source: "app_settings", signIn: true }) : undefined} />

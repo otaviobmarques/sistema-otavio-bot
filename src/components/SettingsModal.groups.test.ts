@@ -5,6 +5,10 @@ import { setLocale } from "@/lib/i18n";
 import type { AppSettingsSection } from "@/state/store";
 import type { Switch } from "./SettingsPrimitives";
 import { SECTIONS, SETTINGS_GROUPS, SettingsModal } from "./SettingsModal";
+import { setCloudOffersForTest } from "@/lib/cloud-offers";
+
+// These tests cover the upstream Cloud account page, so they run with Cloud offers on.
+setCloudOffersForTest(true);
 
 const fixture = vi.hoisted(() => ({
   section: "appearance" as AppSettingsSection,
