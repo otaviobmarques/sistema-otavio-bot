@@ -39,6 +39,12 @@ COPY scripts/prepare-cloudflared.mjs /stage/prepare-cloudflared.mjs
 RUN node /stage/prepare-cloudflared.mjs --current --root /stage \
  && cp /stage/dist-native/cloudflared/linux-*/cloudflared /cloudflared
 
+# The Docker client for the bots' own-VPS desktops (docs/byo-vps.md): the
+# server runs `docker -H ssh://<alias>`, so a server on the VPS itself reaches
+# that machine's daemon over SSH to the host (docs/otavio-bot/VPS-24H.md).
+# Only the client and its build plugin; the daemon stays on the host.
+FROM docker:29.9.2-cli AS docker-cli
+
 # The JavaScript build is the same for every CPU, so it runs once on the build
 # host's own; only the Data engine's native tree below follows the image's CPU.
 FROM --platform=$BUILDPLATFORM node:24-bookworm-slim AS build
@@ -217,6 +223,13 @@ CMD ["node", "/app/dist-server/cloud-home-start.js"]
 
 # The self-hosted server, last so a plain `docker build .` builds it.
 FROM runtime AS server
+# ssh: Docker's SSH transport and the desktop viewer's tunnel to the bots' VPS
+# computers. Pinned, so beneath the engines and the app files.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends openssh-client \
+  && rm -rf /var/lib/apt/lists/*
+COPY --from=docker-cli /usr/local/bin/docker /usr/local/bin/docker
+COPY --from=docker-cli /usr/local/libexec/docker/cli-plugins/docker-buildx /usr/local/libexec/docker/cli-plugins/docker-buildx
 # Optional engine CLIs baked into the image (space-separated npm packages).
 ARG ENGINES=""
 RUN if [ -n "$ENGINES" ]; then HOME=/tmp/omb-build-home npm install -g $ENGINES && rm -rf /tmp/omb-build-home /tmp/node-compile-cache; fi

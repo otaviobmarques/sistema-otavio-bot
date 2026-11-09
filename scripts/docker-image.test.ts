@@ -40,7 +40,7 @@ function chain(target: string): Step[] {
   if (!stage) throw new Error(`the Dockerfile has no ${target} stage`);
   return [...(all.some(s => s.name === stage.from) ? chain(stage.from) : []), ...stage.steps];
 }
-const shipped = () => all.filter(s => s.name !== "build" && s.name !== "edge" && s.name !== "tunnel").flatMap(s => s.steps);
+const shipped = () => all.filter(s => !["build", "edge", "tunnel", "docker-cli"].includes(s.name)).flatMap(s => s.steps);
 const npmInstall = (step: Step) => step.op === "RUN" && /\bnpm install\b/.test(step.args);
 const browserRun = () => chain("runtime").find(step => step.op === "RUN" && step.args.includes("agent-browser install"))!;
 const grokRun = (steps: Step[]) => steps.findIndex(step => step.op === "RUN" && step.args.includes("https://x.ai/cli/install.sh"));
@@ -65,7 +65,7 @@ describe("container images", () => {
     for (const target of ["server", "cloud-home"]) {
       const steps = chain(target);
       const heavy = steps.flatMap((step, i) => (npmInstall(step) ? [i] : []));
-      const app = steps.flatMap((step, i) => (step.op === "COPY" && !/--from=(?:edge|tunnel) /.test(step.args) ? [i] : []));
+      const app = steps.flatMap((step, i) => (step.op === "COPY" && !/--from=(?:edge|tunnel|docker-cli) /.test(step.args) ? [i] : []));
       // agent-browser + Chrome, then (Cloud home only) pnpm in the tools layer, then the engines, then the app files
       // (and the Cloud home's Caddyfile)
       expect(heavy, target).toHaveLength(target === "cloud-home" ? 3 : 2);

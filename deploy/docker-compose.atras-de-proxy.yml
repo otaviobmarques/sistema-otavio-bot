@@ -1,0 +1,21 @@
+# Otávio Bot behind a reverse proxy that already holds ports 80/443 (an nginx,
+# Caddy or Traefik of another project), on top of docker-compose.yml:
+#
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.atras-de-proxy.yml   (in .env)
+#
+# That proxy keeps the TLS certificate and forwards https://DOMAIN to
+# http://127.0.0.1:OTAVIO_PROXY_PORT. Caddy here only bridges to the server,
+# which binds loopback inside its container: nothing but that one port is
+# published, and never on a public address.
+services:
+  omb:
+    ports: !override
+      # A proxy running in a container cannot reach the host's loopback: bind
+      # the Docker bridge's gateway instead (OTAVIO_PROXY_BIND=172.17.0.1).
+      - "${OTAVIO_PROXY_BIND:-127.0.0.1}:${OTAVIO_PROXY_PORT:-18080}:8080"
+
+  caddy:
+    volumes: !override
+      - ./Caddyfile.atras-de-proxy:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
