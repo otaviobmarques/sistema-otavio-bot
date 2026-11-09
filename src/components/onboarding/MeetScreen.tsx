@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowUp, Check, Plus } from "lucide-react";
 import { BotAvatar, MausAvatar } from "@/components/Avatar";
 import { engineReady } from "@/components/EngineLibrary";
-import { usePrefersReducedMotion } from "@/components/mascot-clock";
+import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion";
 import { brand, productName } from "@/lib/brand";
 import { cn } from "@/lib/cn";
 import { DEFAULT_BOT_NAME, myDefaultBot, useViewerEmail } from "@/lib/default-bot";

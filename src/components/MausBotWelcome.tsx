@@ -16,7 +16,7 @@ import { BOT_PROFILE_LIMITS } from "../../shared/bot-profile";
 import { BotAvatar } from "./Avatar";
 import { useAvatarImage } from "./avatar-editing";
 import { MausBotCustomize } from "./MausBotCustomize";
-import { usePrefersReducedMotion } from "./mascot-clock";
+import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion";
 
 const LOOK = ["name", "color", "mascotBody", "avatarUrl", "avatarCrop", "avatarZoom", "avatarFocusX", "avatarFocusY"] as const;
 export type WelcomeDraft = Pick<Bot, (typeof LOOK)[number]>;

@@ -350,9 +350,15 @@ describe("bots that are working or waiting on the person", () => {
 
   it("move to the top of their own list, in the person's order, and go back when done", () => {
     busy("cleo", { busy: true });
+    busy("echo", { busy: true });
+    expect(listed()).toEqual(["cleo", "atlas", "bea", "echo", "dodo"]);
+  });
+
+  it("leave the list for Destaques while they wait on the person, and come back once it is answered", () => {
+    busy("cleo", { busy: true });
     busy("bea", { activity: "waiting-on-you" });
     busy("echo", { busy: true });
-    expect(listed()).toEqual(["bea", "cleo", "atlas", "echo", "dodo"]);
+    expect(listed()).toEqual(["cleo", "atlas", "echo", "dodo"]);
     busy("cleo", { busy: false });
     busy("bea", { activity: "idle" });
     busy("echo", { busy: false });

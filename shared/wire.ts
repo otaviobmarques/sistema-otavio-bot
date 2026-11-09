@@ -298,8 +298,8 @@ export interface WireBot extends DefaultBotFields, BotAccessFields {
   color: MausColor;
   mascotExpression?: MausExpression | null;
   mascotBody?: BotBodyId | null;
-  /** Overrides both eyes and mouth. Absent or null preserves the body's default inks. */
-  mascotFaceColor?: MascotFaceColor | null;
+  /** Kept for looks saved before figurinhas, which draw their features in their own ink. */ mascotFaceColor?: MascotFaceColor | null;
+  /** The figurinha parts a person picked; a part left out, or the whole field absent, is derived from the bot id. */ figurinha?: import("./figurinha.ts").FigurinhaChoice | null;
   /** App-owned attachment served as this bot's custom profile image;
    * always present on the wire, null when the bot has none. */
   avatarUrl: string | null;

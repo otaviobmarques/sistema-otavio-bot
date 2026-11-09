@@ -4,11 +4,12 @@ import { ImagePlus, Loader2, Sparkles, Trash2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { t } from "@/lib/i18n";
 import { colorSwatch, MAUS_COLOR_LABEL, MAUS_COLOR_NAMES } from "@/lib/mascot";
-import { bodyName } from "@/lib/mascot-names";
+import { FIGURINHA_HEAD_LABEL } from "@/lib/figurinha";
 import type { Bot } from "@/state/store";
 import { BOT_PROFILE_LIMITS } from "../../shared/bot-profile";
-import { MASCOT_BODY_IDS } from "../../shared/mascot-bodies";
-import { MausAvatar } from "./Avatar";
+import { FIGURINHA_HEADS } from "../../shared/figurinha";
+import { Figurinha } from "./Figurinha";
+import { botFigurinha } from "./FigurinhaPicker";
 import { AvatarImageGenerator } from "./AvatarImageGenerator";
 import type { AvatarPatch, useAvatarImage } from "./avatar-editing";
 
@@ -27,6 +28,7 @@ export function MausBotCustomize({ preview, name, nameRef, image, onName, onPatc
   const [generating, setGenerating] = useState(false);
   const picture = Boolean(preview.avatarUrl) && preview.avatarCrop !== "mascot";
   const shape = (patch: AvatarPatch) => onPatch({ ...patch, avatarCrop: "mascot" });
+  const look = botFigurinha(preview);
   return (
     <div className="space-y-3 rounded-2xl bg-ink/[0.03] p-3.5 text-left">
       <label className="block">
@@ -63,18 +65,18 @@ export function MausBotCustomize({ preview, name, nameRef, image, onName, onPatc
       <div>
         <span className={LABEL}>{t("mausbotWelcome.look")}</span>
         <div className="mt-1.5 grid grid-cols-5 gap-1">
-          {MASCOT_BODY_IDS.map((id) => (
+          {FIGURINHA_HEADS.map((head) => (
             <button
-              key={id}
+              key={head}
               type="button"
-              aria-pressed={!picture && (preview.mascotBody ?? "cursor") === id}
-              aria-label={bodyName(id)}
-              title={bodyName(id)}
-              data-mausbot-welcome-body={id}
-              onClick={() => shape({ mascotBody: id })}
-              className={cn("flex h-11 items-center justify-center rounded-xl", !picture && (preview.mascotBody ?? "cursor") === id ? "bg-ink/[0.08] ring-[1.5px] ring-inset ring-ink/25" : "hover:bg-ink/[0.05]")}
+              aria-pressed={!picture && look.head === head}
+              aria-label={t(FIGURINHA_HEAD_LABEL[head])}
+              title={t(FIGURINHA_HEAD_LABEL[head])}
+              data-mausbot-welcome-head={head}
+              onClick={() => shape({ figurinha: { ...preview.figurinha, head } })}
+              className={cn("flex h-11 items-center justify-center rounded-xl", !picture && look.head === head ? "bg-ink/[0.08] ring-[1.5px] ring-inset ring-ink/25" : "hover:bg-ink/[0.05]")}
             >
-              <MausAvatar color={preview.color} bodyId={id} size={30} animated={false} trackPointer={false} />
+              <Figurinha look={{ ...look, head }} color={preview.color} size={30} animated={false} />
             </button>
           ))}
         </div>

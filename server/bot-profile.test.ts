@@ -137,6 +137,21 @@ describe("mascotFaceColor", () => {
   });
 });
 
+describe("figurinha", () => {
+  it.each([{ head: "tall" }, { head: "round", eyes: "glasses", accessory: "headset" }, {}, null] as const)("accepts %j at both profile boundaries", (figurinha) => {
+    for (const strict of [false, true]) {
+      expect(parseBotProfilePatch({ figurinha }, strict)).toEqual({ ok: true, patch: { figurinha } });
+    }
+  });
+
+  it.each([{ head: "cone" }, { eyes: 1 }, { hat: "cap" }, "tall", []])("rejects %j", (figurinha) => {
+    expect(parseBotProfilePatch({ figurinha } as never, true)).toEqual({
+      ok: false,
+      error: "figurinha must be null or an object of head, eyes and accessory",
+    });
+  });
+});
+
 describe("soul (standing instructions)", () => {
   it("accepts soul on both the strict and broad boundaries", () => {
     expect(parseBotProfilePatch({ soul: "Be brief." }, true)).toEqual({ ok: true, patch: { soul: "Be brief." } });

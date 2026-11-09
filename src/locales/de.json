@@ -711,7 +711,6 @@
   "settings.language.aria": "App-Sprache",
   "settings.language.error": "Die Sprache konnte nicht gespeichert werden.",
   "settings.toolCalls.title": "Werkzeugaufrufe",
-  "settings.toolCalls.subtitle": "Zeigt im Verlauf jedes Werkzeug, das ein Bot benutzt. Standardmäßig aus — das Maskottchen zeigt bereits, dass gearbeitet wird.",
   "settings.toolCalls.show": "Werkzeugaufrufe zeigen",
   "settings.toolCalls.detail": "Benannte Chips für Bash, Suche und andere Werkzeuge. Fehler und Bot-zu-Bot-Nachrichten erscheinen weiterhin.",
   "settings.toolCalls.aria": "Werkzeugaufrufe im Chat zeigen",
