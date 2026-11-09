@@ -12,6 +12,7 @@ import { inputCls } from "./field";
 import { OrgSkillsCard } from "./OrgSkillsCard";
 import { WriteCommandCard } from "./WriteCommandCard";
 import { Select } from "../Select";
+import { skillSourceLabel, TaughtSkillBadge, TeachTaskButton } from "../teach/TeachTaskButton";
 
 export interface ManagedSkill {
   name: string;
@@ -460,6 +461,8 @@ export function SkillsSection({ bot }: { bot: Bot }) {
           </>
         )}
 
+        <div className="mt-3"><TeachTaskButton botId={bot.id} onSaved={() => void refresh()} /></div>
+
         {loading ? (
           <div className="mt-3 text-[12px] text-ink-secondary">{t("skills.loading")}</div>
         ) : skills.length === 0 ? (
@@ -474,7 +477,7 @@ export function SkillsSection({ bot }: { bot: Bot }) {
                     onClick={() => void view(skill)}
                     className="min-w-0 flex-1 text-left"
                   >
-                    <div className="truncate font-mono text-[13px] text-ink">{skill.name}</div>
+                    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5"><div className="max-w-full truncate font-mono text-[13px] text-ink">{skill.name}</div><TaughtSkillBadge source={skill.source} /></div>
                     {(libraryOn || skill.origin === "imported" || skill.origin === "native") && (
                       <span
                         className="ml-1.5 rounded bg-control px-1 py-px font-mono text-[10px] uppercase tracking-wide text-ink-secondary"
@@ -506,7 +509,7 @@ export function SkillsSection({ bot }: { bot: Bot }) {
                     </button>
                   )}
                 </div>
-                <div className="mt-1 truncate text-[11px] text-ink-secondary" title={skill.source}>{t("skills.source", { source: skill.source })}</div>
+                <div className="mt-1 truncate text-[11px] text-ink-secondary" title={skill.source}>{t("skills.source", { source: skillSourceLabel(skill.source) })}</div>
                 {skill.warnings.length > 0 && (
                   <div className="mt-1 text-[11px] text-warning">{skill.warnings.join(" · ")}</div>
                 )}

@@ -65,6 +65,7 @@ Use only mapped, tested commands:
 - [Computer panel focus hand-off](computer-panel-focus.md)
 - [Taking control of a bot's computer](take-control.md)
 - [Saved steps: repeating a computer task without AI](saved-steps.md)
+- [Teach-a-task: a recording becomes a skill](teach-a-task.md)
 - [Native dictation retention and send-to-stop](dictation.md)
 - [Proactive routines and the brief](proactive-routines.md)
 - [Waits: tell me when, with no AI while waiting](waits.md)

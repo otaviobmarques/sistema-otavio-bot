@@ -467,6 +467,7 @@ import { autoStartCompanion } from "./companion-autostart.mjs";
 import { createPhoneLinkRoutes } from "./phone-link-routes.mjs";
 import { createRoutineWakeHold, rememberRoutineWake, routineWakeSettings } from "./routine-wake.mjs";
 import { CREDENTIAL_PATCH, credentialSaveError } from "./credential-patch.mjs";
+import { registerTeachCaptureIpc } from "./teach-capture.mjs";
 
 /** Second wall after preload's reduced bridge: computer-controlling IPC answers only the local server's UI.
  * Declared before any handler registration (temporal dead zone). */
@@ -2957,6 +2958,7 @@ app.whenReady().then(async () => {
     );
   }
   registerCuaIpc();
+  registerTeachCaptureIpc({ ipcMain, desktopCapturer, systemPreferences, guard: localOnly });
   androidDevice.registerIpc(ipcMain);
   registerUpdaterIpc({ pageAllowed: updaterPageAllowed });
   desktopPrefs = nativeText.prefs;

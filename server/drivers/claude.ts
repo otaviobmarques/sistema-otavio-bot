@@ -57,7 +57,7 @@ import {
 } from "./local-inject.ts";
 import { appendNative } from "./native.ts";
 import type { KeepWarmContract } from "./claude-keepwarm.ts"; import { claudeForks } from "./claude-warm-summary.ts";
-import { BACKGROUND_CALL_TIMEOUT_MS, backgroundCallArgs, spawnBackgroundCall } from "./claude-background.ts";
+import { BACKGROUND_CALL_TIMEOUT_MS, backgroundCallArgs, spawnBackgroundCall, streamResultLine, withImageInput } from "./claude-background.ts";
 import { permissionLaunchCwd, shellRequest } from "./permission-command.ts"; import { readToolPaths } from "../own-file-reads.ts";
 import { SPAWNED_PROXIES } from "../proxy-paths.ts"; import { OWN_APPS_SERVER } from "../../shared/own-apps.ts";
 import { extractMcpImages } from "../mcp-tool-images.ts"; import { claudeToolDraft } from "./tool-progress.ts";
@@ -1925,7 +1925,7 @@ export const ClaudeDriver: ProviderDriver<ClaudeConfig> = {
     };
 
     /** One-shot call, prompt on stdin (approval summaries can hold secrets), no tools or MCP servers. */
-    const generateReview = async (prompt: string, signal?: AbortSignal, onUsage?: TextGenerationOptions["onUsage"], timeoutMs?: number, named?: string): Promise<string> => {
+    const generateReview = async (prompt: string, signal?: AbortSignal, onUsage?: TextGenerationOptions["onUsage"], timeoutMs?: number, named?: string, images?: TextGenerationOptions["images"]): Promise<string> => {
       await ensureCliVersion(environment());
       return new Promise((resolve, reject) => {
         if (config.requireApiKey && !input.environment.ANTHROPIC_API_KEY) {
@@ -1934,7 +1934,7 @@ export const ClaudeDriver: ProviderDriver<ClaudeConfig> = {
         }
         const model = named ?? config.managedModels?.[0] ?? config.endpointModels?.[0] ?? "claude-haiku-5-5";
         const env = environment(config.endpointModels ? undefined : model);
-        const args = backgroundCallArgs({ model, outputFormat: onUsage ? "json" : "text", supports: (flag) => cliVersion !== null && claudeCliSupports(cliVersion, flag), isolated: !inheritsUserConfig(env) });
+        const args = withImageInput(backgroundCallArgs({ model, outputFormat: onUsage ? "json" : "text", supports: (flag) => cliVersion !== null && claudeCliSupports(cliVersion, flag), isolated: !inheritsUserConfig(env) }), images);
         const { child, removeCwd } = spawnBackgroundCall(config.cli, args, env);
         let stdout = "";
         let stderr = "";
@@ -1972,7 +1972,8 @@ export const ClaudeDriver: ProviderDriver<ClaudeConfig> = {
         child.on("error", (error) => finish(error));
         child.on("close", (code) => {
           if (settled) return;
-          if (onUsage) {
+          if (images?.length) stdout = streamResultLine(stdout);
+          if (onUsage || images?.length) {
             try {
               const result = JSON.parse(stdout);
               if (!result || result.type !== "result") throw new Error("Claude text generation returned no result");
@@ -1982,7 +1983,7 @@ export const ClaudeDriver: ProviderDriver<ClaudeConfig> = {
                 .filter((value): value is number => value !== undefined);
               const models = result.modelUsage && typeof result.modelUsage === "object" && !Array.isArray(result.modelUsage)
                 ? Object.keys(result.modelUsage) : [];
-              onUsage({
+              onUsage?.({
                 model: models.length === 1 ? models[0]! : models.find(candidate => candidate === model || candidate.startsWith(`${model}-`)) ?? model,
                 input: inputs.length ? inputs.reduce((sum, value) => sum + value, 0) : undefined,
                 output: count(result.usage?.output_tokens),
@@ -2003,7 +2004,7 @@ export const ClaudeDriver: ProviderDriver<ClaudeConfig> = {
         if (signal?.aborted) onAbort();
         else {
           signal?.addEventListener("abort", onAbort, { once: true });
-          child.stdin.end(prompt);
+          child.stdin.end(images?.length ? `${JSON.stringify(claudeUserMessage(prompt, images))}\n` : prompt);
         }
       });
     };
@@ -2074,7 +2075,7 @@ export const ClaudeDriver: ProviderDriver<ClaudeConfig> = {
           return () => listeners.delete(listener);
         },
       },
-      generateText: (prompt, options) => generateReview(prompt, options?.signal, options?.onUsage, options?.timeoutMs, options?.model),
+      generateText: (prompt, options) => generateReview(prompt, options?.signal, options?.onUsage, options?.timeoutMs, options?.model, options?.images),
       reviewPermission: generateReview,
       dispose: async () => {
         try {

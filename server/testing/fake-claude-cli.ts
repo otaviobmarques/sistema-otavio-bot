@@ -27,7 +27,7 @@
 //   FAKE_CLAUDE_PING_USAGE  JSON usage for a keep-warm ping's result (default: warm read 150000, write 40)
 //   FAKE_CLAUDE_PING_RESULT  raw json result for a keep-warm ping
 //   FAKE_CLAUDE_TEXT_DUMP  FAKE_CLAUDE_DUMP for one-shot text runs
-//   FAKE_CLAUDE_TEXT_LOG  JSON-lines file every one-shot prompt is appended to
+//   FAKE_CLAUDE_TEXT_LOG  JSON-lines file every one-shot prompt is appended to (with `images`, the pictures it carried)
 //   FAKE_CLAUDE_TEXT_HANG  set: the one-shot text mode never replies
 //   FAKE_CLAUDE_TEXT_RESULT  raw --output-format json one-shot response
 //   FAKE_CLAUDE_CHECK_LOG  JSON-lines file every connection check is appended to (checks touch no other knob)
@@ -381,13 +381,24 @@ if (argv[0] === "auth" && argv[1] === "status") {
   );
 }
 
-if (["text", "json"].includes(argAfter("--output-format") ?? "")) {
-  const prompt = await new Promise<string>((resolve) => {
+// A one-off call with pictures (claude-background.ts withImageInput): stream-json both ways, one user message on stdin.
+const imageOneShot = argAfter("--input-format") === "stream-json" && !argv.includes("--fork-session")
+  && (argAfter("--settings") ?? "").includes('"disableAllHooks":true');
+let oneShotImages = 0;
+if (imageOneShot || ["text", "json"].includes(argAfter("--output-format") ?? "")) {
+  const stdin = await new Promise<string>((resolve) => {
     let input = "";
     process.stdin.setEncoding("utf8");
     process.stdin.on("data", (chunk) => { input += chunk; });
     process.stdin.on("end", () => resolve(input));
   });
+  let prompt = stdin;
+  if (imageOneShot) {
+    const content = (JSON.parse(stdin.trim().split("\n")[0] ?? "{}") as { message?: { content?: Array<{ type: string; text?: string }> | string } }).message?.content;
+    const blocks = Array.isArray(content) ? content : [{ type: "text", text: content ?? "" }];
+    oneShotImages = blocks.filter((block) => block.type === "image").length;
+    prompt = blocks.filter((block) => block.type === "text").map((block) => block.text ?? "").join("\n");
+  }
   if (argv.includes("--fork-session") && prompt.trimStart().startsWith("/compact")) {
     const file = (flag: string) => {
       const path = argAfter(flag);
@@ -438,6 +449,13 @@ if (["text", "json"].includes(argAfter("--output-format") ?? "")) {
   }
   const replyText = (text: string, code = 0, raw: string | null = process.env.FAKE_CLAUDE_TEXT_RESULT ?? null) => {
     const model = argAfter("--model") ?? "claude-haiku-4-5";
+    if (imageOneShot) {
+      process.stdout.write(`${JSON.stringify({ type: "system", subtype: "init", model })}\n${raw ?? JSON.stringify({
+        type: "result", is_error: code !== 0, result: text, usage: { input_tokens: 10 + oneShotImages * 1000, output_tokens: 5 }, total_cost_usd: 0.01,
+        modelUsage: { [model]: { costUSD: 0.01 } },
+      })}\n`);
+      process.exit(code);
+    }
     process.stdout.write(argAfter("--output-format") === "json"
       ? raw ?? JSON.stringify({
           type: "result", is_error: code !== 0, result: text,
@@ -477,10 +495,10 @@ if (["text", "json"].includes(argAfter("--output-format") ?? "")) {
   if (oneShotDump) {
     writeDumpAtomic(
       oneShotDump,
-      JSON.stringify({ pid: process.pid, argv, env: process.env, prompt, cwd: process.cwd(), mcpConfig: null }, null, 2),
+      JSON.stringify({ pid: process.pid, argv, env: process.env, prompt, images: oneShotImages, cwd: process.cwd(), mcpConfig: null }, null, 2),
     );
   }
-  if (process.env.FAKE_CLAUDE_TEXT_LOG) appendFileSync(process.env.FAKE_CLAUDE_TEXT_LOG, `${JSON.stringify({ prompt })}\n`);
+  if (process.env.FAKE_CLAUDE_TEXT_LOG) appendFileSync(process.env.FAKE_CLAUDE_TEXT_LOG, `${JSON.stringify({ prompt, ...(imageOneShot ? { images: oneShotImages } : {}) })}\n`);
   if (process.env.FAKE_CLAUDE_TEXT_HANG) {
     // An unsettled top-level await is fatal in Node; a repeating timer keeps the loop alive.
     await new Promise(() => setInterval(() => {}, 1 << 30));
