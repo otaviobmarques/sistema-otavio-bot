@@ -1,0 +1,27 @@
+# Edge for Otávio Bot behind another reverse proxy (docker-compose.atras-de-proxy.yml).
+# That proxy terminates TLS and must forward the real Host, X-Forwarded-For and
+# `X-Forwarded-Proto: https`, which the server uses for the same-origin rule,
+# Secure cookies and the pairing lockout (docs/self-hosting.md, "Putting a proxy
+# in front"). Only private addresses may set those headers: the port is
+# published on the host's loopback or Docker bridge alone, never publicly.
+{
+	auto_https off
+	servers {
+		trusted_proxies static private_ranges
+	}
+}
+
+:8080 {
+	encode zstd gzip
+
+	handle /hooks/* {
+		reverse_proxy 127.0.0.1:8800
+	}
+
+	handle {
+		reverse_proxy 127.0.0.1:8799 {
+			# SSE: stream events as they arrive
+			flush_interval -1
+		}
+	}
+}

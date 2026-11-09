@@ -190,6 +190,7 @@ describe("CI outputs", () => {
       "src/",
       "electron/menu.test.mjs",
       "electron/updater.test.mjs",
+      "scripts/deploy-vps.test.ts",
       "scripts/generate-locale.test.mjs",
       "scripts/testing/bot-tools-ui.e2e.test.ts",
       "scripts/testing/key-readback.e2e.test.ts",

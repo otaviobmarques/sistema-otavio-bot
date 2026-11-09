@@ -113,8 +113,8 @@ would answer the whole internet over plain http. More options are in
 ### Docker with your own domain
 
 ```sh
-git clone https://github.com/milind-soni/OpenMausBot && cd OpenMausBot/deploy
-cp .env.example .env                          # set DOMAIN (and ENGINES)
+git clone https://github.com/otaviobmarques/sistema-otavio-bot && cd sistema-otavio-bot/deploy
+cp .env.example .env                          # set DOMAIN
 docker compose pull omb && docker compose up -d
 docker compose exec omb openmausbot pair      # Link https://<DOMAIN>/pair#code=…
 ```
@@ -335,13 +335,15 @@ Requirements: Docker with Compose, a DNS name pointing at the machine, and
 ports 80/443 open.
 
 ```sh
-git clone https://github.com/milind-soni/OpenMausBot && cd OpenMausBot/deploy
+git clone https://github.com/otaviobmarques/sistema-otavio-bot && cd sistema-otavio-bot/deploy
 cp .env.example .env            # set DOMAIN
 docker compose pull omb && docker compose up -d
 ```
 
-That uses the image CI publishes on every `main` push
-(`ghcr.io/milind-soni/openmausbot`, tagged `latest`, `sha-…` and `v…`).
+That uses the image CI publishes (`ghcr.io/otaviobmarques/sistema-otavio-bot`:
+`latest` and the version on every "Publicar versão", `main` and `sha-…` on
+every push to `main`). The Otávio Bot VPS step by step, in Portuguese, is
+[otavio-bot/VPS-24H.md](otavio-bot/VPS-24H.md).
 To build from your checkout instead: `docker compose up -d --build`.
 
 Then sign the engine CLIs in **inside the container** (their logins live on

@@ -47,3 +47,14 @@ jobs:
           gh release create "v$VERSION" --repo otaviobmarques/otavio-bot-releases --target main \
             --title "Otávio Bot $VERSION" --notes "${NOTES:-Versão $VERSION do Otávio Bot para Windows.}" \
             release/*.exe release/*.exe.blockmap release/latest.yml
+
+  # The server image for the owner's VPS (docs/otavio-bot/VPS-24H.md), tagged
+  # with this version and latest, at ghcr.io/otaviobmarques/sistema-otavio-bot.
+  docker-image:
+    needs: publish
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/docker.yml
+    with:
+      version: ${{ inputs.version }}
