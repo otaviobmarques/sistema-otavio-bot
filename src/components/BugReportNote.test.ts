@@ -16,7 +16,7 @@ const person = (bugReport?: Message["bugReport"]): Message => ({ id: "m1", role:
 describe("a @devs report's status, under the message that sent it", () => {
   it("says it was received, then fixed, coming in an update, then here", () => {
     const shown = (bugReport: Message["bugReport"]) => text(renderToStaticMarkup(createElement(UserLineNote, { message: person(bugReport) })));
-    expect(shown({ id: "r1", status: "received" })).toBe("Bug report sent · Got it, we're looking");
+    expect(shown({ id: "r1", status: "received" })).toBe("Bug report saved");
     expect(shown({ id: "r1", status: "fixed" })).toBe("Bug report · Fixed, coming in an update");
     expect(shown({ id: "r1", status: "fixed", fixedIn: "0.1.135" })).toBe("Bug report · Fixed in 0.1.135, coming in your next update");
     expect(shown({ id: "r1", status: "fixed", fixedIn: "0.1.135", running: true })).toBe("Bug report · Fixed in 0.1.135");
