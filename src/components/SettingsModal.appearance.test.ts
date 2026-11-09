@@ -7,6 +7,10 @@ import { en, locales } from "@/locales";
 import type { AppSettingsSection } from "@/state/store";
 import type { Switch } from "./SettingsPrimitives";
 import { SECTIONS, sectionMatches, SettingsModal } from "./SettingsModal";
+import { setCloudOffersForTest } from "@/lib/cloud-offers";
+
+// These tests cover the upstream Cloud account page, so they run with Cloud offers on.
+setCloudOffersForTest(true);
 
 const fixture = vi.hoisted(() => ({
   section: "appearance" as AppSettingsSection,
@@ -443,5 +447,16 @@ describe("Settings → Appearance", () => {
     vi.stubGlobal("window", {}); expect(render()).not.toContain('<option value="cloudAccount"');
     vi.stubGlobal("window", { ogb: { cloudAccount: {}, remoteClient: { active: true } } });
     expect(render()).not.toContain('<option value="cloudAccount"');
+  });
+
+  it("with Cloud offers off, leaves the personal Cloud page out entirely", () => {
+    setCloudOffersForTest(false);
+    try {
+      fixture.section = "appearance";
+      vi.stubGlobal("window", { ogb: { cloudAccount: {} } });
+      expect(render()).not.toContain('<option value="cloudAccount"');
+    } finally {
+      setCloudOffersForTest(true);
+    }
   });
 });

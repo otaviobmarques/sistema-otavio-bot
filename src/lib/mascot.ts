@@ -1,4 +1,3 @@
-import { CURSOR_STATES, type CursorState } from "@/components/CursorAvatar";
 import { botShowsUnread } from "./bot-unread";
 import { lastNonReceipt } from "./receipts";
 import type { MausColor } from "../../shared/wire";
@@ -6,47 +5,17 @@ import type { LocaleKey } from "@/locales";
 
 export { MAUS_COLOR_NAMES, type MausColor } from "../../shared/wire";
 
-export type MausState = CursorState;
-export const MAUS_STATES = CURSOR_STATES;
+export const MAUS_STATES = [
+  "sleeping", "waking", "idle", "listening", "thinking", "searching", "working",
+  "excited", "surprised", "suspicious", "angry", "drowsy", "happy", "curious", "confused", "bored", "proud", "shy", "sad",
+  "laughing", "scared", "playful", "celebrate",
+  "orbit", "radar", "progress",
+  "spawning", "humming", "loading", "dictating", "sending", "receiving", "uploading", "writing", "notifying", "alerting",
+  "bouncing", "dragging", "powering-down",
+] as const;
 
-/** CursorAvatar ships French group labels; these mirror its STATE_GROUPS memberships exactly. */
-export const STATE_GROUPS = {
-  Lifecycle: ["sleeping", "waking", "idle", "listening", "thinking", "searching", "working"],
-  Reactions: [
-    "excited",
-    "surprised",
-    "suspicious",
-    "angry",
-    "drowsy",
-    "happy",
-    "curious",
-    "confused",
-    "bored",
-    "proud",
-    "shy",
-    "sad",
-    "laughing",
-    "scared",
-    "playful",
-    "celebrate",
-  ],
-  "Agent morphs": ["orbit", "radar", "progress"],
-  "Product cycle": [
-    "spawning",
-    "humming",
-    "loading",
-    "dictating",
-    "writing",
-    "sending",
-    "receiving",
-    "uploading",
-    "notifying",
-    "alerting",
-    "dragging",
-    "bouncing",
-    "powering-down",
-  ],
-} satisfies Record<string, MausState[]>;
+/** What a bot is doing or feeling; the figurinha shows it with its mouth and a small motion. */
+export type MausState = (typeof MAUS_STATES)[number];
 
 export const MAUS_COLORS = {
   green: "#009957",

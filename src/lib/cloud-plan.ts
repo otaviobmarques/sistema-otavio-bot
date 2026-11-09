@@ -1,6 +1,7 @@
 import type { CloudAccountState, CloudPlanSnapshot } from "../../electron/cloud-account.mjs";
 import type { CloudCredit, CloudOffer, CloudOfferPlan, CloudPlanAllowances, CloudSetupStep, CloudTrial, CloudTrialState } from "../../electron/cloud-home.mjs";
 import { planTeam, teamPlan } from "../../electron/cloud-team-plan.mjs";
+import { cloudOffersEnabled } from "@/lib/cloud-offers";
 import { activeLocale, t } from "@/lib/i18n";
 import type { LocaleKey } from "@/locales";
 
@@ -46,7 +47,7 @@ export function cloudPlanView(account: CloudAccountState | null | undefined): Cl
 }
 
 export function buyOfferAllowed(view: CloudPlanView): boolean {
-  return view.kind === "signed-out" || view.kind === "free";
+  return cloudOffersEnabled() && (view.kind === "signed-out" || view.kind === "free");
 }
 
 /** What the X research card offers someone whose server has no plan credential yet: a paying desktop is still connecting
@@ -56,7 +57,7 @@ export function xResearchAction(view: CloudPlanView | null): "connecting" | "sig
   if (!view) return null;
   if (view.kind === "paid") return "connecting";
   if (view.kind === "signed-out" || view.kind === "reauth") return "sign-in";
-  return view.kind === "free" ? "get-pro" : null;
+  return view.kind === "free" && cloudOffersEnabled() ? "get-pro" : null;
 }
 
 export function cloudPlanLine(view: CloudPlanView): string | null {

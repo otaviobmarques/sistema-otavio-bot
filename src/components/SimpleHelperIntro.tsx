@@ -14,7 +14,7 @@ import { joinedCorners, SIMPLE_BOT_BUBBLE, SIMPLE_BUBBLE_MAX } from "./chat-bubb
 import { loadAppCards } from "./bot-settings/useBotApps";
 import { engineReady } from "./EngineLibrary";
 import { IntroChips } from "./HelperSetup";
-import { usePrefersReducedMotion } from "./mascot-clock";
+import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion";
 import { preloadConnectedApps } from "@/lib/connected-apps";
 
 /** How long after the part before each part arrives, when a first run has just landed here: the three lines, the typing

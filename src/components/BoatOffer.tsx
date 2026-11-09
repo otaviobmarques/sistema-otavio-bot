@@ -4,6 +4,7 @@ import { track } from "@/lib/analytics";
 import { openEmailDraft } from "@/lib/app-links";
 import { BOAT_OFFER, boatClaimMailto, boatOfferRuns } from "@/lib/boat-offer";
 import { brandStatus } from "@/lib/brand";
+import { cloudOffersEnabled } from "@/lib/cloud-offers";
 import { cn } from "@/lib/cn";
 import { t } from "@/lib/i18n";
 import { LinkButton, NoticeCard, NotNowButton, PRIMARY_BUTTON } from "./NoticeCard";
@@ -50,7 +51,7 @@ export function BoatOfferCard({ onDone }: { onDone: (action: BoatOfferAction) =>
 
 export function BoatOfferPanel() {
   const titleId = useId();
-  if (!boatOfferRuns(Date.now()) || brandStatus().source === "file") return null;
+  if (!cloudOffersEnabled() || !boatOfferRuns(Date.now()) || brandStatus().source === "file") return null;
   return <section data-boat-offer aria-labelledby={titleId} className="rounded-lg bg-ink/[0.04] p-3">
     <h3 id={titleId} className="flex items-center gap-1.5 text-[13px] font-semibold leading-[18px] text-ink">
       <Gift size={14} aria-hidden="true" className="shrink-0 text-ink-secondary" />{t("boatOffer.title")}

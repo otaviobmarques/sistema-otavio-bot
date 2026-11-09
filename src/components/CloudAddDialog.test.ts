@@ -23,6 +23,9 @@ import { ChooseScreen } from "./cloud-buy/ChooseScreen";
 import { cloudAddView, type CloudAddView } from "@/lib/cloud-plan";
 import { track } from "@/lib/analytics";
 import { showWelcome } from "@/lib/onboarding";
+import { setCloudOffersForTest } from "@/lib/cloud-offers";
+
+setCloudOffersForTest(true);
 
 const DAY = 86_400_000, NOW = new Date(2026, 9, 8, 12).getTime();
 const allowances = (cpus: number, maxDiskGb: number, computers: number, computerHours: number, voiceCharacters: number) =>

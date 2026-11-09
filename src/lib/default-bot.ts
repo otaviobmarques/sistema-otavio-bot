@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 
 import { api } from "@/state/api";
+import { cloudOffersEnabled } from "@/lib/cloud-offers";
 import { chiefScope, type OwnedBot } from "../../shared/bot-owner";
 import { defaultBotPerson, viewersDefaultBot, type DefaultBotFields } from "../../shared/default-bot";
 
@@ -97,7 +98,7 @@ export function setupSteps(input: { aiReady: boolean; ownBots: number; onCloud: 
   return [
     ...(input.aiReady ? [] : ["ai" as const]),
     ...(fresh ? ["bots" as const, "apps" as const, "phone" as const] : []),
-    ...(fresh && !input.onCloud && !input.remote ? ["cloud" as const] : []),
+    ...(fresh && !input.onCloud && !input.remote && cloudOffersEnabled() ? ["cloud" as const] : []),
   ];
 }
 
@@ -129,7 +130,7 @@ export function introChips(input: IntroFacts): IntroChip[] {
     ...(fresh && !input.appsConnected ? ["apps" as const] : []),
     ...(fresh && input.importFound ? ["import" as const] : []),
     ...(fresh && !input.phonePaired ? ["phone" as const] : []),
-    ...(fresh && !input.onCloud && !input.remote ? ["cloud" as const] : []),
+    ...(fresh && !input.onCloud && !input.remote && cloudOffersEnabled() ? ["cloud" as const] : []),
   ];
 }
 

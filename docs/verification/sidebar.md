@@ -131,3 +131,29 @@ the page's own drag events, and exits.
 `src/components/SidebarSectionHeader.naming.dom.test.ts` the name field. The
 headless pictures cannot prove the operating system's own drag image or a drag
 between two windows.
+
+## Destaques: bots that spoke to you, at the top
+
+Run `node --experimental-strip-types scripts/verify-destaques.ts`. It starts a
+disposable fake-engine server in Portuguese with six bots and drives the fake
+engine per bot: Duda replies and stays unread (green), Téo asks before acting
+and waits on an MCP question (amber), Otávio's engine is signed out (red), and
+Gui, Lia and Max are read. It prints the real app's address; add `?mode=simple`
+or `?mode=advanced` and `&skin=`. Ctrl-C closes both servers and removes only
+the fixture data.
+
+1. **Destaques · Falaram com você** lists Otávio, Téo and Duda, newest first,
+   each with its figurinha, the time, a one-line preview and a red, amber or
+   green badge. They are not repeated in their departments below.
+2. Open Duda: the conversation is read, Duda leaves Destaques and returns to its
+   place in the list.
+3. Open Téo: the approval is still undecided, so Téo stays in Destaques until
+   the card is answered.
+4. Set the sidebar to avatars only: Destaques shows the figurinhas with their
+   badges above the others. At phone width the rows fill the drawer.
+5. With nothing unread or waiting, the section is gone.
+
+`src/components/sidebar-destaques.test.ts` covers the tones, counts, the
+approval that stays, routine runs, archived and hidden bots, and the bots taken
+out of the list below. The screenshots in `docs/otavio-bot/screenshots/` were
+taken from this fixture with Playwright at 1440x900 in pt-BR.

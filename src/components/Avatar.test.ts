@@ -9,7 +9,7 @@ import {
   type BotAvatarProps,
   type MausAvatarProps,
 } from "./Avatar";
-import { MASCOT_BODIES } from "../../shared/mascot-bodies";
+import { derivedFigurinha } from "../../shared/figurinha";
 
 const render = (props: Partial<MausAvatarProps>) =>
   renderToStaticMarkup(createElement(MausAvatar, { color: "green", animated: false, ...props }));
@@ -19,52 +19,44 @@ const renderBot = (bot: Partial<BotAvatarProps["bot"]>) =>
     createElement(BotAvatar, { bot: { color: "green", ...bot }, animated: false }),
   );
 
-describe("MausAvatar body", () => {
-  it("wears the cursor when no body is given", () => {
-    expect(render({})).toContain(MASCOT_BODIES.cursor.fit);
+const lookOf = (markup: string) => markup.match(/data-figurinha="([^"]+)"/)?.[1];
+
+describe("MausAvatar figurinha", () => {
+  it("derives the same character from the same seed, and another from another seed", () => {
+    const one = derivedFigurinha("bot-1");
+    expect(lookOf(render({ seed: "bot-1" }))).toBe(`${one.head}.${one.eyes}.${one.accessory}`);
+    expect(lookOf(render({ seed: "bot-1" }))).toBe(lookOf(render({ seed: "bot-1" })));
+    const seeds = ["a", "b", "c", "d", "e", "f", "g", "h"].map((seed) => lookOf(render({ seed })));
+    expect(new Set(seeds).size).toBeGreaterThan(1);
   });
 
-  it("wears the body it is given", () => {
-    const markup = render({ bodyId: "star" });
-    expect(markup).toContain(MASCOT_BODIES.star.fit);
+  it("wears the parts the bot picked over the derived ones", () => {
+    expect(lookOf(render({ seed: "bot-1", figurinha: { head: "tall", eyes: "glasses", accessory: "headset" } }))).toBe("tall.glasses.headset");
   });
 
-  it("falls back to the cursor for an unknown body", () => {
-    // SAFETY: "hexagram" is deliberately not a MascotBodyId, to exercise the runtime fallback for persisted or streamed
-    // data.
-    expect(render({ bodyId: "hexagram" as MausAvatarProps["bodyId"] })).toContain(
-      MASCOT_BODIES.cursor.fit,
-    );
+  it("keeps an old body's nearest head and dresses a festival costume as its accessory", () => {
+    expect(lookOf(render({ seed: "bot-1", bodyId: "circle" }))?.split(".")[0]).toBe("round");
+    expect(lookOf(render({ seed: "bot-1", bodyId: "pumpkin" }))?.split(".")[2]).toBe("horns");
+    expect(lookOf(render({ seed: "bot-1", bodyId: "laddu" }))?.split(".")[2]).toBe("star");
   });
 
-  it("paints the body with the per-bot gradient, never a flat black fill", () => {
-    const markup = render({ bodyId: "circle" });
-    expect(markup).not.toContain('fill="#000000"');
-    expect(markup).not.toContain("{{GRADIENT}}");
-    expect(markup).toContain("url(#");
-  });
-});
-
-describe("mascot facial feature colors", () => {
-  it.each(["white", "black"] as const)("uses %s for both eyes and mouth on every body type", (mascotFaceColor) => {
-    const ink = mascotFaceColor === "white" ? "#ffffff" : "#000000";
-    for (const mascotBody of ["cursor", "star", "pumpkin", "vampire"] as const) {
-      for (const color of ["green", "chrome"] as const) {
-        const markup = renderBot({ color, mascotBody, mascotFaceColor });
-        expect(markup).toContain(`fill="${ink}"`);
-        expect(markup).toContain(`stroke="${ink}"`);
-        expect(markup).not.toContain('visibility="hidden"');
-      }
-    }
+  it("ignores an unknown body and an invalid stored choice", () => {
+    // SAFETY: "hexagram" and "cone" are deliberately invalid, to exercise the runtime fallback for persisted data.
+    const markup = render({ seed: "bot-1", bodyId: "hexagram" as MausAvatarProps["bodyId"], figurinha: { head: "cone" } as never });
+    const derived = derivedFigurinha("bot-1");
+    expect(lookOf(markup)).toBe(`${derived.head}.${derived.eyes}.${derived.accessory}`);
   });
 
-  it("keeps default inks when an override is reset or comes from an older profile", () => {
-    expect(renderBot({ color: "chrome", mascotFaceColor: null })).toContain('stroke="#1E2833"');
-    expect(renderBot({ mascotBody: "pumpkin" })).toContain('stroke="#0d0a10"');
-    expect(renderBot({})).toContain('stroke="#ffffff"');
+  it("paints the tile and face from the bot's colour", () => {
+    expect(render({ color: "blue" })).not.toBe(render({ color: "red" }));
+    expect(render({ color: "green" })).toContain('fill="#');
   });
 
-  it("does not paint features over an uploaded image", () => {
+  it("derives a bot's character from its id, so a rename keeps its look", () => {
+    expect(lookOf(renderBot({ id: "bot-7", name: "Ana" }))).toBe(lookOf(renderBot({ id: "bot-7", name: "Bia" })));
+  });
+
+  it("does not draw a figurinha over an uploaded image", () => {
     const markup = renderBot({ mascotFaceColor: "black", avatarUrl: "/api/attachments/photo.png", avatarCrop: "circle" });
     expect(markup).toContain("<img");
     expect(markup).not.toContain("<svg");
@@ -85,13 +77,13 @@ describe("BotAvatar's two avatar outcomes", () => {
     expect(markup).toContain("border-radius:50%");
   });
 
-  it("renders a flat cropped image for circle/rounded/square, with no mascot at all", () => {
+  it("renders a flat cropped image for circle/rounded/square, with no figurinha at all", () => {
     const markup = renderBot({ avatarUrl: "/api/attachments/cat.webp", avatarCrop: "circle" });
     expect(markup).toContain("<img");
     expect(markup).not.toContain("<svg");
   });
 
-  it("shows the image as it is, with no mascot face painted on it", () => {
+  it("shows the image as it is, with no figurinha painted on it", () => {
     const markup = renderBot({ avatarUrl: "/api/attachments/cat.webp", avatarCrop: "square" });
     expect(markup).toContain("border-radius:0");
     expect(markup).toContain("<img");
@@ -99,13 +91,13 @@ describe("BotAvatar's two avatar outcomes", () => {
     expect(markup).not.toContain("radialGradient");
   });
 
-  it("renders the gradient mascot when the crop is mascot, image or not", () => {
+  it("renders the figurinha when the crop is mascot, image or not", () => {
     const markup = renderBot({ avatarUrl: "/api/attachments/cat.webp", avatarCrop: "mascot" });
     expect(markup).not.toContain("<img");
     expect(markup).toContain("<svg");
   });
 
-  it("falls back to the gradient mascot when a flat crop has no valid image", () => {
+  it("falls back to the figurinha when a flat crop has no valid image", () => {
     const markup = renderBot({ avatarUrl: undefined, avatarCrop: "circle" });
     expect(markup).not.toContain("<img");
     expect(markup).toContain("<svg");
@@ -115,10 +107,10 @@ describe("BotAvatar's two avatar outcomes", () => {
 describe("resolveBotAvatarOutcome", () => {
   // imageFailed is set by the <img>'s onError, which renderToStaticMarkup never fires, so the decision is a pure
   // function.
-  it("falls back to the gradient mascot for an image that failed to load", () => {
+  it("falls back to the figurinha for an image that failed to load", () => {
     expect(
       resolveBotAvatarOutcome({ avatarCrop: "circle", hasUrl: true, imageFailed: true }),
-    ).toBe("gradientMascot");
+    ).toBe("figurinha");
   });
 
   it("renders a good flat image flat", () => {
@@ -127,15 +119,15 @@ describe("resolveBotAvatarOutcome", () => {
     ).toBe("flatImage");
   });
 
-  it("keeps the mascot crop on the gradient mascot even with a loaded image", () => {
+  it("keeps the mascot crop on the figurinha even with a loaded image", () => {
     expect(
       resolveBotAvatarOutcome({ avatarCrop: "mascot", hasUrl: true, imageFailed: false }),
-    ).toBe("gradientMascot");
+    ).toBe("figurinha");
   });
 
-  it("falls back to the gradient mascot when there is no image at all", () => {
+  it("falls back to the figurinha when there is no image at all", () => {
     expect(
       resolveBotAvatarOutcome({ avatarCrop: "square", hasUrl: false, imageFailed: false }),
-    ).toBe("gradientMascot");
+    ).toBe("figurinha");
   });
 });

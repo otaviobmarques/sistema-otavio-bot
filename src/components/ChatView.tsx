@@ -166,7 +166,7 @@ function useChatRows(): ChatRows {
 }
 
 const drawnBot = (bot: Bot) =>
-  [bot.id, bot.name, bot.hidden, bot.color, bot.mascotBody, bot.mascotExpression, bot.mascotFaceColor, bot.avatarUrl, bot.avatarCrop, bot.avatarZoom, bot.avatarFocusX, bot.avatarFocusY].join("\u0001");
+  [bot.id, bot.name, bot.hidden, bot.color, bot.mascotBody, bot.mascotExpression, bot.mascotFaceColor, JSON.stringify(bot.figurinha ?? null), bot.avatarUrl, bot.avatarCrop, bot.avatarZoom, bot.avatarFocusX, bot.avatarFocusY].join("\u0001");
 
 function useDrawnBots(bots: readonly Bot[]): readonly Bot[] {
   const signature = bots.map(drawnBot).join("\u0002");
@@ -1232,8 +1232,6 @@ export function ChatView({ bot: profile }: { bot: Bot }) {
                 bot={bot}
                 state={toolInFlight ? "working" : "thinking"}
                 size={advanced ? 36 : 28}
-                forward={false}
-                lookAround={1}
                 trackPointer={false}
               />
             }

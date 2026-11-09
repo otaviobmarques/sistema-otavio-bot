@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Check, LogOut, Plus, UserRound, X } from "lucide-react";
 import type { AccountsView, AccountSwitchResult, RailOpenResult } from "../../electron/cloud-account.mjs";
 import { cn } from "@/lib/cn";
+import { cloudOffersEnabled } from "@/lib/cloud-offers";
 import type { CloudSignInPhase } from "@/lib/cloud-plan";
 import { t } from "@/lib/i18n";
 import { usePlaces } from "@/lib/places";
@@ -66,6 +67,10 @@ export function useAccounts(): AccountsAccess & { sheet: { email: string | null;
  * told to sign in finds the words. Any other page knows nothing of who is signed in. */
 export function cloudRowLabel(view: AccountsView | null): string {
   return t(view && !view.active ? "accounts.signIn" : "settings.section.cloudAccount");
+}
+
+export function cloudRow(view: AccountsView | null, cloudHome: boolean): string | null {
+  return cloudOffersEnabled() || cloudHome || view?.active ? cloudRowLabel(view) : null;
 }
 
 /** The You menu's last rows: who is signed in here and Sign out. The other accounts are on the rail, and so is Add another account,

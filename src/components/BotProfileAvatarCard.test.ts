@@ -3,8 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import { StoreProvider, type Bot } from "@/state/store";
-import { MASCOT_BODY_IDS, MASCOT_BODIES } from "../../shared/mascot-bodies";
-import { CARVED_BODIES, DIWALI_BODY_IDS, HALLOWEEN_BODY_IDS } from "../../shared/carved-bodies";
+import { derivedFigurinha, FIGURINHA_ACCESSORIES, FIGURINHA_EYES, FIGURINHA_HEADS } from "../../shared/figurinha";
 import { BotProfileAvatarCard } from "./BotProfileAvatarCard";
 
 function makeBot(overrides: Partial<Bot> = {}): Bot {
@@ -38,40 +37,32 @@ function renderCard(bot: Bot) {
   );
 }
 
-describe("BotProfileAvatarCard body picker", () => {
-  it("renders one option per body catalog entry, labeled by name", () => {
+describe("BotProfileAvatarCard figurinha picker", () => {
+  it("offers every head, eyes and accessory, each drawn on the bot's own figurinha", () => {
     const markup = renderCard(makeBot());
 
-    expect(markup).toContain(">Body<");
-    for (const id of MASCOT_BODY_IDS) {
-      expect(markup).toContain(`aria-label="Use the ${MASCOT_BODIES[id].name} body"`);
-    }
+    expect(markup).toContain(">Head<");
+    expect(markup).toContain(">Eyes<");
+    expect(markup).toContain(">Accessory<");
+    for (const id of FIGURINHA_HEADS) expect(markup).toContain(`data-figurinha-option="head.${id}"`);
+    for (const id of FIGURINHA_EYES) expect(markup).toContain(`data-figurinha-option="eyes.${id}"`);
+    for (const id of FIGURINHA_ACCESSORIES) expect(markup).toContain(`data-figurinha-option="accessory.${id}"`);
+    expect(markup).not.toContain(">Halloween<");
   });
 
-  it("offers each festival's bodies in their own row", () => {
-    const markup = renderCard(makeBot({ mascotBody: "jalebi" }));
-
-    expect(markup).toContain(">Halloween<");
-    expect(markup).toContain(">Diwali<");
-    for (const id of [...HALLOWEEN_BODY_IDS, ...DIWALI_BODY_IDS]) {
-      expect(markup).toContain(`aria-label="Use the ${CARVED_BODIES[id].name} body"`);
-    }
-    expect(markup).toContain(`aria-pressed="true" aria-label="Use the ${CARVED_BODIES.jalebi.name} body"`);
-    expect(markup).toContain(`aria-pressed="false" aria-label="Use the ${CARVED_BODIES.witch.name} body"`);
-  });
-
-  it("marks the current body pressed and the rest unpressed, defaulting to cursor", () => {
+  it("marks the parts derived from the bot id when it picked none", () => {
+    const derived = derivedFigurinha("bot-1");
     const markup = renderCard(makeBot());
 
-    expect(markup).toContain(`aria-pressed="true" aria-label="Use the ${MASCOT_BODIES.cursor.name} body"`);
-    expect(markup).toContain(`aria-pressed="false" aria-label="Use the ${MASCOT_BODIES.star.name} body"`);
+    expect(markup).toMatch(new RegExp(`aria-pressed="true"[^>]*data-figurinha-option="head\\.${derived.head}"`));
+    expect(markup).toMatch(new RegExp(`aria-pressed="true"[^>]*data-figurinha-option="eyes\\.${derived.eyes}"`));
   });
 
-  it("reflects an explicitly chosen body", () => {
-    const markup = renderCard(makeBot({ mascotBody: "star" }));
+  it("reflects explicitly chosen parts, and an old body's nearest head", () => {
+    const markup = renderCard(makeBot({ figurinha: { eyes: "visor" }, mascotBody: "capsule" }));
 
-    expect(markup).toContain(`aria-pressed="true" aria-label="Use the ${MASCOT_BODIES.star.name} body"`);
-    expect(markup).toContain(`aria-pressed="false" aria-label="Use the ${MASCOT_BODIES.cursor.name} body"`);
+    expect(markup).toMatch(/aria-pressed="true"[^>]*data-figurinha-option="eyes\.visor"/);
+    expect(markup).toMatch(/aria-pressed="true"[^>]*data-figurinha-option="head\.tall"/);
   });
 
   it("offers zoom and drag framing for a custom image", () => {
@@ -86,23 +77,17 @@ describe("BotProfileAvatarCard body picker", () => {
     expect(markup).toContain("Reset framing");
   });
 
-  it("hides zoom controls for the mascot", () => {
+  it("hides zoom controls for the figurinha", () => {
     const markup = renderCard(makeBot());
     expect(markup).not.toContain('aria-label="Zoom avatar"');
   });
 
-  it("hides the body picker for flat crops that have no mascot to wear one", () => {
-    const markup = renderCard(makeBot({ avatarCrop: "circle" }));
-
-    expect(markup).not.toContain(">Body<");
-    expect(markup).not.toContain(`aria-label="Use the ${MASCOT_BODIES.cursor.name} body"`);
-  });
-
-  it("hides the body picker for every flat crop, not just circle", () => {
-    for (const crop of ["rounded", "square"] as const) {
+  it("hides the figurinha picker for every flat crop", () => {
+    for (const crop of ["circle", "rounded", "square"] as const) {
       const markup = renderCard(makeBot({ avatarCrop: crop }));
 
-      expect(markup).not.toContain(">Body<");
+      expect(markup).not.toContain(">Head<");
+      expect(markup).not.toContain("data-figurinha-option");
     }
   });
 });

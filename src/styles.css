@@ -3454,3 +3454,16 @@ button:disabled.bg-danger {
 .trace-step-box { background: color-mix(in srgb, #8b7cf6 14%, var(--color-card)); border-color: color-mix(in srgb, #8b7cf6 30%, var(--color-card)); }
 .trace-step-ink { color: color-mix(in srgb, #7c6cf0 85%, var(--color-ink)); }
 .trace-tool-ink { color: color-mix(in srgb, #1f9a8c 80%, var(--color-ink)); }
+
+.figurinha-body { transform-box: fill-box; transform-origin: 50% 100%; }
+.figurinha-bob { animation: figurinha-bob 1.1s ease-in-out infinite; }
+.figurinha-pulse { animation: figurinha-pulse 2.1s ease-in-out infinite; }
+.figurinha-pop { animation: figurinha-pop 0.7s ease-out 1; }
+.figurinha-breathe { animation: figurinha-breathe 4.6s ease-in-out infinite; }
+@keyframes figurinha-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.6px); } }
+@keyframes figurinha-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+@keyframes figurinha-pop { 0% { transform: scale(0.82); } 60% { transform: scale(1.08); } 100% { transform: scale(1); } }
+@keyframes figurinha-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(0.97, 1.02); } }
+@media (prefers-reduced-motion: reduce) {
+  .figurinha-bob, .figurinha-pulse, .figurinha-pop, .figurinha-breathe { animation: none; }
+}

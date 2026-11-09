@@ -31,7 +31,7 @@ vi.mock("@/state/store", () => ({
 vi.mock("./PluginsPanel", () => ({ preloadConnectedApps: async () => ({ services: f.services, authoritative: true }) }));
 vi.mock("./bot-settings/useBotApps", () => ({ loadAppCards: async () => new Map([["gmail", { label: "Gmail" }], ["github", { label: "GitHub" }]]) }));
 vi.mock("./Avatar", () => ({ BotAvatar: () => null }));
-vi.mock("./mascot-clock", () => ({ usePrefersReducedMotion: () => f.reduced }));
+vi.mock("@/hooks/use-prefers-reduced-motion", () => ({ usePrefersReducedMotion: () => f.reduced }));
 vi.mock("@/lib/interface-mode", () => ({ useAdvancedMode: () => f.advanced }));
 vi.mock("./onboarding/ConnectAi", async () => {
   const { createElement: h } = await import("react");
@@ -50,6 +50,9 @@ const { followupLine, INTRO_TIMING, introLines, whoConnectsAi } = await import("
 const { setTeamPeople } = await import("@/state/team-people");
 const { chipAction, setupAction } = await import("./HelperSetup");
 const { SIMPLE_BOT_BUBBLE } = await import("./chat-bubble");
+import { setCloudOffersForTest } from "@/lib/cloud-offers";
+
+setCloudOffersForTest(true);
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 const claude = (ready: boolean): InstanceInfo => ({ instanceId: "claude", driverKind: "claudeAgent", displayName: "Claude",
