@@ -10,6 +10,9 @@ vi.mock("@/lib/analytics", () => ({ track: vi.fn() }));
 vi.mock("./cloud-buy/CloudMascotScene", () => ({ CloudMascotScene: () => null }));
 const { PlacesRail, matchingPlaces, placeLabel, shownPlaces } = await import("./PlacesRail");
 const { DesktopWorkspaceSwitcher } = await import("./DesktopWorkspaceSwitcher");
+import { setCloudOffersForTest } from "@/lib/cloud-offers";
+
+setCloudOffersForTest(true);
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 const place = (id: string, name: string, extra: Partial<RailPlace> = {}): RailPlace => ({ id, name, color: null, kind: "cloud", opens: true, ...extra });

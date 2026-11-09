@@ -7,6 +7,7 @@ import type { CloudAccountState, CloudCheckoutOutcome } from "../../electron/clo
 import type { CloudOffer } from "../../electron/cloud-home.mjs";
 import { track } from "@/lib/analytics";
 import { cn } from "@/lib/cn";
+import { cloudOffersEnabled } from "@/lib/cloud-offers";
 import { cloudColor, cloudNameShown, DEFAULT_CLOUD_COLOR } from "@/lib/cloud-look";
 import { cloudAddView, offerPlan, sameTerms, startedSleeps, type CloudAddView, type CloudSignInPhase } from "@/lib/cloud-plan";
 import { t } from "@/lib/i18n";
@@ -102,6 +103,11 @@ export function CloudAddSheet({ kind, staging, onClose, children }: { kind: Clou
   </div>;
 }
 const OFFER_VIEWS: ReadonlyArray<CloudAddView["kind"]> = ["offer", "checking", "unreachable", "waiting", "sign-in", "signing-in"];
+const SELLING: ReadonlySet<CloudAddView["kind"]> = new Set(["offer", "sign-in", "signing-in", "waiting", "has-cloud", "unreachable", "error"]);
+export function cloudAddShows(kind: CloudAddView["kind"]): "show" | "hide" | "close" {
+  if (cloudOffersEnabled()) return "show";
+  return SELLING.has(kind) ? "close" : kind === "checking" ? "hide" : "show";
+}
 const FOCUSABLE = "button:not([disabled]):not([tabindex='-1']), input:not([disabled]):not([tabindex='-1']), [href], [tabindex='0']";
 const free = (state: CloudAccountState) => state.status === "connected" && state.entitlement?.plan === "free" && !state.purchase && !state.machine;
 const currentTier = (state: CloudAccountState | null | undefined) =>
@@ -184,6 +190,8 @@ export function CloudAddDialog({ now = Date.now }: { now?: () => number }) {
     return () => { void bridge.sheet?.(false).catch(() => {}); };
   }, [open, bridge, overWelcome]);
   const kind = view?.kind ?? null;
+  const shows = kind ? cloudAddShows(kind) : "show";
+  useEffect(() => { if (shows === "close") close(); }, [shows]);
   const focusKey = view?.kind === "sign-in" ? `sign-in-${view.phase.step}` : kind;
   useEffect(() => {
     if (!focusKey || focusKey === "checking" || focusKey === "settings") return;
@@ -197,7 +205,7 @@ export function CloudAddDialog({ now = Date.now }: { now?: () => number }) {
     if (kind === "ready" || kind === "team-ready") void bridge?.readySeen?.().catch(() => {});
   }, [kind]);
   useEffect(() => {
-    if (!kind || !request) return;
+    if (!kind || !request || shows !== "show") return;
     if (kind === "settings") { close(); dispatch({ type: "toggleAppSettings", open: true, section: "cloudAccount" }); return; }
     if (kind === "checking") return;
     const first = reported.length === 0;
@@ -264,7 +272,7 @@ export function CloudAddDialog({ now = Date.now }: { now?: () => number }) {
     window.addEventListener("blur", stop);
     return () => window.removeEventListener("blur", stop);
   }, [counting]);
-  if (!open || !view || !request || !bridge || view.kind === "settings") return null;
+  if (!open || !view || !request || !bridge || view.kind === "settings" || shows !== "show") return null;
   if (view.kind === "has-cloud" && account?.status === "connected" && account.clouds && window.ogb?.cloudAdd
     && (account.addCloud?.canAdd !== false || (account.adding && !account.adding.done))) {
     return <CloudAddSheet kind={extraWide ? "offer" : "has-cloud"} staging={account.staging === true} onClose={close}>

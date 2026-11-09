@@ -3,6 +3,9 @@ import { describe, expect, it } from "vitest";
 import { chiefChoices, chiefFor, chiefStepFits, createChiefPatch, hiddenFromSidebar, INTRO_CHIPS, introChips, myDefaultBot, setupSteps, someoneElsesDefaultBot } from "./default-bot";
 import { partitionSidebarBots } from "./sidebar-layout";
 import type { DefaultBotFields } from "../../shared/default-bot";
+import { setCloudOffersForTest } from "@/lib/cloud-offers";
+
+setCloudOffersForTest(true);
 
 const bot = (id: string, fields: DefaultBotFields = {}): DefaultBotFields & { id: string } => ({ id, ...fields });
 

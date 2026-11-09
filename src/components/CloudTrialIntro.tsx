@@ -1,6 +1,7 @@
 import { Check, Cloud } from "lucide-react";
 import type { CloudOffer } from "../../electron/cloud-home.mjs";
 import { cn } from "@/lib/cn";
+import { cloudOffersEnabled } from "@/lib/cloud-offers";
 import { cloudIntroView } from "@/lib/cloud-plan";
 import { t } from "@/lib/i18n";
 import { LINK, Tag } from "./cloud-buy/parts";
@@ -12,7 +13,7 @@ export function CloudTrialIntroCard({ offer, onStart, onHowTo, onSignIn, onNotNo
   onSignIn?: () => void;
   onNotNow: () => void; onDismiss: () => void;
 }) {
-  const view = cloudIntroView(offer);
+  const view = cloudOffersEnabled() ? cloudIntroView(offer) : null;
   if (!view) return null;
   return <NoticeCard titleId="cloud-intro-title" notice="cloud-intro" icon={Cloud} title={t("cloudIntro.title")} onDismiss={onDismiss}>
     <Tag className="mt-2">{view.badge}</Tag>

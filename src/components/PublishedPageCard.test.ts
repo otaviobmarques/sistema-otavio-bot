@@ -16,6 +16,9 @@ vi.mock("@/lib/app-links", () => ({ openExternalLink: (url: string) => openExter
 import { StoreContext } from "@/state/store";
 import { usePanelPage, type PanelPage } from "@/lib/page-open";
 import { PublishedPageCard } from "./PublishedPageCard";
+import { setCloudOffersForTest } from "@/lib/cloud-offers";
+
+setCloudOffersForTest(true);
 
 const URL = "https://abcdefghijklmnopqrstuvwxyz.mausbot.page/";
 const page = (card: Message["publishedPage"]): Message => ({ id: "m1", at: 1, role: "bot", kind: "text", text: "fallback", publishedPage: card });

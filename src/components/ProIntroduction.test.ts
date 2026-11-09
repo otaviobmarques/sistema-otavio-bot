@@ -13,6 +13,9 @@ vi.mock("react", async original => ({ ...await original<typeof import("react")>(
 vi.mock("@/state/store", () => ({ useStore: () => ({ dispatch: f.dispatch }),
   CLOUD_LINK_SETTINGS: { type: "toggleAppSettings", open: true, section: "cloudAccount", cloudLink: true } }));
 import { ProSettingsCard, proOfferAvailable } from "./ProIntroduction";
+import { setCloudOffersForTest } from "@/lib/cloud-offers";
+
+setCloudOffersForTest(true);
 
 const PLANS = [{ tier: "starter", label: "Starter", amount: 1500, trialDays: 7 }, { tier: "pro", label: "Pro", amount: 4900, trialDays: 7 }];
 const TRIAL: CloudOffer = { plans: PLANS, recommended: "pro", creditUsd: 5, refundDays: 14 };
@@ -107,4 +110,17 @@ it("never offers a plan to anyone who pays, may pay, or whose state is unknown; 
   expect(await card(signedOut)).toBe("");
   vi.stubGlobal("window", {});
   expect(await card(signedOut)).toBe("");
+});
+
+it("with Cloud offers off: nothing for someone signed out, and no plans, price, Compare plans or Add a Cloud for someone on no plan", async () => {
+  setCloudOffersForTest(false);
+  try {
+    expect(await card(signedOut)).toBe("");
+    const free = await card(plan());
+    for (const gone of ["Compare plans", "Start free trial", "Add a Cloud", "plans from", "money-back", "Sign in to your Cloud plan"]) expect(free).not.toContain(gone);
+    expect(proOfferAvailable(signedOut)).toBe(false);
+    expect(bridge.offer).not.toHaveBeenCalled();
+  } finally {
+    setCloudOffersForTest(true);
+  }
 });

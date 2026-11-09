@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Archive, Cloud, Gauge, CloudDownload, Coins, Download, FlaskConical, KeyRound, LockKeyhole, Monitor, Palette, ScrollText, Search, Settings, Sparkles, TabletSmartphone, Terminal, User, Users, X, Building2, Zap, BookOpen, ImagePlus } from "lucide-react";
 import { useStore, type AppSettingsSection } from "@/state/store";
 import { skillsLibraryEnabled } from "@/lib/feature-flags";
+import { cloudOffersEnabled } from "@/lib/cloud-offers";
 import { type LocaleKey } from "@/locales";
 import { t } from "@/lib/i18n";
 import { AdminOnly } from "./AdminOnly";
@@ -337,8 +338,8 @@ export function SettingsModal() {
       case "cloudAccount":
         return (window.ogb?.cloudAccount || (window.ogb?.cloudPlan && state.config?.cloudHome === true)) && !remoteActive
           ? <CloudAccountSettings linkRequest={state.appSettingsCloudLink} cloudHome={state.config?.cloudHome === true} teamHome={state.config?.team}
-            onConnectPhone={() => dispatch(phonePairingSettingsAction())} onAddCloud={advanced ? () => dispatch({ type: "openCloudAdd", source: "app_settings" }) : undefined}
-            onSignIn={() => dispatch({ type: "openCloudAdd", source: "app_settings", signIn: true })} />
+            onConnectPhone={() => dispatch(phonePairingSettingsAction())} onAddCloud={advanced && cloudOffersEnabled() ? () => dispatch({ type: "openCloudAdd", source: "app_settings" }) : undefined}
+            onSignIn={cloudOffersEnabled() ? () => dispatch({ type: "openCloudAdd", source: "app_settings", signIn: true }) : undefined} />
           : null;
       case "general":
         return (

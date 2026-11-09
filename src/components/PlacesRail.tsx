@@ -19,6 +19,7 @@ import { activeLocale, t } from "@/lib/i18n";
 import { localizedRelativeTime } from "@/lib/relative-time";
 import { useAdvancedMode } from "@/lib/interface-mode";
 import { useBesideFramed } from "@/lib/chrome-rail";
+import { offeredAddChoices } from "@/lib/cloud-offers";
 import { computerName, editLocal, makeHome, placeInitials, recolorPlace, removeLocal, removePlace, usePlaces, type RailPlace } from "@/lib/places";
 import { AccountsSheet, switchNote } from "./AccountMenu";
 import { useDesktopCapabilities, windowFramed } from "./DesktopCapabilities";
@@ -434,8 +435,9 @@ export function PlacesRail({ chrome = false }: { chrome?: boolean }) {
   const drag = draggable ? ({ WebkitAppRegion: "drag" } as CSSProperties) : undefined;
   const noDrag = draggable ? ({ WebkitAppRegion: "no-drag" } as CSSProperties) : undefined;
   const shown = shownPlaces(state.places);
-  const canPair = state.add.link || state.add.address, canAdd = state.add.cloud || canPair || state.add.organization === true || state.add.account === true || state.add.local === true;
-  const addLabel = t(state.add.local ? "rail.addAny" : "rail.add");
+  const add = offeredAddChoices(state.add);
+  const canPair = add.link || add.address, canAdd = add.cloud || canPair || add.organization === true || add.account === true || add.local === true;
+  const addLabel = t(add.local || !add.cloud ? "rail.addAny" : "rail.add");
   // The menu opens next to the tile or row it was asked from (measured now, while that row is there), within the rail.
   const openMenu = ({ place, from }: MenuAt) => {
     const nav = navRef.current;
@@ -468,8 +470,8 @@ export function PlacesRail({ chrome = false }: { chrome?: boolean }) {
     {menu && <div ref={menuRef} style={noDrag}>
       <PlaceMenu key={menu.place.id} place={state.places.find((entry) => entry.id === menu.place.id) ?? menu.place} top={menu.top} onClose={() => setMenu(null)} />
     </div>}
-    {adding && <PlaceAddSheet choices={state.add} places={state.places} onClose={() => setAdding(false)} onAccount={() => { setAdding(false); setAccounts({ adding: "", note: null }); }} />}
+    {adding && <PlaceAddSheet choices={add} places={state.places} onClose={() => setAdding(false)} onAccount={() => { setAdding(false); setAccounts({ adding: "", note: null }); }} />}
     {accounts && <AccountsSheet adding={accounts.adding} note={accounts.note} onClose={() => setAccounts(null)} />}
-    {connecting !== null && <PlaceAddSheet choices={state.add} connect={{ name: connecting }} onClose={() => setConnecting(null)} />}
+    {connecting !== null && <PlaceAddSheet choices={add} connect={{ name: connecting }} onClose={() => setConnecting(null)} />}
   </nav>;
 }

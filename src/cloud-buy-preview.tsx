@@ -12,10 +12,13 @@ import { CloudAddPanel, CloudAddSheet, type CloudAddActions, type CloudAddUi } f
 import { WhatsNewPopup } from "@/components/whats-new/WhatsNewPopup";
 import { ChooseScreen } from "@/components/cloud-buy/ChooseScreen";
 import type { CloudAddView } from "@/lib/cloud-plan";
+import { setCloudOffersForTest } from "@/lib/cloud-offers";
 import { loadLocale } from "@/lib/i18n";
 import { SKIN_IDS, type SkinId } from "@/lib/skins";
 import { whatsNewView } from "@/lib/whats-new";
 import "./styles.css";
+
+setCloudOffersForTest(true);
 
 const NOW = Date.now(), DAY = 86_400_000;
 const allowances = (cpus: number, swapGb: number, maxDiskGb: number, computers: number, computerHours: number, voiceCharacters: number, snapshotDays: number) =>

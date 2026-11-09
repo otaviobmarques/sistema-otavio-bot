@@ -12,6 +12,9 @@ vi.mock("react", async original => ({ ...await original<typeof import("react")>(
 vi.mock("./DesktopCapabilities", () => ({ useDesktopCapabilities: () => ({ capabilities: { host: { platform: f.platform } }, ready: true }) }));
 vi.mock("@/state/store", async original => ({ ...await original<typeof import("@/state/store")>(), useStore: () => ({ state: { bots: [{ name: "Ember" }] }, dispatch: vi.fn() }) }));
 import { CloudAccountSettings, CloudPlanOnCloud, TeamPeopleCard, cloudLinkAction, cloudPlanLabel } from "./CloudAccountSettings";
+import { setCloudOffersForTest } from "@/lib/cloud-offers";
+
+setCloudOffersForTest(true);
 type Node = ReactElement<{ children?: ReactNode; onClick?: () => void }>;
 function nodes(value: ReactNode): Node[] { if (!isValidElement(value)) return []; const node = value as Node; return [node, ...Children.toArray(node.props.children).flatMap(nodes)]; }
 function render(props?: { linkRequest?: number; cloudHome?: boolean; teamHome?: { name: string; cloudPage?: string }; onConnectPhone?: () => void; onAddCloud?: () => void; onSignIn?: () => void }) { f.index = 0; f.effects = []; let tree: ReactNode; function Capture() { tree = CloudAccountSettings(props); return tree; }

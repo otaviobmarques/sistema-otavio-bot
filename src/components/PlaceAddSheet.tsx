@@ -9,6 +9,7 @@ import { EXAMPLE_ADDRESS, parseServerInput } from "../../electron/server-address
 import { CONNECT_PROBLEM_KEYS, type ServerProbe, type ServerProbeProblem } from "../../electron/server-probe.mjs";
 import { track } from "@/lib/analytics";
 import { cn } from "@/lib/cn";
+import { offeredAddChoices } from "@/lib/cloud-offers";
 import { CLOUD_LIST_NAME_LIMIT, CLOUD_SWATCH_ORDER, SWATCH_COLOR, swatchFill } from "@/lib/cloud-extra";
 import { useCopyFeedback } from "@/lib/copy-text";
 import { t } from "@/lib/i18n";
@@ -238,7 +239,8 @@ export function NewLocalFromMenu() {
   </RailSheet>;
 }
 
-export function PlaceAddSheet({ choices, places = [], connect = null, onClose, onAccount }: { choices: RailAddChoices; places?: readonly RailPlace[]; connect?: { name: string } | null; onClose: () => void; onAccount?: () => void }) {
+export function PlaceAddSheet({ choices: listed, places = [], connect = null, onClose, onAccount }: { choices: RailAddChoices; places?: readonly RailPlace[]; connect?: { name: string } | null; onClose: () => void; onAccount?: () => void }) {
+  const choices = offeredAddChoices(listed);
   const server = choices.link, organization = choices.organization === true, account = choices.account === true && Boolean(onAccount), local = choices.local === true;
   const several = [local, organization, choices.cloud, server, account].filter(Boolean).length > 1;
   const [view, setView] = useState<"choose" | "local" | "cloud" | "server" | "organization">(connect ? "server" : several ? "choose" : local ? "local" : organization ? "organization" : choices.cloud ? "cloud" : "server");
@@ -251,7 +253,7 @@ export function PlaceAddSheet({ choices, places = [], connect = null, onClose, o
   };
   return <RailSheet wide={view === "cloud" && wide} focusKey={view} onClose={onClose}>
     {view === "choose" && <div data-place-add="choose" className="flex flex-col gap-5 px-[30px] pb-[26px] pt-7">
-      <Heading title={t(local ? "rail.addAny" : "rail.add")} />
+      <Heading title={t(local || !choices.cloud ? "rail.addAny" : "rail.add")} />
       {local && <Choice kind="local" icon={<Laptop size={19} />} title={t("rail.local")} sub={t("rail.localSub")} onClick={() => setView("local")} />}
       <div className="flex flex-col gap-3 sm:flex-row">
         {organization && <Choice kind="organization" icon={<Building2 size={19} />} title={t("rail.org")} sub={t("rail.orgSub")} onClick={() => setView("organization")} />}

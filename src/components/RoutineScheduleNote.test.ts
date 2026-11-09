@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { schedulePlace } from "./RoutineScheduleNote";
+import { setCloudOffersForTest } from "@/lib/cloud-offers";
+
+setCloudOffersForTest(true);
 
 describe("where a routine runs, said where it is scheduled", () => {
   const free = { kind: "free" } as const, paid = { kind: "paid", label: "Pro", checking: false } as const;

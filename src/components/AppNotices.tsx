@@ -6,6 +6,7 @@ import { api, useStore } from "@/state/store";
 import { APP_REPOSITORY } from "@/lib/app-links";
 import { track } from "@/lib/analytics";
 import { boatOfferRuns } from "@/lib/boat-offer";
+import { cloudOffersEnabled } from "@/lib/cloud-offers";
 import { brandStatus } from "@/lib/brand";
 import { buyOfferAllowed, cloudNoticeKind, cloudPlanView, cloudTrialNotice, cloudTrialView, offerTrialDays } from "@/lib/cloud-plan";
 import { jobRoutine, useCloudIntent } from "@/lib/cloud-intent";
@@ -85,7 +86,7 @@ export function AppNotices({ quiet = false, viewer = null, now = Date.now }: { q
   const [grokShown, setGrokShown] = useState(false);
   const [grokOpen, setGrokOpen] = useState(false);
   const [grokLanded, setGrokLanded] = useState(false);
-  const consentHere = (local || viewer?.cloudHome === true) && brandStatus().source !== "file";
+  const consentHere = cloudOffersEnabled() && (local || viewer?.cloudHome === true) && brandStatus().source !== "file";
   const consent = useUpdatesConsent(consentHere ? updatesConsentBridge() : undefined);
   const [consentDone, setConsentDone] = useState(false);
   const updater = useUpdaterState();
@@ -118,7 +119,7 @@ export function AppNotices({ quiet = false, viewer = null, now = Date.now }: { q
   const trialDue = cloudTrialNotice(plan);
   // What's new: This computer's page of a desktop that sells MausBot Cloud, once per person; never on a branded build or a
   // desktop an organization runs.
-  const whatsNewHere = Boolean(bridge && desktop) && brandStatus().source !== "file";
+  const whatsNewHere = cloudOffersEnabled() && Boolean(bridge && desktop) && brandStatus().source !== "file";
   const whatsNewSeen = noticeSeen(record, WHATS_NEW_NOTICE);
   const whatsNewDue = !whatsNewHere || whatsNewSeen || organization === true ? false : !desktopState || organization === null ? null
     : desktopState.cloud && !desktopState.seen.includes(WHATS_NEW_NOTICE);
@@ -145,7 +146,7 @@ export function AppNotices({ quiet = false, viewer = null, now = Date.now }: { q
   // Every page with the app's chrome, desktop or Cloud, new install or not: once per browser, as the mode is.
   const simpleDue = !useSimpleModePromptSeen();
   const simpleBlocked = useOtherDialogOpen(simpleDue) || Boolean(state.liveCall && state.liveCall.status !== "ended");
-  const boatHere = boatOfferRuns(now()) && brandStatus().source !== "file";
+  const boatHere = cloudOffersEnabled() && boatOfferRuns(now()) && brandStatus().source !== "file";
 
   const trial = plan?.trial;
   const key = trial ? trialKey(trial) : null;

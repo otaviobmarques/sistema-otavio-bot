@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { xResearchAction, type CloudPlanView } from "./cloud-plan";
+import { setCloudOffersForTest } from "@/lib/cloud-offers";
+
+setCloudOffersForTest(true);
 
 describe("xResearchAction", () => {
   it("tells a paying desktop it is connecting, a signed-out one to sign in, and a free one to get a plan", () => {

@@ -35,6 +35,9 @@ const { BOAT_OFFER_NOTICE } = await import("@/lib/notices");
 const { applyBrand, DEFAULT_BRAND } = await import("@/lib/brand");
 const { LiveKeyNeeded } = await import("../LiveKeyNeeded");
 const { openKeySettings } = await import("./key-focus");
+import { setCloudOffersForTest } from "@/lib/cloud-offers";
+
+setCloudOffersForTest(true);
 
 let host: HTMLDivElement;
 let root: Root;
