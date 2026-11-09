@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import { z } from "zod";
 
+import { COMPANY_BUDGET_MAX_BRL, COMPANY_COLOR, COMPANY_MISSION_MAX, COMPANY_NAME_MAX, COMPANY_SECTOR_MAX, type Company } from "../shared/companies.ts";
 import { writeFileAtomic } from "./atomic.ts";
 import { DATA_DIR } from "./config.ts";
 import { renamePublishedTeam } from "./published-teams.ts";
@@ -23,20 +24,48 @@ interface SectionContextFile {
   contexts: Record<string, SectionContextRecord>;
   /** Stable memory ownership survives renames; deleting a label retires its key. */
   memoryKeys: Record<string, string>;
+  /** Top floor first; a department's rename or deletion here moves or drops it in its company. */
+  companies: CompanyRecord[];
 }
+
+export type CompanyRecord = Omit<Company, "order">;
+
+const companyRecordSchema = z.object({
+  id: z.string().regex(/^[\w-]{1,64}$/),
+  name: z.string().min(1).max(COMPANY_NAME_MAX),
+  sector: z.string().max(COMPANY_SECTOR_MAX),
+  mission: z.string().max(COMPANY_MISSION_MAX),
+  color: z.string().regex(COMPANY_COLOR),
+  monthlyBudgetBrl: z.number().finite().min(0).max(COMPANY_BUDGET_MAX_BRL).nullable(),
+  departmentIds: z.array(z.string()),
+});
 
 const sectionContextRecordSchema = z.object({ text: z.string(), updatedAt: z.number().finite() });
 const sectionContextFileSchema = z.object({
   version: z.literal(1),
   sections: z.array(z.string()).optional(),
   memoryKeys: z.record(z.string(), z.string().min(1)).optional(),
+  companies: z.array(z.unknown()).optional(),
   contexts: z.record(
     z.string(),
     sectionContextRecordSchema,
   ),
 });
 
-const emptyFile = (): SectionContextFile => ({ version: 1, sections: [], contexts: Object.create(null), memoryKeys: Object.create(null) });
+const emptyFile = (): SectionContextFile => ({ version: 1, sections: [], contexts: Object.create(null), memoryKeys: Object.create(null), companies: [] });
+
+/** Each department stays in the first company that lists it, and only while the department exists. */
+function companiesOf(stored: readonly unknown[], sections: readonly string[]): CompanyRecord[] {
+  const free = new Set(sections);
+  const ids = new Set<string>();
+  return stored.flatMap((value) => {
+    const parsed = companyRecordSchema.safeParse(value);
+    if (!parsed.success || ids.has(parsed.data.id)) return [];
+    ids.add(parsed.data.id);
+    const departmentIds = parsed.data.departmentIds.filter((department) => free.delete(department));
+    return [{ ...parsed.data, departmentIds }];
+  });
+}
 
 export function sectionContextKey(section?: string | null): string {
   return section?.trim() || "";
@@ -64,9 +93,10 @@ function loadFile(forWrite = false): SectionContextFile {
     }
     const memoryKeys: Record<string, string> = Object.create(null);
     for (const [name, key] of Object.entries((input as { memoryKeys?: Record<string, string> }).memoryKeys ?? {})) memoryKeys[name] = key;
-    return { version: 1, memoryKeys, sections: [...new Set([
+    const sections = [...new Set([
       ...(candidate.data.sections ?? []), ...Object.keys(contexts),
-    ].map(sectionContextKey).filter(Boolean))], contexts };
+    ].map(sectionContextKey).filter(Boolean))];
+    return { version: 1, memoryKeys, sections, contexts, companies: companiesOf(candidate.data.companies ?? [], sections) };
   } catch {
     if (forWrite) throw userErrorThrown("serverError.department.readFailed");
     return emptyFile();
@@ -80,6 +110,21 @@ function saveFile(data: SectionContextFile): void {
 
 export function readSections(): string[] {
   return loadFile().sections;
+}
+
+export function readCompanies(): CompanyRecord[] {
+  return loadFile().companies;
+}
+
+/** Saves what `change` makes of the companies, in the same atomic write as the departments they hold; handing back the
+ * list it was given writes nothing. */
+export function changeCompanies(change: (companies: CompanyRecord[], sections: readonly string[]) => CompanyRecord[]): CompanyRecord[] {
+  const data = loadFile(true);
+  const next = change(data.companies, data.sections);
+  if (next === data.companies) return next;
+  const companies = companiesOf(next, data.sections);
+  saveFile({ ...data, companies });
+  return companies;
 }
 
 export function sectionMemoryKey(section?: string | null): string {
@@ -118,6 +163,9 @@ export function changeEmptySection(name: string, nextName: string | null): void 
   if (nextName !== null) data.memoryKeys[nextName] = memoryKey;
   if (nextName === null) data.sections.splice(index, 1);
   else data.sections[index] = nextName;
+  data.companies = data.companies.map((company) => ({ ...company,
+    departmentIds: company.departmentIds.flatMap((department) => department !== name ? [department] : nextName === null ? [] : [nextName]),
+  }));
   const context = data.contexts[name];
   delete data.contexts[name];
   if (nextName !== null && context) data.contexts[nextName] = context;
