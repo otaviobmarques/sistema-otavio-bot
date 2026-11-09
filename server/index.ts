@@ -630,6 +630,7 @@ import { findAntigravityLeftovers, removeAntigravityLeftovers } from "./drivers/
 import { createLiveRoutes } from "./routes/live.ts";
 import { createNotificationRoutes, notificationListedFor } from "./routes/notifications.ts";
 import { createTodayRoutes } from "./routes/today.ts"; import { createInboxRoutes } from "./routes/inbox.ts"; import { createSidebarSectionRoutes } from "./routes/sidebar-sections.ts";
+import { createCompanyRoutes } from "./routes/companies.ts";
 import { createToolTimingRoute, createUsageRoutes } from "./routes/usage.ts";
 import { createBotMessageRoutes } from "./routes/bot-messages.ts";
 import { clearInternalTurn, isInternalTurn, markInternalTurn } from "./internal-turns.ts"; import { createFirstReplyRescue } from "./first-reply-rescue.ts";
@@ -12223,6 +12224,7 @@ const teamMoveIn = CLOUD_TEAM ? createTeamMoveIn({ team: CLOUD_TEAM, dataDir: DA
 if (CLOUD_TEAM) teamHost.adoptServerProfile(sessions.list().flatMap((session) => session.email ? [session.email] : []));
 ROUTES.push(createSidebarSectionRoutes({ store, teamComputers, maxBots: MAX_WORKSPACE_BOTS, assertTeamComputerChangeIdle, wireBot }), createPresenceRoutes({ isOwner: ownerOrAdmin, heard: (auth, language) => personLanguages.heard(auth.kind === "session" ? actorKey(auth) : THIS_COMPUTER, language), sawChat: (auth, threadId) => { if (ownerOrAdmin(auth) && store.botByThread(threadId)) sawThread(threadId); }, active: async (source, zone, language) => { const answer = await proactive.brief.active(source, zone, language); firstHourHooks.arrived(); return answer; }, ...(CLOUD_TEAM ? { member: (auth) => { noAiNotice.flush(); return teamMessages.arrived(auth); } } : {}) }), createMeRoutes({ team: CLOUD_TEAM, session: (auth) => (auth.kind === "session" ? auth.session : null), profile: teamHost.memberProfile, save: teamHost.saveMemberProfile, seed: teamHost.seedMemberProfile, seeded: teamHost.seededFields, changed: () => broadcast({ kind: "config", ...configStatus() }) }), createTeamPhoneRoutes({ team: CLOUD_TEAM, sessions, publicBase: (req, auth) => pairingLinkBase(publicUrl(), auth.kind === "session" ? requestOrigin(req) : null) }),
   createTeamConnectionRoutes({ host: teamConnections, cfg: () => cfg, composio, policy: managedPolicy, publicOrigin: CLOUD_HOME?.publicOrigin ?? null, record: (auth, row) => appendAdminAction(DATA_DIR, { ...row, actor: decisionActorFor(auth) }) }), createSignInCardRoutes({ settle: signInSettle.settle, saveLogin: (botId, threadId, messageId, body, auth) => CLOUD_TEAM && !auth.scopes.includes("admin") ? Promise.resolve({ status: 403 as const, body: memberLoginRefusal(CLOUD_TEAM) }) : saveLoginFromCard(botId, threadId, messageId, body), saveTarget: signInSaveTarget, threadVisible: (auth, threadId) => visibleTo(viewerFor(auth)).thread(threadId) }));
+ROUTES.push(createCompanyRoutes({ visibleSections: (auth) => visibleTo(viewerFor(auth)).sections(store.sections), changed: (companies) => broadcast({ kind: "companies", companies }) }));
 ROUTES.push(createRoomHoldRoutes({
   group: (id) => store.group(id),
   groupFor: personRooms.groupForAuth,

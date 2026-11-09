@@ -319,6 +319,8 @@ export const CLIENT_ALLOW: ReadonlyArray<{ methods: readonly string[]; path: Reg
   // reads that carry no secrets
   { methods: ["GET"], path: /^\/api\/bots$/ },
   { methods: ["GET"], path: /^\/api\/team-map$/ },
+  // the companies, narrowed to the departments this viewer sees; changing them is an admin's, like changing departments
+  { methods: ["GET"], path: /^\/api\/companies$/ },
   // a link into the organisation's Admin: identifiers only, and Admin authorizes its own visitor
   { methods: ["GET"], path: /^\/api\/bots\/[\w-]+\/slack-management$/ },
   { methods: ["GET"], path: /^\/api\/search$/ },

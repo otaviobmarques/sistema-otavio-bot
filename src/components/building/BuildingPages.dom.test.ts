@@ -7,6 +7,7 @@ vi.mock("@/lib/use-owner-or-admin", () => ({ useOwnerOrAdmin: () => true }));
 vi.mock("../../state/api", () => ({ api: vi.fn(async () => null) }));
 
 import { initialState, StoreContext, type AppState, type Bot } from "@/state/store";
+import { setCompanies } from "@/state/companies";
 import { setInboxView } from "@/state/inbox";
 import { approvalRow, inboxView, messageRow, questionRow } from "@/testing/inbox-fixture";
 import { BoardRoomPage } from "./BoardRoomPage";
@@ -42,6 +43,7 @@ beforeEach(() => {
 afterEach(() => {
   act(() => root.unmount());
   setInboxView(null);
+  setCompanies(null);
   document.body.innerHTML = "";
 });
 
@@ -65,6 +67,20 @@ describe("the Building", () => {
     expect(dispatch).toHaveBeenCalledWith({ type: "select", id: "writer" });
     await act(async () => { document.querySelector<HTMLElement>("[data-building-board]")!.click(); });
     expect(dispatch).toHaveBeenCalledWith({ type: "showBoardRoom" });
+  });
+
+  it("has the presidency on top, a floor per company with its departments, the rest in No company, and the reception below", async () => {
+    setCompanies([{ id: "co_1", name: "RedBox", sector: "Agência de Marketing", mission: "Campanhas com CPA menor.", color: "#FF2D33", monthlyBudgetBrl: 500, order: 0,
+      departmentIds: ["RedBox - Agência de Marketing"] }]);
+    await mount(createElement(BuildingPage));
+    expect(document.querySelector("h1")!.textContent).toBe("Otávio's building");
+    const floors = [...document.querySelectorAll<HTMLElement>("[data-building-floor]")];
+    expect(floors.map((floor) => floor.dataset.buildingFloor)).toEqual(["penthouse", "co_1", "none", "ground"]);
+    expect([...floors[1]!.querySelectorAll<HTMLElement>("[data-building-room]")].map((room) => room.dataset.buildingRoom)).toEqual(["RedBox - Agência de Marketing"]);
+    expect([...floors[2]!.querySelectorAll<HTMLElement>("[data-building-room]")].map((room) => room.dataset.buildingRoom)).toEqual(["FoodX - Gestão de Restaurantes", ""]);
+    expect(floors[1]!.querySelector<HTMLElement>("[data-floor-stripe]")!.dataset.floorStripe).toBe("#FF2D33");
+    expect(floors[1]!.querySelector<HTMLElement>("[data-company-budget]")!.textContent).toContain("500");
+    expect(floors[0]!.querySelector<HTMLElement>("[data-building-board]")!.dataset.buildingBoard).toBe("2");
   });
 });
 
