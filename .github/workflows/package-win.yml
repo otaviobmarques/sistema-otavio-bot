@@ -19,6 +19,18 @@ on:
         description: "Commit/tag/branch to build (defaults to the branch this is run from)"
         required: false
         type: string
+      version:
+        description: "Version to stamp on the installer, e.g. 0.2.0 (defaults to package.json)"
+        required: false
+        type: string
+  workflow_call:
+    inputs:
+      ref:
+        required: false
+        type: string
+      version:
+        required: false
+        type: string
 
 # least privilege: the build only reads the checkout, it never writes back
 permissions:
@@ -45,6 +57,14 @@ jobs:
       - name: clean build outputs
         shell: bash
         run: rm -rf dist dist-server release
+      - name: stamp the requested version
+        if: inputs.version != ''
+        shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::version must look like 0.2.0"; exit 1; }
+          npm pkg set version="$VERSION"
       - run: pnpm package:win
       - name: Verify the bundled browser with an empty home
         run: node scripts/smoke-browser-bundle.mjs --resources "${{ github.workspace }}/release/win-unpacked/resources"
@@ -91,8 +111,8 @@ jobs:
           fi
           [ -f "$res/app-update.yml" ] || { echo "::error::missing $res/app-update.yml"; fail=1; }
           if [ -f "$res/app-update.yml" ]; then
-            grep -Eq '^repo: sistema-otavio-bot$' "$res/app-update.yml" || {
-              echo "::error::app-update.yml does not point at otaviobmarques/sistema-otavio-bot"; fail=1; }
+            grep -Eq '^repo: otavio-bot-releases$' "$res/app-update.yml" || {
+              echo "::error::app-update.yml does not point at otaviobmarques/otavio-bot-releases"; fail=1; }
             # while the build is unsigned, a publisherName makes
             # electron-updater reject every update as untrusted
             if grep -q "publisherName" "$res/app-update.yml"; then

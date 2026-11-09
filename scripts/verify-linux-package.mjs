@@ -72,8 +72,8 @@ function requireUpdaterTarget(resources, label) {
   const updateFile = path.join(resources, "app-update.yml");
   requireFile(updateFile);
   const update = readFileSync(updateFile, "utf8");
-  if (!/^owner: otaviobmarques$/m.test(update) || !/^repo: sistema-otavio-bot$/m.test(update)) {
-    fail(`${label} app-update.yml does not point at otaviobmarques/sistema-otavio-bot`);
+  if (!/^owner: otaviobmarques$/m.test(update) || !/^repo: otavio-bot-releases$/m.test(update)) {
+    fail(`${label} app-update.yml does not point at otaviobmarques/otavio-bot-releases`);
   }
 }
 

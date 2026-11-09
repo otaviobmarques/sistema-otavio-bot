@@ -22,7 +22,7 @@ Critério de pronto da Fase 1: três bots trabalhando em paralelo num projeto se
 
 - Pasta `enterprise/` removida. Ela tem licença própria e exige chave em produção. O app compila e passa no typecheck sem ela.
 - Rebrand dos textos de interface para "Otávio Bot" nas 16 línguas (388 textos), com o catálogo validado.
-- Nome do produto, ID do app, nomes dos instaladores, atalho, textos de permissão do macOS e canal de atualização apontando para `otaviobmarques/sistema-otavio-bot`.
+- Nome do produto, ID do app, nomes dos instaladores, atalho, textos de permissão do macOS e canal de atualização apontando para o repositório público `otaviobmarques/otavio-bot-releases`, que guarda só os instaladores.
 - Tema escuro padrão trocado para o visual do Otávio Bot: azul-marinho com o azul do Tavinho e a fonte Inter. Contraste conferido com `pnpm check:contrast`.
 - Analytics desligada. A chave do PostHog dos autores originais foi removida. A analytics só funciona se você configurar uma chave própria em `VITE_POSTHOG_TOKEN`.
 - Portal web com as telas do protótipo em `apps/portal/`, com dados de exemplo.

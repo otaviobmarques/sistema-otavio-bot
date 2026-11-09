@@ -16,7 +16,7 @@ protocols:
 publish:
   - provider: github
     owner: otaviobmarques
-    repo: sistema-otavio-bot
+    repo: otavio-bot-releases
 
 directories:
   buildResources: build
