@@ -25,7 +25,12 @@ export function ConselhoPage() {
   return (
     <div className="mx-auto grid max-w-[1340px] gap-5 px-4 py-6 sm:px-14 sm:py-7 lg:grid-cols-[minmax(0,1fr)_566px]">
       <main>
-        <h1 className="text-[27px] font-semibold text-white">Sala do conselho</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-[27px] font-semibold text-white">Sala do conselho</h1>
+          <Link to="/ao-vivo/presidencia" className="btn">
+            Ver a mesa
+          </Link>
+        </div>
         <p className="mt-1 text-[14.5px] text-muted">Tudo que precisa de você antes de acontecer. Aprovar, ajustar ou recusar — o bot continua de onde parou.</p>
 
         <div className="mt-4 space-y-4">
@@ -86,7 +91,7 @@ export function ConselhoPage() {
                 <strong className="text-white">
                   {b.name} · {b.role}
                 </strong>{" "}
-                está bloqueado no login do Canva (2FA) há 6 min.
+                ({companyName(b)}) está bloqueado {b.blocker ?? "num login (2FA)"} há 6 min. Pela política, bots não digitam códigos.
               </p>
               <button
                 className="btn btn-primary"

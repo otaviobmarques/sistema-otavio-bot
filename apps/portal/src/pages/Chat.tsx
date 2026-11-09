@@ -12,9 +12,10 @@ import { usePortal } from "../state/store";
 
 const sectionTitle: Record<Conversation["section"], string> = {
   salas: "Salas",
-  "master-laudo": "Master Laudo IA",
-  redbox: "RedBox IA",
-  domma: "Domma IA",
+  redbox: "RedBox",
+  vertice: "Vertice",
+  domma: "Domma Tecnologia",
+  foodx: "FoodX",
 };
 
 function useChatLists(query: string) {
@@ -33,7 +34,7 @@ function useChatLists(query: string) {
     };
     const highlighted = visible.filter((c) => tone(c) !== null).sort((a, b) => b.time.localeCompare(a.time));
     const rest = visible.filter((c) => tone(c) === null);
-    const sections = (["salas", "master-laudo", "redbox", "domma"] as const)
+    const sections = (["salas", "redbox", "vertice", "domma", "foodx"] as const)
       .map((s) => ({ id: s, title: sectionTitle[s], items: rest.filter((c) => c.section === s) }))
       .filter((s) => s.items.length > 0);
     return { highlighted, sections, tone };
@@ -232,7 +233,7 @@ function ComputerPanel({ bot }: { bot: Bot }) {
   return (
     <aside className="overflow-y-auto border-l border-line px-5 py-5">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="eyebrow font-sans">Computador do {bot.role.toLowerCase() === "franquias" ? "Franquias" : bot.name}</h2>
+        <h2 className="eyebrow font-sans">Computador do {bot.name}</h2>
         <Link to={`/computador/${bot.id}`} className="chip hover:bg-ink-700">
           <Dot color={bot.status === "bloqueado" ? "#ef4444" : "#22c55e"} size={7} /> ao vivo
         </Link>

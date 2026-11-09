@@ -49,10 +49,10 @@ function InstallSkill() {
   const [url, setUrl] = useState("https://github.com/anthropics/skills/tree/main/skills/pptx");
   const [read, setRead] = useState(true);
   const targets: { id: string; label: string; bots: string[] }[] = [
-    { id: "lia", label: "Lia · Conteúdo", bots: ["lia"] },
+    { id: "lia", label: "Lia · Roteirista", bots: ["lia"] },
     { id: "duda", label: "Duda · Copy", bots: ["duda"] },
     { id: "otavio", label: "Otávio · Designer", bots: ["otavio"] },
-    { id: "redbox", label: "toda a RedBox IA", bots: state.bots.filter((b: Bot) => b.companyId === "redbox" && b.hired).map((b) => b.id) },
+    { id: "redbox", label: "toda a RedBox", bots: state.bots.filter((b: Bot) => b.companyId === "redbox" && b.hired).map((b) => b.id) },
   ];
   const [checked, setChecked] = useState<string[]>(["lia", "duda"]);
   const recipients = [...new Set(targets.filter((t) => checked.includes(t.id)).flatMap((t) => t.bots))];

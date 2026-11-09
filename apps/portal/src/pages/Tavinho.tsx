@@ -12,7 +12,15 @@ const modeColor: Record<Mode, { core: string; ring: string; label: string }> = {
   atencao: { core: "#fca5a5", ring: "#ef4444", label: "precisa de você" },
 };
 
-const commands = ["aprova os três primeiros", "abre o computador do Otávio", "manda a Lia escrever um post", "quanto gastamos hoje?", "modo silencioso"];
+const commands = ["aprova os três primeiros", "abre o computador do Otávio", "manda a Lia escrever um roteiro", "quanto gastamos hoje?", "modo silencioso"];
+
+const needLabel: Record<string, string> = {
+  "ap-teo": "enviar proposta para 12 restaurantes",
+  "ap-davi": "entregar o corte da Academia Pulso",
+  "ap-gui": "deploy do PR #142 em produção",
+  "ap-vini": "contratar Vini (TikTok)",
+  "ap-max": "subir orçamento da Academia Pulso",
+};
 
 export function TavinhoPage() {
   const { state, decide, toast } = usePortal();
@@ -20,9 +28,9 @@ export function TavinhoPage() {
   const navigate = useNavigate();
   const mobile = useIsMobile();
   const [mode, setMode] = useState<Mode>("ouvindo");
-  const [question, setQuestion] = useState("Tavinho, como estão os leads de franquia e o que o Otávio está fazendo?");
+  const [question, setQuestion] = useState("Tavinho, como estão os restaurantes da FoodX e o que o Otávio está fazendo?");
   const [answer, setAnswer] = useState(
-    "Doze leads novos essa semana. O Téo preparou a proposta e está esperando você aprovar o envio. O Otávio travou no login do Canva — precisa do código de 2FA. Quer que eu abra a tela dele?",
+    "Doze restaurantes pediram demonstração essa semana. O Téo preparou a proposta e está esperando você aprovar o envio. O Otávio travou no login do Canva — precisa do código de 2FA. Quer que eu abra a tela dele?",
   );
   useEffect(() => {
     if (mode === "ouvindo") return;
@@ -36,7 +44,7 @@ export function TavinhoPage() {
       const ap = state.approvals.find((a) => a.id === "ap-teo");
       if (ap) {
         decide(ap.id, 1);
-        setAnswer("Feito. Aprovei o envio para os três primeiros leads. O Téo te avisa quando responderem.");
+        setAnswer("Feito. Aprovei o envio para os três primeiros restaurantes. O Téo te avisa quando responderem.");
         setMode("executando");
       } else {
         setAnswer("Não há envio do Téo esperando você agora.");
@@ -47,10 +55,10 @@ export function TavinhoPage() {
       setMode("executando");
       setTimeout(() => navigate("/computador/otavio"), 700);
     } else if (cmd.startsWith("manda")) {
-      setAnswer("Pedi à Lia um post sobre franquias para quinta. Como é publicação, ela vai preparar e esperar sua aprovação.");
+      setAnswer("Pedi à Lia o roteiro de um vídeo de demonstração da FoodX para quinta. Como o vídeo vai para clientes, ela prepara e espera sua aprovação.");
       setMode("executando");
     } else if (cmd.startsWith("quanto")) {
-      setAnswer("Hoje foram R$ 41 em tokens, somando as três empresas. No mês, R$ 733 de R$ 1.500.");
+      setAnswer("Hoje foram R$ 48 em tokens, somando as quatro empresas. No mês, R$ 887 de R$ 1.800.");
       setMode("ouvindo");
     } else {
       setAnswer("Modo silencioso ligado. Só aviso aprovações e bloqueios até as 8h.");
@@ -61,10 +69,10 @@ export function TavinhoPage() {
   const needs = [
     ...state.approvals.map((a) => {
       const bot = state.bots.find((b) => b.id === a.botId);
-      const label = a.id === "ap-teo" ? "enviar proposta para 12 leads" : a.id === "ap-vini" ? "contratar Vini (TikTok)" : a.id === "ap-max" ? "subir orçamento da Auto Visão" : a.tag;
+      const label = needLabel[a.id] ?? a.tag;
       return { id: a.id, color: "#f59e0b", text: `${bot?.name ?? "Bot"} · ${label}` };
     }),
-    ...state.bots.filter((b) => b.hired && b.status === "bloqueado").map((b) => ({ id: b.id, color: "#ef4444", text: `${b.name} · 2FA do Canva` })),
+    ...state.bots.filter((b) => b.hired && b.status === "bloqueado").map((b) => ({ id: b.id, color: "#ef4444", text: `${b.name} · ${b.blocker ?? "login (2FA)"}` })),
   ];
   const c = modeColor[mode];
 

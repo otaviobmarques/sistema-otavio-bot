@@ -11,10 +11,10 @@ export function computerFor(bot: Bot): ComputerData {
   const known = computers[bot.id];
   if (known) return known;
   const company = companies.find((c) => c.id === bot.companyId);
-  const container = `${company ? slug(company.name.replace(" IA", "")) : "diretoria"}-${slug(bot.role)}`;
+  const container = `${company ? slug(company.name) : "diretoria"}-${slug(bot.role)}`;
   return {
-    url: bot.id === "gui" ? "github.com/domma/domma-chat/pull/142" : "app.otaviobot.local/painel",
-    profile: `perfil: ${slug(bot.name)}@${company ? slug(company.name.replace(" IA", "")) : "diretoria"} · só este bot`,
+    url: bot.id === "gui" ? "github.com/domma/domma-sistema/pull/142" : "app.otaviobot.local/painel",
+    profile: `perfil: ${slug(bot.name)}@${company ? slug(company.name) : "diretoria"} · só este bot`,
     container: `${bot.model} · container Docker \`${container}\` · Ubuntu 24.04 · Chromium com perfil próprio · 0,8 GB em uso`,
     tabs: ["Tela ao vivo", "Terminal", "Arquivos", "Logins do bot", "Auditoria"],
     terminal: [`$ cd ~/trabalho`, `$ ls`, `notas.md   tarefas.json`, `[gateway] sessão iniciada para ${bot.name} (${bot.role})`],
@@ -25,7 +25,7 @@ export function computerFor(bot: Bot): ComputerData {
       { name: "compartilhado/", depth: 0, kind: "shared", note: company?.name ?? "Diretoria" },
     ],
     logins: [
-      { site: "Google Drive", account: `OAuth · ${company?.name.replace(" IA", "") ?? "Diretoria"}`, ok: true },
+      { site: "Google Drive", account: `OAuth · ${company?.name ?? "Diretoria"}`, ok: true },
       { site: "WhatsApp", account: "não conectado", ok: false },
     ],
     policies: ["Sites permitidos: definidos pela empresa", "Nunca digitar códigos 2FA ou senhas", "Compras e pagamentos: sempre pedir aprovação"],

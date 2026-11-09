@@ -51,7 +51,7 @@ const reserves = ["Claude · Sonnet", "Claude · Opus", "ChatGPT · GPT-5", "Cha
 const cheapModels = ["Claude · Haiku", "ChatGPT · GPT-5 mini", "Gemini · Flash-Lite", "O mesmo modelo"];
 const steps = ["Empresa", "Identidade e IA", "Acessos e skills", "Regras e orçamento"];
 const qualityLabel = ["melhor qualidade", "mais rápido", "mais barato", "alternativa"];
-const skillOptions = ["proposta-franquia", "relatorio-semanal-ads", "docx · xlsx · pdf", "frontend-design", "laudo-portaria-01524"];
+const skillOptions = ["proposta-foodx", "relatorio-semanal-ads", "docx · xlsx · pdf", "frontend-design", "roteiro-video-curto"];
 
 const hash = (s: string) => [...s].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) >>> 0, 7);
 

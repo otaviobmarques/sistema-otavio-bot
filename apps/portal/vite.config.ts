@@ -6,4 +6,5 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: { port: 5180 },
   preview: { port: 5181 },
+  build: { chunkSizeWarningLimit: 650 },
 });

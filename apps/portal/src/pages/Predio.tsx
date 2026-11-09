@@ -4,7 +4,7 @@ import { companies, feed, nowLabel, statusLabel, totalBudget, type Bot, type Sta
 import { Figurinha } from "../components/Figurinha";
 import { Bar, Dot, InitialsTile, Rich, StatusDot, useIsMobile } from "../components/ui";
 import { Logo } from "../components/Shell";
-import { toneColor } from "../lib/colors";
+import { palette, toneColor } from "../lib/colors";
 import { useCounts, usePortal } from "../state/store";
 
 function useBotNavigation() {
@@ -50,7 +50,7 @@ function PredioDesktop() {
             <Link to="/ao-vivo" className="btn border-ok/70 text-white">
               <Dot color="#22c55e" /> Ver ao vivo
             </Link>
-            <button className="btn" onClick={() => toast("Nova empresa: no protótipo, use um template como o da Master Laudo IA.")}>
+            <button className="btn" onClick={() => toast("Nova empresa: no protótipo, use um template como o da FoodX.")}>
               <Building size={15} /> Nova empresa
             </button>
             <Link to="/contratar" className="btn btn-primary">
@@ -60,9 +60,40 @@ function PredioDesktop() {
         </div>
 
         <section className="card overflow-hidden">
-          <div className="flex items-center justify-between border-b border-line px-6 py-4">
-            <span className="eyebrow">Cobertura · Diretoria</span>
-            {tavinho && <InitialsTile bot={{ ...tavinho, initials: "TV" }} onClick={() => openBot(tavinho)} />}
+          <div className="grid grid-cols-[224px_1fr] gap-6 border-b border-line px-6 py-5">
+            <div className="pt-1">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted">Cobertura</div>
+              <div className="flex items-center gap-2 font-display text-[17px] font-semibold text-white">
+                <span className="h-2.5 w-2.5 rounded-full bg-wait" /> Presidência
+              </div>
+              <div className="text-[12.5px] text-soft">Sala do conselho · mesa dos diretores</div>
+            </div>
+            <div className="grid grid-cols-[1fr_1.3fr] gap-3.5">
+              <div className="rounded-xl border border-line bg-ink-850 px-4 py-4">
+                <div className="text-[13.5px] font-medium text-white">Na mesa redonda</div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {tavinho && <InitialsTile bot={{ ...tavinho, initials: "TV" }} onClick={() => openBot(tavinho)} />}
+                  {hired
+                    .filter((b) => b.departmentId === "direcao")
+                    .map((b) => (
+                      <InitialsTile key={b.id} bot={b} onClick={() => openBot(b)} />
+                    ))}
+                </div>
+              </div>
+              <Link to="/conselho" className="rounded-xl border border-wait bg-wait/[0.04] px-4 py-4 transition hover:bg-wait/[0.08]">
+                <div className="text-[13.5px] font-medium text-wait">Sala do conselho · você</div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className="chip border-wait text-soft">
+                    <Dot color="#f59e0b" size={7} /> {state.approvals.length} {state.approvals.length === 1 ? "aprovação" : "aprovações"}
+                  </span>
+                  {blocked.length > 0 && (
+                    <span className="chip">
+                      <Dot color="#ef4444" size={7} /> {blocked.length} bot bloqueado (login)
+                    </span>
+                  )}
+                </div>
+              </Link>
+            </div>
           </div>
 
           {companies.map((co) => {
@@ -71,9 +102,19 @@ function PredioDesktop() {
               <div key={co.id} className="grid grid-cols-[224px_1fr] gap-6 border-b border-line px-6 py-5">
                 <div className="pt-1">
                   <div className="text-[11px] font-semibold uppercase tracking-wider text-muted">{co.floorLabel}</div>
-                  <Link to={`/empresas/${co.id}`} className="font-display text-[17px] font-semibold text-white hover:underline">
+                  <Link to={`/empresas/${co.id}`} className="flex items-center gap-2 font-display text-[17px] font-semibold text-white hover:underline">
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: palette[co.color].accent }} />
                     {co.name}
                   </Link>
+                  <div className="text-[12.5px] text-soft">{co.tagline}</div>
+                  {(() => {
+                    const dir = hired.find((b) => b.companyId === co.id && b.departmentId === "direcao");
+                    return dir ? (
+                      <button onClick={() => openBot(dir)} className="mt-2 flex items-center gap-2 text-left text-[12px] text-muted hover:text-white">
+                        <Figurinha f={dir.figurinha} size={22} status={dir.status} /> {dir.name} · {dir.role}
+                      </button>
+                    ) : null;
+                  })()}
                   <div className="mt-1 text-[12.5px] text-muted">
                     {coBots.length} bots · R$ {co.budget.spent} / R$ {co.budget.cap} este mês
                   </div>
@@ -103,12 +144,12 @@ function PredioDesktop() {
           <div className="grid grid-cols-[224px_1fr] gap-6 px-6 py-5">
             <div className="pt-1">
               <div className="text-[11px] font-semibold uppercase tracking-wider text-muted">Térreo</div>
-              <div className="font-display text-[17px] font-semibold text-white">Recepção e conselho</div>
-              <div className="mt-1 text-[12.5px] text-muted">Entradas e decisões suas</div>
+              <div className="font-display text-[17px] font-semibold text-white">Recepção</div>
+              <div className="mt-1 text-[12.5px] text-muted">Entradas e visitantes</div>
             </div>
-            <div className="grid grid-cols-2 gap-3.5">
+            <div className="grid grid-cols-1 gap-3.5">
               <div className="rounded-xl border border-line bg-ink-850 px-4 py-4">
-                <div className="text-[13.5px] font-medium text-white">Recepção · o Tavinho encaminha</div>
+                <div className="text-[13.5px] font-medium text-white">Recepção · canais de entrada</div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <span className="chip">
                     <Dot color="#22c55e" size={7} /> WhatsApp · 7 conversas
@@ -131,19 +172,6 @@ function PredioDesktop() {
                   </div>
                 )}
               </div>
-              <Link to="/conselho" className="rounded-xl border border-wait bg-wait/[0.04] px-4 py-4 transition hover:bg-wait/[0.08]">
-                <div className="text-[13.5px] font-medium text-wait">Sala do conselho · você</div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <span className="chip border-wait text-soft">
-                    <Dot color="#f59e0b" size={7} /> {state.approvals.length} {state.approvals.length === 1 ? "aprovação" : "aprovações"}
-                  </span>
-                  {blocked.length > 0 && (
-                    <span className="chip">
-                      <Dot color="#ef4444" size={7} /> {blocked.length} bot bloqueado (login)
-                    </span>
-                  )}
-                </div>
-              </Link>
             </div>
           </div>
         </section>
@@ -190,7 +218,7 @@ function PredioDesktop() {
           <div className="text-[12.5px] text-muted">Gasto do mês · todas as empresas</div>
           <div className="mt-1 flex items-baseline gap-1.5">
             <span className="font-display text-[22px] font-semibold text-white">R$ {totalBudget.spent}</span>
-            <span className="text-[12.5px] text-muted">de R$ 1.500</span>
+            <span className="text-[12.5px] text-muted">de R$ {totalBudget.cap.toLocaleString("pt-BR")}</span>
           </div>
           <Bar value={totalBudget.spent} max={totalBudget.cap} className="mt-2" />
         </div>
@@ -220,7 +248,7 @@ function PredioMobile() {
         </Link>
       </header>
       <div className="flex items-center justify-between border-y border-line bg-ink-850 px-4 py-3">
-        <span className="eyebrow">Cobertura</span>
+        <span className="eyebrow">Cobertura · Presidência</span>
         {tavinho && (
           <button onClick={() => openBot(tavinho)}>
             <Figurinha f={tavinho.figurinha} size={30} status={tavinho.status} />
@@ -242,7 +270,7 @@ function PredioMobile() {
               const room = hired.filter((b) => b.companyId === co.id && b.departmentId === d.id);
               return (
                 <div key={d.id} className="w-[140px] shrink-0 rounded-xl border border-line bg-ink-800 px-3 py-3">
-                  <div className="truncate text-[13px] text-white">{d.name.replace(" às lojas", "")}</div>
+                  <div className="truncate text-[13px] text-white">{d.name.replace(" aos restaurantes", "")}</div>
                   <div className="mt-2.5 flex gap-2">
                     {room.map((b) => (
                       <button key={b.id} onClick={() => openBot(b)} title={`${b.name} · ${b.role}`}>
