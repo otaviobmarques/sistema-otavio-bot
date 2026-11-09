@@ -1,0 +1,49 @@
+name: Publicar versão
+
+# Builds the Windows installer and publishes it as a release of the public
+# otaviobmarques/otavio-bot-releases repository, where the installed app's
+# updater looks (electron-builder.yml `publish`). That repository holds no code.
+# Needs the RELEASES_TOKEN secret: a fine-grained token with Contents read and
+# write on otavio-bot-releases only.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Número da nova versão, maior que a última publicada (ex.: 0.2.0)"
+        required: true
+        type: string
+      notes:
+        description: "O que mudou nesta versão"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    uses: ./.github/workflows/package-win.yml
+    with:
+      version: ${{ inputs.version }}
+
+  publish:
+    needs: package
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: windows-installer
+          path: release
+      - name: Publish to otavio-bot-releases
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+          VERSION: ${{ inputs.version }}
+          NOTES: ${{ inputs.notes }}
+        run: |
+          [ -n "$GH_TOKEN" ] || { echo "::error::RELEASES_TOKEN is not set"; exit 1; }
+          grep -qx "version: $VERSION" release/latest.yml || { echo "::error::latest.yml does not name version $VERSION"; exit 1; }
+          cp release/*-setup.exe release/OtavioBot-setup.exe
+          gh release create "v$VERSION" --repo otaviobmarques/otavio-bot-releases --target main \
+            --title "Otávio Bot $VERSION" --notes "${NOTES:-Versão $VERSION do Otávio Bot para Windows.}" \
+            release/*.exe release/*.exe.blockmap release/latest.yml
