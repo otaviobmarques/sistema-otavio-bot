@@ -113,9 +113,9 @@ it("stays off and silent until the owner connects, then links by QR code", async
   phone.scan();
   await expect.poll(async () => (await api("GET", "/api/whatsapp")).body, { timeout: 10_000 }).toMatchObject({ state: "connected", linkedNumber: "5511900001111" });
   const session = join(fixture.info.dataDir, "whatsapp", "session");
-  expect(statSync(session).mode & 0o777).toBe(0o700);
-  expect(statSync(join(session, "creds.json")).mode & 0o777).toBe(0o600);
-  expect(statSync(join(fixture.info.dataDir, "whatsapp", "settings.json")).mode & 0o777).toBe(0o600);
+  if (process.platform !== "win32") expect(statSync(session).mode & 0o777).toBe(0o700);
+  if (process.platform !== "win32") expect(statSync(join(session, "creds.json")).mode & 0o777).toBe(0o600);
+  if (process.platform !== "win32") expect(statSync(join(fixture.info.dataDir, "whatsapp", "settings.json")).mode & 0o777).toBe(0o600);
 }, 60_000);
 
 it("sends each card to the owner, answers the right one by reference, ignores anyone else and late replies", async () => {

@@ -58,8 +58,8 @@ describe("the WhatsApp link", () => {
     runs[0]!.events.open("5511900001111");
     expect(connection.status()).toMatchObject({ state: "connected", linkedNumber: "5511900001111" });
     expect(connection.status().qr).toBeUndefined();
-    expect(statSync(join(dataDir, "whatsapp")).mode & 0o777).toBe(0o700);
-    expect(statSync(join(dataDir, "whatsapp", "settings.json")).mode & 0o777).toBe(0o600);
+    if (process.platform !== "win32") expect(statSync(join(dataDir, "whatsapp")).mode & 0o777).toBe(0o700);
+    if (process.platform !== "win32") expect(statSync(join(dataDir, "whatsapp", "settings.json")).mode & 0o777).toBe(0o600);
     expect(JSON.parse(readFileSync(join(dataDir, "whatsapp", "settings.json"), "utf8"))).toMatchObject({ enabled: true });
   });
 
