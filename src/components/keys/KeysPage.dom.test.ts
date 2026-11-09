@@ -129,6 +129,20 @@ describe("the keys page", () => {
     expect(row("liveCalls")).not.toBeNull();
   });
 
+  it("with Cloud offers off, hides the paid Boat key row unless a Boat key is already saved", () => {
+    setCloudOffersForTest(false);
+    try {
+      page();
+      type(host.querySelector<HTMLInputElement>("[data-keys-search]")!, "Computers and browser");
+      expect(rowsShown()).toEqual(["vps", "onePassword"]);
+      setConfig({ ...fx.config, box: { configured: true, last4: "c3d4" } });
+      page();
+      expect(rowsShown()).toContain("box");
+    } finally {
+      setCloudOffersForTest(true);
+    }
+  });
+
   it("opens a section that holds a saved key, and counts what is connected", () => {
     setConfig({ ...fx.config, box: { configured: true, last4: "c3d4" } });
     page();

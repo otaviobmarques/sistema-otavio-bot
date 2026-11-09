@@ -4,6 +4,7 @@ import { useStore, type ConfigStatus } from "@/state/store";
 import { cn } from "@/lib/cn";
 import { scrollParent, scrollWithin } from "@/lib/scroll-within";
 import { t } from "@/lib/i18n";
+import { cloudOffersEnabled } from "@/lib/cloud-offers";
 import { BoatOfferPanel } from "../BoatOffer";
 import { LiveProviderSettings } from "../LiveProviderSettings";
 import { VoiceEveryReplySetting } from "../VoiceEveryReplySetting";
@@ -149,7 +150,9 @@ export function KeysPage() {
 
   // With Azure chosen, Live calls do not use the OpenAI key that row points at.
   const azureLive = state.config?.live?.provider === "azure";
-  const rows = KEY_CATALOG.filter((entry) => keyMatches(entry, q) && !(azureLive && entry.id === "liveCalls"));
+  // With Cloud offers off, the paid Boat key row stays out of sight unless a key is already saved.
+  const hideBoat = !cloudOffersEnabled() && !connected(KEY_CATALOG.find((entry) => entry.id === "box")!, state.config);
+  const rows = KEY_CATALOG.filter((entry) => keyMatches(entry, q) && !(azureLive && entry.id === "liveCalls") && !(hideBoat && entry.id === "box"));
   const sections = KEY_SECTIONS.flatMap((section) => {
     const own = rows.filter((entry) => entry.section === section.id);
     return own.length > 0 ? [{ id: section.id, rows: own }] : [];
