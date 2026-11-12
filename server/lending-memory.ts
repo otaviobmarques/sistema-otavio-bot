@@ -1,7 +1,7 @@
 // Known open risks: a foreign write racing trustedWrite in the same moment cannot be told apart, and a
 // guest-driven shell can still write after the pending window or edit this record (Full access owns the machine).
 import { createHash } from "node:crypto";
-import { existsSync, lstatSync, opendirSync, readFileSync, readlinkSync, realpathSync } from "node:fs";
+import { existsSync, lstatSync, opendirSync, readFileSync, readlinkSync, realpathSync, type BigIntStats } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { z } from "zod";
 import { writeFileAtomic } from "./atomic.ts";
@@ -18,9 +18,19 @@ export const ANCESTOR_FILES = ["CLAUDE.md", "CLAUDE.local.md", "AGENTS.md", "AGE
 export const FOLDER_ENTRY_CAP = 200;
 const ROOT_ENTRY_CAP = 5_000;
 
+/** A change this soon after an entry's last one can carry the same timestamp (NTFS stamps about every 16 ms, FAT every
+ * 2 s, Linux every jiffy), so what was read in that window is not cached: a later change might not move the key. */
+const SETTLING_NS = 2_000_000_000n;
+const nowNs = () => BigInt(Date.now()) * 1_000_000n;
+function settled(stat: BigIntStats, readAt: bigint): boolean {
+  const latest = stat.ctimeNs > stat.mtimeNs ? stat.ctimeNs : stat.mtimeNs;
+  return readAt - latest >= SETTLING_NS;
+}
+
 /** Cached by identity, size and ctime, which no process can set back. */
 const contentCache = new Map<string, { key: string; hash: string }>();
 function describe(file: string): string | undefined {
+  const readAt = nowNs();
   let stat;
   try { stat = lstatSync(file, { bigint: true, throwIfNoEntry: false }); } catch { return undefined; }
   if (!stat) return undefined;
@@ -33,6 +43,7 @@ function describe(file: string): string | undefined {
   if (cached?.key === key) return cached.hash;
   let hash: string;
   try { hash = `file:${createHash("sha256").update(readFileSync(file)).digest("hex")}`; } catch { hash = "file:unreadable"; }
+  if (!settled(stat, readAt)) return hash;
   if (contentCache.size > 50_000) contentCache.clear();
   contentCache.set(file, { key, hash });
   return hash;
@@ -42,6 +53,7 @@ function describe(file: string): string | undefined {
 type Listing = { key: string; names: ReadonlySet<string>; overflow: boolean; link?: true };
 const listingCache = new Map<string, Listing>();
 function listing(dir: string, cap: number, through = false): Listing | undefined {
+  const readAt = nowNs();
   let stat;
   try { stat = lstatSync(dir, { bigint: true, throwIfNoEntry: false }); } catch { return undefined; }
   if (through && stat?.isSymbolicLink()) {
@@ -71,6 +83,7 @@ function listing(dir: string, cap: number, through = false): Listing | undefined
     return { key: `${key}:unreadable`, names: new Set(), overflow: true };
   }
   const listed = { key, names, overflow };
+  if (!settled(stat, readAt)) return listed;
   if (listingCache.size > 50_000) listingCache.clear();
   listingCache.set(cacheKey, listed);
   return listed;

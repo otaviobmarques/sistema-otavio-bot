@@ -124,6 +124,7 @@ describe("the relay client", () => {
     await waitFor(() => instance.node === "relay1.openmausbot.com", 5_000);
     await waitFor(() => first.admitted(hid).size === 2);
     await waitFor(() => !second.hosts.has(hid));
+    expect(second.closes).toEqual([]);
   });
 
   it("redials at once when the wall clock jumps past the monotonic one (sleep)", async () => {

@@ -215,7 +215,8 @@ describe.each([
     const processId = await start();
     holdStatusAfterFirst = true;
     const controller = new AbortController();
-    const pending = background.backgroundStatus(cfg, BOX, { process_id: processId, wait_seconds: 1 }, controller.signal);
+    const unhurried = { now: Date.now, sleep: async () => {}, timeout: () => new AbortController().signal };
+    const pending = background.backgroundStatus(cfg, BOX, { process_id: processId, wait_seconds: 30 }, controller.signal, unhurried);
     await expect.poll(() => calls.filter(entry => entry.method === "GET").length).toBe(2);
     controller.abort();
     await expect(pending).rejects.toMatchObject({ name: "AbortError" });
