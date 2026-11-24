@@ -1,6 +1,9 @@
 import { spawnSync } from "node:child_process";
-import { readFileSync, statSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { afterEach, describe, expect, it } from "vitest";
 import { parse } from "yaml";
 
 // The owner's VPS (docs/otavio-bot/VPS-24H.md): the fork's image, its compose
@@ -10,7 +13,10 @@ import { parse } from "yaml";
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8").replace(/\r\n/g, "\n");
 const yaml = (path: string) => parse(read(path), { logLevel: "silent" });
 const IMAGE = "ghcr.io/otaviobmarques/sistema-otavio-bot";
-const SCRIPTS = ["deploy/ligar-desktops.sh", "deploy/backup.sh", "deploy/restaurar-backup.sh", "deploy/instalar-backup-diario.sh"];
+const SCRIPTS = [
+  "deploy/ligar-desktops.sh", "deploy/backup.sh", "deploy/restaurar-backup.sh", "deploy/instalar-backup-diario.sh",
+  "deploy/atualizar.sh", "deploy/instalar-atualizador.sh",
+];
 
 interface Step { op: string; args: string }
 function stageSteps(dockerfile: string, name: string): Step[] {
@@ -56,6 +62,8 @@ describe("the Otávio Bot VPS deployment", () => {
     expect(omb.image).toBe(`${IMAGE}:\${OTAVIO_BOT_VERSION:-latest}`);
     expect(omb.restart).toBe("always");
     expect(caddy.restart).toBe("always");
+    // the server's own shutdown takes up to ~7 s; Docker's default 10 s before SIGKILL is too close
+    expect(omb.stop_grace_period).toBe("30s");
     expect(omb.mem_limit).toBe("${OTAVIO_MEM_LIMIT:-3g}");
     expect(caddy.mem_limit).toBeTruthy();
     expect(omb.extra_hosts).toEqual(["host.docker.internal:host-gateway"]);
@@ -139,6 +147,29 @@ describe("the Otávio Bot VPS deployment", () => {
     expect(timer).toContain("Persistent=true");
   });
 
+  it("updates by itself only after a backup, one run at a time, and goes back when the new image is not healthy", () => {
+    const update = read("deploy/atualizar.sh");
+    expect(update).toMatch(/^exec 9>"\$STATE_DIR\/atualizar\.lock"\nflock -n 9 /m);
+    expect(update).toMatch(/^ {2}latest \| main\) ;;$/m);
+    expect(update.indexOf("exit 0 ;;")).toBeLessThan(update.indexOf("docker compose pull"));
+    const backup = update.indexOf("if ! ./backup.sh; then");
+    expect(backup).toBeGreaterThan(update.indexOf("docker compose pull"));
+    expect(backup).toBeLessThan(update.indexOf('docker tag "$old_id" "$previous_tag"'));
+    expect(update.indexOf('docker tag "$old_id" "$previous_tag"')).toBeLessThan(update.indexOf("\ndocker compose up -d ||"));
+    expect(update).toContain('previous_tag="${image%:*}:anterior"');
+    expect(update).toContain('TIMEOUT="${ATUALIZAR_TIMEOUT:-300}"');
+    expect(update).toMatch(/não ficou saudável[\s\S]*docker tag "\$old_id" "\$image"\ndocker compose up -d/);
+
+    const installer = read("deploy/instalar-atualizador.sh");
+    expect(installer).toContain("ExecStart=$here/atualizar.sh");
+    expect(installer).toContain("OnCalendar=*:0/30");
+    expect(installer).toContain("Persistent=true");
+    expect(installer).toMatch(/^RandomizedDelaySec=\d+m$/m);
+    expect(installer).toContain("systemctl enable --now otavio-bot-atualizar.timer");
+    expect(installer).toContain("systemctl disable --now otavio-bot-atualizar.timer");
+    expect(installer).toContain("journalctl -u otavio-bot-atualizar.service");
+  });
+
   it("smokes the image this fork builds, with no enterprise layer, and both stacks", () => {
     const workflow = yaml(".github/workflows/docker.yml");
     const steps = workflow.jobs["build-and-smoke"].steps as { name?: string; run?: string }[];
@@ -207,5 +238,144 @@ describe("the Otávio Bot VPS deployment", () => {
       expect(pt[key], key).toBeTruthy();
       expect(guide.replace(/\s+/g, " "), key).toContain(pt[key].replace(/…$/, ""));
     }
+  });
+});
+
+// Images are files holding an ID: "remote_" is what `pull` fetches, "tag_" the local tag, "run_" what a service runs.
+const FAKE_DOCKER = String.raw`#!/usr/bin/env bash
+S="$FAKE_DOCKER_STATE"
+echo "$*" >> "$S/calls"
+key() { printf '%s' "$1" | tr '/:' '__'; }
+resolve() { case "$1" in sha256:*) echo "$1" ;; *) cat "$S/tag_$(key "$1")" 2>/dev/null ;; esac; }
+OMB=ghcr.io/otaviobmarques/sistema-otavio-bot:latest
+CADDY=caddy:2.10.2
+last="${"$"}{*: -1}"
+if [ "$1" = compose ]; then
+  case "$2" in
+    config) if [ "$last" = caddy ]; then echo "$CADDY"; else echo "$OMB"; fi ;;
+    ps) [ -f "$S/run_$last" ] && echo "cid_$last" ;;
+    pull) [ -f "$S/pull_fails" ] && exit 1
+      for ref in "$OMB" "$CADDY"; do [ -f "$S/remote_$(key "$ref")" ] && cp "$S/remote_$(key "$ref")" "$S/tag_$(key "$ref")"; done ;;
+    up) resolve "$OMB" > "$S/run_omb"; resolve "$CADDY" > "$S/run_caddy" ;;
+    exec) id="$(cat "$S/run_omb")"; echo "ver-${"$"}{id#sha256:}" ;;
+  esac
+  exit 0
+fi
+case "$1" in
+  image) [ "$2" = inspect ] || exit 0
+    id="$(resolve "$last")"; [ -n "$id" ] || exit 1
+    case "$4" in *.Id*) echo "$id" ;; *revision*) echo "rev${"$"}{id#sha256:}" ;; *) echo latest ;; esac ;;
+  inspect) id="$(cat "$S/run_${"$"}{last#cid_}")"
+    case "$3" in *Health*) echo "$id $(cat "$S/health_${"$"}{id#sha256:}" 2>/dev/null || echo healthy)" ;; *) echo "$id" ;; esac ;;
+  tag) resolve "$2" > "$S/tag_$(key "$3")" ;;
+esac
+`;
+const OMB_LATEST = "ghcr.io_otaviobmarques_sistema-otavio-bot_latest";
+const hasFlock = process.platform !== "win32" && spawnSync("flock", ["--version"]).status === 0;
+
+describe.skipIf(!hasFlock)("atualizar.sh, with a fake docker", () => {
+  const dirs: string[] = [];
+  afterEach(() => { for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true }); });
+
+  function setup({ remote = "sha256:old", version = "latest", running = true, backupFails = false, health = "healthy" } = {}) {
+    const root = mkdtempSync(join(tmpdir(), "omb-atualizar-"));
+    dirs.push(root);
+    const state = join(root, "docker"), bin = join(root, "bin"), deploy = join(root, "deploy"), lib = join(root, "lib");
+    for (const dir of [state, bin, deploy, lib]) mkdirSync(dir);
+    writeFileSync(join(bin, "docker"), FAKE_DOCKER, { mode: 0o755 });
+    copyFileSync(fileURLToPath(new URL("../deploy/atualizar.sh", import.meta.url)), join(deploy, "atualizar.sh"));
+    writeFileSync(join(deploy, "backup.sh"), `#!/usr/bin/env bash\necho backup >> "$FAKE_DOCKER_STATE/calls"\nexit ${backupFails ? 1 : 0}\n`, { mode: 0o755 });
+    writeFileSync(join(deploy, ".env"), `DOMAIN=bots.example.com\nOTAVIO_BOT_VERSION=${version}\n`);
+    writeFileSync(join(state, `tag_${OMB_LATEST}`), "sha256:old\n");
+    writeFileSync(join(state, "tag_caddy_2.10.2"), "sha256:caddy\n");
+    writeFileSync(join(state, `remote_${OMB_LATEST}`), `${remote}\n`);
+    writeFileSync(join(state, "health_new"), `${health}\n`);
+    if (running) {
+      writeFileSync(join(state, "run_omb"), "sha256:old\n");
+      writeFileSync(join(state, "run_caddy"), "sha256:caddy\n");
+    }
+    const env: NodeJS.ProcessEnv = {
+      ...process.env, PATH: `${bin}:${process.env.PATH}`, FAKE_DOCKER_STATE: state,
+      ATUALIZAR_STATE_DIR: lib, ATUALIZAR_TIMEOUT: "2", ATUALIZAR_INTERVALO: "0",
+    };
+    delete env.OTAVIO_BOT_VERSION;
+    const file = (name: string) => existsSync(join(state, name)) ? readFileSync(join(state, name), "utf8").trim() : "";
+    const run = (wrap: string[] = []) => {
+      const [command, ...args] = [...wrap, "bash", join(deploy, "atualizar.sh")];
+      const result = spawnSync(command!, args, { env, encoding: "utf8" });
+      return { ...result, calls: file("calls").split("\n").filter(Boolean) };
+    };
+    return { run, file, lib };
+  }
+
+  it("does nothing, quietly, when the pull brings nothing new", () => {
+    const { run, file } = setup();
+    const result = run();
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toBe("");
+    expect(result.calls).toContain("compose pull --quiet omb caddy");
+    expect(result.calls).not.toContain("backup");
+    expect(result.calls.some(call => call.startsWith("compose up"))).toBe(false);
+    expect(file("run_omb")).toBe("sha256:old");
+  });
+
+  it("backs up, keeps the old image as :anterior and runs the new one when it comes up healthy", () => {
+    const { run, file } = setup({ remote: "sha256:new" });
+    const result = run();
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.calls.indexOf("backup")).toBeGreaterThan(result.calls.indexOf("compose pull --quiet omb caddy"));
+    expect(result.calls.indexOf("backup")).toBeLessThan(result.calls.indexOf("compose up -d"));
+    expect(file("run_omb")).toBe("sha256:new");
+    expect(file("tag_ghcr.io_otaviobmarques_sistema-otavio-bot_anterior")).toBe("sha256:old");
+    expect(result.stdout).toContain("atualizado: ver-old (rev. revold) → ver-new (rev. revnew)");
+  });
+
+  it("goes back to the previous image when the new one is unhealthy, and does not try that one again", () => {
+    const { run, file, lib } = setup({ remote: "sha256:new", health: "unhealthy" });
+    const result = run();
+    expect(result.status).toBe(1);
+    expect(result.calls.filter(call => call === "compose up -d")).toHaveLength(2);
+    expect(file("run_omb")).toBe("sha256:old");
+    expect(file(`tag_${OMB_LATEST}`)).toBe("sha256:old");
+    expect(result.stderr).toContain("não ficou saudável");
+    expect(result.stderr).toContain("o servidor voltou para ver-old");
+    expect(readFileSync(join(lib, "versao-recusada"), "utf8").trim()).toBe("sha256:new");
+
+    const again = run();
+    expect(again.status, again.stderr).toBe(0);
+    expect(again.stdout).toContain("já falhou aqui");
+    expect(again.calls.filter(call => call === "compose up -d")).toHaveLength(2);
+    expect(again.calls.filter(call => call === "backup")).toHaveLength(1);
+    expect(file(`tag_${OMB_LATEST}`)).toBe("sha256:old");
+  });
+
+  it("does not update when the backup fails", () => {
+    const { run, file } = setup({ remote: "sha256:new", backupFails: true });
+    const result = run();
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("o backup falhou: não atualizei");
+    expect(result.calls.some(call => call.startsWith("compose up"))).toBe(false);
+    expect(file("run_omb")).toBe("sha256:old");
+    expect(file(`tag_${OMB_LATEST}`)).toBe("sha256:old");
+  });
+
+  it("leaves a version fixed in .env alone, and a stopped stack stopped", () => {
+    const pinned = setup({ remote: "sha256:new", version: "0.2.0" }).run();
+    expect(pinned.status, pinned.stderr).toBe(0);
+    expect(pinned.stdout).toContain("versão fixada no .env (OTAVIO_BOT_VERSION=0.2.0)");
+    expect(pinned.calls).toEqual([]);
+
+    const stopped = setup({ remote: "sha256:new", running: false }).run();
+    expect(stopped.status, stopped.stderr).toBe(0);
+    expect(stopped.stdout).toContain("não está rodando");
+    expect(stopped.calls.some(call => call.startsWith("compose pull"))).toBe(false);
+  });
+
+  it("runs once at a time", () => {
+    const { run, lib } = setup({ remote: "sha256:new" });
+    const result = run(["flock", join(lib, "atualizar.lock")]);
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toContain("outra atualização já está rodando");
+    expect(result.calls).toEqual([]);
   });
 });
