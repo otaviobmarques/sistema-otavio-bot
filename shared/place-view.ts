@@ -4,6 +4,8 @@
 // English mirrors src/locales/en.json `place.*` exactly (a test holds them
 // together): the server has no i18n.
 
+import { formatServerText } from "./server-text.ts";
+
 export type Place = "cloud" | "vm" | "local" | "browser";
 
 /** Every state a place can be in. cc-* is the cloud computer. */
@@ -146,7 +148,7 @@ export const PLACE_EN = {
   "place.view.ccUnavailable.short": "Not available now",
   "place.view.ccUnavailable.line": "Cloud desktops can't start right now. It isn't anything you did.",
   "place.view.ccEnded.short": "Plan ended",
-  "place.view.ccEnded.line": "Your MausBot Cloud plan has ended, so cloud desktops are off.",
+  "place.view.ccEnded.line": "Your {app} Cloud plan has ended, so cloud desktops are off.",
   "place.view.ccNoStart.short": "Didn't start",
   "place.view.ccNoStart.line": "{bot}'s cloud desktop didn't start.",
   "place.view.ccClearing.short": "Clearing up",
@@ -227,11 +229,7 @@ export const PLACE_WORDS: Record<PlaceActionId, string> = {
  * server the English mirror. */
 export type PlaceTranslate = (key: PlaceKey, params?: Record<string, string | number>) => string;
 
-function fill(template: string, params: Record<string, string | number> = {}): string {
-  return template.replace(/\{(\w+)\}/g, (whole, name: string) => (Object.hasOwn(params, name) ? String(params[name]) : whole));
-}
-
-export const english: PlaceTranslate = (key, params) => fill(PLACE_EN[key], params);
+export const english: PlaceTranslate = (key, params) => formatServerText(PLACE_EN[key], params);
 
 /** Each state's key segment, short and line keys, and own action. */
 const STATE: Record<PlaceState, { key: string; action: PlaceActionId | null }> = {
@@ -449,7 +447,7 @@ export function placeRowText(row: PlaceRow, server?: ServerKind): string {
   if (!view.action) return view.line;
   const words = row.source === "auto-pin" && view.action.id === "try-again"
     ? "Send your message again."
-    : fill(PLACE_WORDS[view.action.id], templateParams(row.params, "en"));
+    : formatServerText(PLACE_WORDS[view.action.id], templateParams(row.params, "en"));
   return `${view.line} ${words}`;
 }
 

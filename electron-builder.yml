@@ -133,12 +133,12 @@ mac:
     - from: dist-native/duckdb/darwin-${arch}/node_modules
       to: duckdb/node_modules
   extendInfo:
-    CFBundleDisplayName: Otávio Bot
-    NSMicrophoneUsageDescription: Otávio Bot uses the microphone for voice dictation into the composer.
-    NSSpeechRecognitionUsageDescription: Otávio Bot transcribes your voice on-device to type messages for you.
-    NSAccessibilityUsageDescription: Otávio Bot uses Accessibility when you let a bot control this Mac.
-    NSScreenCaptureUsageDescription: Otávio Bot uses Screen Recording so bots can see this Mac before acting.
-    NSDownloadsFolderUsageDescription: Otávio Bot looks in Downloads for the file your bot saved when you move it here.
+    CFBundleDisplayName: ArkoBot
+    NSMicrophoneUsageDescription: ArkoBot uses the microphone for voice dictation into the composer.
+    NSSpeechRecognitionUsageDescription: ArkoBot transcribes your voice on-device to type messages for you.
+    NSAccessibilityUsageDescription: ArkoBot uses Accessibility when you let a bot control this Mac.
+    NSScreenCaptureUsageDescription: ArkoBot uses Screen Recording so bots can see this Mac before acting.
+    NSDownloadsFolderUsageDescription: ArkoBot looks in Downloads for the file your bot saved when you move it here.
   # Notarization runs manually after the build (notarytool + staple),
   # mirroring the BlueyLite ship_release.sh flow.
   notarize: false
@@ -195,8 +195,8 @@ win:
 nsis:
   oneClick: true
   perMachine: false
-  shortcutName: Otávio Bot
-  uninstallDisplayName: Otávio Bot
+  shortcutName: ArkoBot
+  uninstallDisplayName: ArkoBot
   # Versioned, like the .dmg. The README's /latest/download/ button needs a
   # STABLE filename, so ship a second copy named OpenMausBot-setup.exe on the
   # release — the same trick as OpenMausBot.dmg beside OpenMausBot-${version}.dmg.
@@ -233,7 +233,7 @@ linux:
       to: openmausbot-browser.apparmor
   desktop:
     entry:
-      Name: OpenMausBot
+      Name: ArkoBot
       Comment: Your own team of AI bots, in a chat app
       Keywords: AI;Agents;Chat;Productivity;
 

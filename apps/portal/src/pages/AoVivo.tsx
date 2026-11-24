@@ -176,7 +176,7 @@ export function AoVivoPage() {
     <div className="flex min-h-screen flex-col bg-ink-900 lg:h-screen">
       <header className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-line px-4 py-3 sm:px-5">
         <Logo compact />
-        <span className="font-display text-[17px] font-semibold text-white">Prédio Otávio</span>
+        <span className="font-display text-[17px] font-semibold text-white">Prédio ArkoBot</span>
         <span className="hidden text-[13px] text-muted sm:inline">· ao vivo</span>
         <span className="chip hidden md:inline-flex">
           <Dot color="#22c55e" size={7} /> {counts.working} trabalhando · {counts.waiting} esperando você · {counts.blocked} bloqueado

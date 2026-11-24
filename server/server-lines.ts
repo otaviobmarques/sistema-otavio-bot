@@ -5,6 +5,7 @@
 // comes from here. A guard beside the packs (server-lines.test.ts) fails on an English line written straight into one.
 import en from "../src/locales/en.json" with { type: "json" };
 import { byLanguage } from "./language.ts";
+import { PRODUCT_NAME } from "../shared/product-name.ts";
 
 export type ServerLineKey = Extract<keyof typeof en, `server.${string}`>;
 type Pack = Partial<Record<string, string>>;
@@ -17,11 +18,13 @@ export function addServerLinePacks(more: Readonly<Record<string, Pack>>): void {
   Object.assign(packs, more, { en: ENGLISH });
 }
 
-/** The line in `language` (a language tag; undefined reads as English), with each `{name}` filled from `params`. A key
- * the language has no words for yet reads in English, as the app's own screens do. */
+/** The line in `language` (a language tag; undefined reads as English), with each `{name}` filled from `params` and
+ * `{app}` the product's name unless `params` names it. A key the language has no words for yet reads in English, as the
+ * app's own screens do. */
 export function serverLine(language: string | undefined, key: ServerLineKey, params?: Readonly<Record<string, string | number>>): string {
   const template = byLanguage(packs, language)[key] ?? ENGLISH[key] ?? key;
-  return params ? template.replace(/\{(\w+)\}/g, (match, name: string) => (Object.hasOwn(params, name) ? String(params[name]) : match)) : template;
+  return template.replace(/\{(\w+)\}/g, (match, name: string) =>
+    params && Object.hasOwn(params, name) ? String(params[name]) : name === "app" ? PRODUCT_NAME : match);
 }
 
 const escaped = (text: string) => text.replace(/[.*+?^$()|[\]{}\\]/g, "\\$&");

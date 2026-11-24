@@ -2,6 +2,8 @@
 // level, "Just do it" included: before a bot first touches it in a turn, the person is asked once, in these words. The
 // English mirrors src/locales/en.json `approval.yourComputer.*` exactly (a test holds them together): the server has no i18n.
 
+import { PRODUCT_NAME, UPSTREAM_NAME } from "./product-name.ts";
+
 /** What a bot's first call on the person's computer names, cleaned for a sentence they read. */
 export interface YourComputerCall {
   /** The app's everyday name: "Chrome", "Safari", "Keynote". */
@@ -25,7 +27,12 @@ export type YourComputerKey = keyof typeof YOUR_COMPUTER_WORDS;
 export const YOUR_COMPUTER_TOOL = "use_your_computer";
 
 /** A failed turn's line starts with this when the desktop app's own driver is not ready; the app adds the permission fix. */
-export const THIS_COMPUTER_NOT_READY = "OpenMausBot can't use this computer yet — ";
+export const THIS_COMPUTER_NOT_READY = `${PRODUCT_NAME} can't use this computer yet — `;
+const EARLIER_NOT_READY = `${UPSTREAM_NAME} can't use this computer yet — `;
+
+/** Lines written before the product had its own name start with the upstream project's. */
+export const saysThisComputerNotReady = (line: string): boolean =>
+  line.startsWith(THIS_COMPUTER_NOT_READY) || line.startsWith(EARLIER_NOT_READY);
 
 const BROWSERS: Record<string, string> = {
   chrome: "Chrome", "google chrome": "Chrome", chromium: "Chromium", safari: "Safari", firefox: "Firefox",

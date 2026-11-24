@@ -1,4 +1,4 @@
-# Otávio Bot behind a Traefik that already holds ports 80/443 and discovers
+# ArkoBot behind a Traefik that already holds ports 80/443 and discovers
 # sites from Docker labels (providers.docker, exposedbydefault=false), as on the
 # owner's VPS. On top of docker-compose.yml and docker-compose.atras-de-proxy.yml:
 #

@@ -1,6 +1,7 @@
 // What this desktop keeps whatever page its window shows, whichever port its own page is served on: the notices someone
 // closed, its usage-analytics switch, the app's language, its answer to the product-updates email question, whether
-// the person hid the window's rail of places and whether they turned the window's frame off.
+// the person hid the window's rail of places, whether they turned the window's frame off and whether the app opens with
+// its opening video.
 import { randomBytes } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -9,6 +10,7 @@ import { onboardingHints } from "./onboarding-record.mjs";
 import { DEFAULT_TALK_KEY, isTalkKey } from "./talk-keys.mjs";
 import { createUpdatesConsent, parseUpdatesConsent, registerUpdatesConsent } from "./updates-consent.mjs";
 import { accountFullName } from "./system-name.mjs";
+import { createOpening } from "./opening.mjs";
 
 export { DESKTOP_PORTS } from "./desktop-ports.mjs";
 /** The only notices a page may record, so no page can write anything else into the file. */
@@ -56,6 +58,8 @@ function parse(raw) {
     ...(isTalkKey(record.talkKey) ? { talkKey: record.talkKey } : {}),
     ...(typeof record.railHidden === "boolean" ? { railHidden: record.railHidden } : {}),
     ...(typeof record.windowFrame === "boolean" ? { windowFrame: record.windowFrame } : {}),
+    ...(typeof record.opening === "boolean" ? { opening: record.opening } : {}),
+    ...(typeof record.openingSound === "boolean" ? { openingSound: record.openingSound } : {}),
     ...(Object.keys(quickAsks).length ? { quickAsks } : {}) };
 }
 
@@ -141,6 +145,18 @@ export function createDesktopPrefs({ read, write }) {
       const windowFrame = on !== false;
       if ((current().windowFrame !== false) !== windowFrame) save({ ...current(), windowFrame });
     },
+    /** The app opens with its opening video until the person turns it off. */
+    opening: () => current().opening !== false,
+    setOpening(on) {
+      const opening = on !== false;
+      if ((current().opening !== false) !== opening) save({ ...current(), opening });
+    },
+    /** The opening plays with its sound until the person turns the sound off. */
+    openingSound: () => current().openingSound !== false,
+    setOpeningSound(on) {
+      const openingSound = on !== false;
+      if ((current().openingSound !== false) !== openingSound) save({ ...current(), openingSound });
+    },
   };
 }
 
@@ -154,7 +170,7 @@ export function createDesktopPrefs({ read, write }) {
  * `onLanguage(language)`: tells main, which draws its menus, tray and dialogs in it. `onShown(language, sender)`: the
  * language a page of the window shows, which main's words follow while nothing is picked. `prefs`: the record main reads too.
  */
-export function registerDesktopPrefs({ prefs: given, ipcMain, read, write, page, cloudOffered, cloudAccount, localConfig = () => null, languageChanged = () => {}, onLanguage = () => {}, onShown = () => {}, frame = null, now = Date.now, systemName = accountFullName }) {
+export function registerDesktopPrefs({ prefs: given, ipcMain, read, write, page, cloudOffered, cloudAccount, localConfig = () => null, languageChanged = () => {}, onLanguage = () => {}, onShown = () => {}, frame = null, openingAllowed = () => false, now = Date.now, systemName = accountFullName }) {
   let prefs = given ?? null;
   const store = () => prefs ??= createDesktopPrefs({ read, write });
   const from = (channel, pages, handler) => (event, ...args) => {
@@ -208,6 +224,16 @@ export function registerDesktopPrefs({ prefs: given, ipcMain, read, write, page,
     store().setWindowFrame(on === true);
     try { frame?.changed(); } catch {}
     return frameState();
+  }));
+  // Every page of the window may ask; only the first in this launch is told to play.
+  const openingChoice = () => ({ on: store().opening(), sound: store().openingSound() });
+  const opening = createOpening({ choice: openingChoice, allowed: openingAllowed });
+  ipcMain.handle("opening:claim", from("opening:claim", ANY, () => opening.claim()));
+  ipcMain.handle("opening:state", from("opening:state", ANY, openingChoice));
+  ipcMain.handle("opening:set", from("opening:set", ANY, (_, choice) => {
+    if (typeof choice?.on === "boolean") store().setOpening(choice.on);
+    if (typeof choice?.sound === "boolean") store().setOpeningSound(choice.sound);
+    return openingChoice();
   }));
   if (!cloudAccount) return null;
   const consent = createUpdatesConsent({ prefs: { installId: () => store().installId(), updatesConsent: () => store().updatesConsent(), setUpdatesConsent: value => store().setUpdatesConsent(value) },

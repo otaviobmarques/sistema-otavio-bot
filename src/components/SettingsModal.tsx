@@ -36,6 +36,7 @@ import { ConnectedWorkspacesSettings } from "./ConnectedWorkspacesSettings";
 import { PlaceLookCard } from "./PlaceLookCard";
 import { ChromeRailRow } from "./ChromeRailToggle";
 import { WindowFrameRow } from "./WindowFrameRow";
+import { OpeningRows } from "./OpeningRows";
 import { OrganizationSettings } from "./OrganizationSettings";
 import { CloudAccountSettings } from "./CloudAccountSettings";
 import { ProSettingsCard } from "./ProIntroduction";
@@ -403,6 +404,7 @@ export function SettingsModal() {
             <SidebarToolsLayoutRow />
             <ChromeRailRow />
             <WindowFrameRow />
+            <OpeningRows />
             <ShowThreadsRow />
             <PinnedCirclesRow />
             <UniversalPinsRow />

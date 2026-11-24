@@ -62,7 +62,7 @@ function InstallSkill() {
     <section className="card px-5 py-5">
       <h2 className="text-[16px] font-semibold text-white">Instalar skill do GitHub</h2>
       <p className="mt-0.5 text-[12.5px] leading-snug text-muted">
-        Cole a URL de um repositório ou pasta. O Otávio Bot lê o <code className="font-mono">SKILL.md</code>, mostra o que a skill faz e quais permissões pede, e você escolhe quem recebe.
+        Cole a URL de um repositório ou pasta. O ArkoBot lê o <code className="font-mono">SKILL.md</code>, mostra o que a skill faz e quais permissões pede, e você escolhe quem recebe.
       </p>
       <form
         className="mt-3 flex gap-2"

@@ -10,7 +10,7 @@ here="$(pwd)"
 
 cat > /etc/systemd/system/otavio-bot-backup.service <<EOF
 [Unit]
-Description=Backup diário do Otávio Bot
+Description=Backup diário do ArkoBot
 Requires=docker.service
 After=docker.service
 
@@ -22,7 +22,7 @@ EOF
 
 cat > /etc/systemd/system/otavio-bot-backup.timer <<'EOF'
 [Unit]
-Description=Backup diário do Otávio Bot
+Description=Backup diário do ArkoBot
 
 [Timer]
 OnCalendar=*-*-* 04:15:00

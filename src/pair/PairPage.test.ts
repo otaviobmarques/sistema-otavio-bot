@@ -30,7 +30,7 @@ it("opening My Cloud from the app needs no click and no code to type", async () 
   vi.stubGlobal("window", { ogb: { workspaces: {} } });
   f.pair.mockResolvedValue({ ok: true });
   const html = render(code);
-  expect(html).toContain("Connecting to this MausBot…");
+  expect(html).toContain("Connecting to this ArkoBot…");
   expect(html).not.toContain("Pairing code"); expect(html).not.toContain("<form");
   f.effects[0](); await flush();
   expect(f.pair).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ code }));
@@ -53,8 +53,8 @@ it("a browser keeps the code in the form for the person to confirm", () => {
 
 it("My Cloud says where its connection starts, never 'the code shown on the server'", () => {
   const cloud = pairIntro({ mode: "code", sent: false, email: "", cloudHome: true });
-  expect(cloud).toContain(`choose ${en["cloudHome.connect"]} in the MausBot app`);
-  expect(cloud).toContain(`Settings → ${en["settings.section.cloudAccount"]}`);
+  expect(cloud).toContain(`choose ${en["cloudHome.connect"]} in the ArkoBot app`);
+  expect(cloud).toContain(`Settings → ${en["settings.section.cloudAccount"].replaceAll("{app}", "ArkoBot")}`);
   expect(cloud).toContain("on your Plan page");
   expect(cloud).not.toContain("from the server");
   expect(pairIntro({ mode: "code", sent: false, email: "", cloudHome: false })).toContain("from the server");
@@ -66,12 +66,12 @@ it("a team's Cloud is called by the team's name, a person's own Cloud My Cloud",
   expect(pairTitle(descriptor({ cloudHome: true, cloudTeam: true }), "code")).toBe("Acme Labs");
   expect(pairTitle(descriptor({ cloudHome: true }), "code")).toBe("My Cloud");
   expect(pairTitle(descriptor({}), "email")).toBe("Sign in to Acme Labs");
-  expect(pairTitle(null, "code")).toBe("Connect to this MausBot");
+  expect(pairTitle(null, "code")).toBe("Connect to this ArkoBot");
 });
 
 it("names a wrong kind of code instead of letting it be sent as a wrong one", () => {
   expect(codeProblem("1234 5678")).toBe(en["serverError.pair.emailCode"]);
-  expect(codeProblem("123456")).toBe(en["serverError.pair.oldCode"]);
+  expect(codeProblem("123456")).toBe(en["serverError.pair.oldCode"].replaceAll("{app}", "ArkoBot"));
   expect(codeProblem(`omb_sess_${"a".repeat(43)}`)).toBe(en["serverError.pair.scriptKey"]);
   expect(codeProblem("7KQ2-M9XD")).toBeNull();
   expect(codeReady("7kq2 m9xd h4tp")).toBe(true);

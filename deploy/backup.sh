@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Daily backup of the Otávio Bot data volume (bots, conversations, routines,
+# Daily backup of the ArkoBot data volume (bots, conversations, routines,
 # paired devices, engine logins). Run as root from the deploy folder, by hand
 # or from the timer instalar-backup-diario.sh installs.
 #

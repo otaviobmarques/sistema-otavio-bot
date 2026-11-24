@@ -1,4 +1,5 @@
 import nativeText from "./native-text.cjs";
+import productName from "./product-name.cjs";
 import { fileURLToPath } from "node:url";
 
 export const TALK_PANEL = Object.freeze({ width: 400, margin: 24, minHeight: 56, maxHeight: 240, fadeMs: 180 });
@@ -9,10 +10,10 @@ const LIGHT = "color-scheme:light;--panel:#f7f7f7f5;--border:#0000001a;--ink:#0d
 
 export const TALK_LABELS = Object.freeze({
   listening: "Listening…",
-  sending: "Sending to MausBot…",
-  thinking: "MausBot is thinking…",
-  reply: "MausBot",
-  "needs-you": "MausBot needs you · Open chat",
+  sending: `Sending to ${productName.PRODUCT_NAME}…`,
+  thinking: `${productName.PRODUCT_NAME} is thinking…`,
+  reply: productName.PRODUCT_NAME,
+  "needs-you": `${productName.PRODUCT_NAME} needs you · Open chat`,
   "still-working": "Still working · Open chat",
   error: "",
 });

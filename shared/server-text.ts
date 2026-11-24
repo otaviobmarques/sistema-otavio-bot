@@ -1,3 +1,5 @@
+import { PRODUCT_NAME } from "./product-name.ts";
+
 /** Values for the `{placeholders}` of a sentence the server words. */
 export type ServerTextParams = Record<string, string | number>;
 
@@ -53,8 +55,9 @@ export function isReferenceParam(name: string, value: string | number): boolean 
   return REFERENCE_PARAMS.has(name) && typeof value === "string" && PART_KEY.test(value);
 }
 
+/** `{app}` is the product's name unless `params` names it. */
 export function formatServerText(template: string, params: ServerTextParams = {}): string {
   return template.replace(/\{(\w+)\}/g, (match, name: string) =>
-    Object.hasOwn(params, name) ? String(params[name]) : match,
+    Object.hasOwn(params, name) ? String(params[name]) : name === "app" ? PRODUCT_NAME : match,
   );
 }

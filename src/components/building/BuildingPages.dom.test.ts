@@ -77,7 +77,7 @@ describe("the Building", () => {
     setCompanies([{ id: "co_1", name: "RedBox", sector: "Agência de Marketing", mission: "Campanhas com CPA menor.", color: "#FF2D33", monthlyBudgetBrl: 500, usdToBrl: null, budgetReleasedMonth: null, rules: [], order: 0,
       departmentIds: ["RedBox - Agência de Marketing"] }]);
     await mount(createElement(BuildingPage));
-    expect(document.querySelector("h1")!.textContent).toBe("Otávio's building");
+    expect(document.querySelector("h1")!.textContent).toBe("ArkoBot building");
     const floors = [...document.querySelectorAll<HTMLElement>("[data-building-floor]")];
     expect(floors.map((floor) => floor.dataset.buildingFloor)).toEqual(["penthouse", "co_1", "none", "ground"]);
     expect([...floors[1]!.querySelectorAll<HTMLElement>("[data-building-room]")].map((room) => room.dataset.buildingRoom)).toEqual(["RedBox - Agência de Marketing"]);

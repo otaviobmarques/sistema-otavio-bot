@@ -5,9 +5,9 @@ import { serverLine } from "./server-lines.ts";
 
 describe("serverLine", () => {
   it("writes the line in the language given, with its values filled in", () => {
-    expect(serverLine("pt-br", "server.reports.sent", { report: "r-1" })).toBe("Relatório r-1 salvo neste computador, na pasta bug-reports dos dados do app. Você pode mandar o arquivo para quem cuida do seu Otávio Bot.");
-    expect(serverLine("de", "server.reports.sent", { report: "r-1" })).toBe("Fehlerbericht r-1 auf diesem Computer gespeichert, im Ordner bug-reports in den Daten der App. Du kannst die Datei an die Person schicken, die sich um deinen Otávio Bot kümmert.");
-    expect(serverLine(undefined, "server.reports.sent", { report: "r-1" })).toBe("Bug report r-1 saved on this computer, in the bug-reports folder of the app's data. You can send the file to whoever looks after your Otávio Bot.");
+    expect(serverLine("pt-br", "server.reports.sent", { report: "r-1" })).toBe("Relatório r-1 salvo neste computador, na pasta bug-reports dos dados do app. Você pode mandar o arquivo para quem cuida do seu ArkoBot.");
+    expect(serverLine("de", "server.reports.sent", { report: "r-1" })).toBe("Fehlerbericht r-1 auf diesem Computer gespeichert, im Ordner bug-reports in den Daten der App. Du kannst die Datei an die Person schicken, die sich um deinen ArkoBot kümmert.");
+    expect(serverLine(undefined, "server.reports.sent", { report: "r-1" })).toBe("Bug report r-1 saved on this computer, in the bug-reports folder of the app's data. You can send the file to whoever looks after your ArkoBot.");
     expect(serverLine("en", "server.reports.when.minutes", { count: 5 })).toBe("in about 5 minutes");
   });
 
@@ -19,6 +19,6 @@ describe("serverLine", () => {
   });
 
   it("leaves a {name} it was given no value for as it is", () => {
-    expect(serverLine("en", "server.reports.refused", {})).toBe("The MausBot team's server refused this bug report, so nothing was sent: {detail}.");
+    expect(serverLine("en", "server.reports.refused", {})).toBe("The ArkoBot team's server refused this bug report, so nothing was sent: {detail}.");
   });
 });

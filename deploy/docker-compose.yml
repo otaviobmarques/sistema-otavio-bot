@@ -1,4 +1,4 @@
-# Otávio Bot on one server: the harness server plus Caddy for TLS + login.
+# ArkoBot on one server: the harness server plus Caddy for TLS + login.
 # Step by step, in Portuguese, for the owner's VPS: docs/otavio-bot/VPS-24H.md.
 #
 # Caddy runs in the server's network namespace, so it reaches the server on

@@ -30,6 +30,7 @@ import { resolveSkin, SKINS } from "@/lib/skins";
 import { PlaceLookRows } from "./PlaceLookCard";
 import { ChromeRailRow } from "./ChromeRailToggle";
 import { WindowFrameRow } from "./WindowFrameRow";
+import { OpeningRows } from "./OpeningRows";
 import { ProfileSummaryRow } from "./ProfileSettings";
 import { ImportSettings } from "./ImportSettings";
 import { NotificationRows } from "./NotificationSettingsRows";
@@ -70,6 +71,7 @@ export function SimpleGeneralPage({ has, peopleOpen, onLooks }: { has: Has; peop
             <PlaceLookRows />
             <ChromeRailRow />
             <WindowFrameRow />
+            <OpeningRows />
             <ColorUserBubblesRow simple />
           </SettingsRows>
         </SettingsGroup>

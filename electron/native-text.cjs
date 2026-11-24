@@ -1,5 +1,6 @@
 const fs = require("node:fs");
 const path = require("node:path");
+const { PRODUCT_NAME } = require("./product-name.cjs");
 
 const LOCALES_DIR = path.join(__dirname, "..", "src", "locales");
 const LOCALE_FILE = /^[a-z]{2,3}(?:-[a-z0-9]{2,8})*\.json$/;
@@ -41,8 +42,8 @@ function readPack(dir, code, files) {
 }
 
 function fill(template, params) {
-  if (!params) return template;
-  return template.replace(/\{(\w+)\}/g, (match, name) => (Object.hasOwn(params, name) ? String(params[name]) : match));
+  return template.replace(/\{(\w+)\}/g, (match, name) =>
+    params && Object.hasOwn(params, name) ? String(params[name]) : name === "app" ? PRODUCT_NAME : match);
 }
 
 const intlTagOf = (code) => code.split("-").map((part, index) => (index === 0 ? part

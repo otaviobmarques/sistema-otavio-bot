@@ -82,7 +82,7 @@ test("moves nothing until the person agrees in main's own confirm, which says th
     assert.equal(journal.value, null);
     assert.equal(asked[0].message, "Move Atlas to Acme?");
     assert.match(asked[0].detail, /no way back/);
-    assert.match(asked[0].detail, /what Atlas remembers, your connections, and MausBot/);
+    assert.match(asked[0].detail, /what Atlas remembers, your connections, and ArkoBot/);
     assert.deepEqual(asked[0].buttons, ["Move to Acme", "Cancel"]);
   } finally { done(); }
 });
@@ -120,7 +120,7 @@ test("keeps the last bot on My Cloud, and leaves out what already left", () => {
 
 test("its confirm says what the page's confirm says, word for word", () => {
   const en = JSON.parse(readFileSync(new URL("../src/locales/en.json", import.meta.url), "utf8"));
-  const fill = (key) => en[key].replaceAll("{bot}", "Atlas").replaceAll("{team}", "Acme");
+  const fill = (key) => en[key].replaceAll("{bot}", "Atlas").replaceAll("{team}", "Acme").replaceAll("{app}", "ArkoBot");
   const words = teamMoveConfirmWords({ bot: "Atlas", team: "Acme" });
   assert.equal(words.message, fill("teamMove.title"));
   assert.equal(words.buttons[0], fill("teamMove.confirm"));
@@ -143,7 +143,7 @@ test("the native confirm and IPC refusals follow the app's current language", as
         "Todos em Acme podem usar Atlas. Só os administradores de Acme podem alterá-lo.",
         "Vão com Atlas: instruções, habilidades, arquivos, rotinas e suas conversas com Atlas",
         "Suas conversas continuam privadas lá: só você pode vê-las.",
-        "Ficam no My Cloud: o que Atlas lembra, suas conexões e o MausBot",
+        "Ficam no My Cloud: o que Atlas lembra, suas conexões e o ArkoBot",
         "Não é possível desfazer: você não pode mover o bot de volta para o My Cloud.",
       ].join("\n\n"),
       buttons: ["Mover para Acme", "Cancelar"],

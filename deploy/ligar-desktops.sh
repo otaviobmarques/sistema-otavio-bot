@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Lets the Otávio Bot server, running in Docker on this VPS, create and drive
+# Lets the ArkoBot server, running in Docker on this VPS, create and drive
 # the bots' desktops on this same VPS (docs/byo-vps.md, docs/otavio-bot/VPS-24H.md).
 #
 # The server only ever speaks `docker -H ssh://<alias>`, so it gets what the
@@ -37,7 +37,7 @@ in_server "mkdir -p ~/.ssh && chmod 700 ~/.ssh
 public_key="$(in_server "cat ~/.ssh/$KEY_NAME.pub")"
 [[ "$public_key" == ssh-ed25519\ * ]] || fail "não consegui ler a chave pública do servidor"
 
-say "Autorizando a chave para $VPS_USER, só a partir da rede do Otávio Bot"
+say "Autorizando a chave para $VPS_USER, só a partir da rede do ArkoBot"
 networks="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.NetworkID}} {{end}}' "$container")"
 subnets=""
 for network in $networks; do
@@ -89,7 +89,7 @@ echo "Docker do VPS: $version"
 
 cat <<EOF
 
-Pronto. Falta um clique, no Otávio Bot aberto no endereço do servidor:
+Pronto. Falta um clique, no ArkoBot aberto no endereço do servidor:
   Configurações -> Chaves de API -> VPS próprio -> digite  $ALIAS  -> Salvar
 Depois, em cada bot: Configurações do bot -> Acesso -> computador "Nuvem" com
 "VPS próprio". O primeiro desktop demora alguns minutos (a imagem é montada aqui).

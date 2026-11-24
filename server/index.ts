@@ -4095,7 +4095,7 @@ const handoffTicks = createHandoffTicks(), coordinator: Coordinator = createCoor
     outward: node => {
       const followup = node.parentId || node.groupId ? undefined : followupAtBoot(node.threadId);
       if (followup) {
-        followupEndedRoots.set(node.id, followup === "pending" ? "turn interrupted — OpenMausBot restarted" : undefined);
+        followupEndedRoots.set(node.id, followup === "pending" ? chatNotice("chat.notice.restartInterrupted") : undefined);
         return [followup === "pending" ? "queued follow-up waiting" : "queued follow-up dispatched"];
       }
       return outwardActions(turnRows(node));
@@ -12610,7 +12610,7 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
     if (path === MCP_OAUTH_CALLBACK_PATH) {
       const answer = method === "GET"
         ? await teamConnections.mcpCallback(req.headers.host, url.search)
-        : { status: 400, text: "Invalid sign-in callback. Return to OpenMausBot and try again." };
+        : { status: 400, text: "Invalid sign-in callback. Return to ArkoBot and try again." };
       res.writeHead(answer.status, { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store", "referrer-policy": "no-referrer" });
       res.end(answer.text);
       return;
