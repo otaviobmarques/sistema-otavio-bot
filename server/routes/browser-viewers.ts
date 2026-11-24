@@ -4,7 +4,7 @@
 // is fetched from GET …/browser/download/:id. Never mix login frames into the general events feed, which every device
 // reads.
 import { createReadStream, rmSync } from "node:fs";
-import type { IncomingMessage } from "node:http";
+import type { IncomingMessage, ServerResponse } from "node:http";
 import { dirname, join } from "node:path";
 import { Readable, Transform } from "node:stream";
 
@@ -16,7 +16,7 @@ import type { LiveRouter } from "../browser/engines.ts";
 import { requestedSize } from "../browser/viewers/viewport.ts";
 import { messageFileDisposition } from "../message-file.ts";
 import { isSameOrigin, type RequestAuth } from "../request-auth.ts";
-import { PASS, type RouteHandler } from "./table.ts";
+import { PASS, type RouteContext, type RouteHandler } from "./table.ts";
 import type { Upgrades } from "./upgrades.ts";
 
 const LIVE = /^\/api\/bots\/([\w-]+)\/browser\/(live|action)$/;
@@ -26,6 +26,7 @@ const DOWNLOAD = /^\/api\/bots\/([\w-]+)\/browser\/download\/([\w-]{1,64})$/;
 const CHOOSER = /^[\w-]{1,64}$/;
 const UPLOAD_MAX_FILES = 20;
 const PICKER_CLOSED = "The page's file picker is no longer open.";
+const REFUSED_BODY_DRAIN_MAX_BYTES = 1024 * 1024;
 
 type Spec = Parameters<BrowserLive["open"]>[0]["spec"];
 type Failure = { status: number; error: string };
@@ -83,6 +84,21 @@ async function uploadedFiles(req: IncomingMessage): Promise<Array<{ name: string
   const files = form.getAll("file").filter((entry): entry is File => typeof entry !== "string");
   if (files.length > UPLOAD_MAX_FILES) throw new UploadError(413, `A page takes at most ${UPLOAD_MAX_FILES} files at once.`);
   return Promise.all(files.map(async (file) => ({ name: file.name, bytes: new Uint8Array(await file.arrayBuffer()) })));
+}
+
+/** Answers an upload refused before its body was read. A client still sending that body when its connection closes
+ * gets a failed write (EPIPE, ECONNRESET, ECONNABORTED) instead of the answer: Node's fetch, since undici 7.30.2
+ * (Node 24.22.3), writes a FormData body part by part, after the answer may have come. So a body of declared length up
+ * to 1 MiB is read to its end and discarded, never kept; a larger or chunked one is not read, and its connection closes. */
+function refuseUpload(req: IncomingMessage, res: ServerResponse, json: RouteContext["json"], { status, error }: Failure): void {
+  const declared = Number(req.headers["content-length"]);
+  if (req.headers["transfer-encoding"] === undefined && Number.isSafeInteger(declared) && declared >= 0 && declared <= REFUSED_BODY_DRAIN_MAX_BYTES) {
+    req.unpipe();
+    req.resume();
+  } else {
+    res.setHeader("connection", "close");
+  }
+  json(res, status, { error });
 }
 
 /** Gives an upload's files to the page's picker; null when it took them, else why not. Files it did not take are deleted. */
@@ -167,18 +183,14 @@ export function createBrowserViewerRoutes(deps: BrowserViewerRouteDeps): RouteHa
       // Security: a body is read into memory only for the picker this person was offered, one upload of theirs at a time.
       const refused = !deps.viewers.fileChooserOffered(browser, owner, chooser) ? { status: 409, error: PICKER_CLOSED }
         : uploading.has(owner) ? { status: 429, error: "Your previous upload is still on its way. Wait for it, then try again." } : null;
-      if (refused) {
-        res.setHeader("connection", "close");
-        return json(res, refused.status, { error: refused.error });
-      }
+      if (refused) return refuseUpload(req, res, json, refused);
       uploading.add(owner);
       const unanswered = await answerUpload(req, deps, browser, owner, chooser).finally(() => uploading.delete(owner));
       if (!unanswered) {
         res.writeHead(204).end();
         return;
       }
-      // The rest of a refused body is never read.
-      if (unanswered.unread) res.setHeader("connection", "close");
+      if (unanswered.unread) return refuseUpload(req, res, json, unanswered);
       return json(res, unanswered.status, { error: unanswered.error });
     }
 

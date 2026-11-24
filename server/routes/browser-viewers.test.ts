@@ -370,6 +370,30 @@ describe("the page's file picker and downloads", () => {
     expect(existsSync(join(fixture.dataDir, "browser-uploads"))).toBe(false);
   });
 
+  it("lets a client still sending a small refused upload finish it and read the refusal", async () => {
+    const fixture = await serve();
+    const [host, port] = fixture.origin.split(":");
+    const size = 256 * 1024;
+    const upload = request({ host, port: Number(port), method: "POST", path: "/api/bots/pepper/browser/upload?chooser=stale", headers: { "content-type": "multipart/form-data; boundary=x", "content-length": String(size) } });
+    const failed = new Promise<string>((resolve) => {
+      upload.once("error", (error) => resolve(error.message));
+      upload.once("socket", (socket) => socket.once("close", () => resolve("the server closed the connection")));
+    });
+    const answered = new Promise<{ status: number; body: string }>((resolve) => upload.once("response", (res) => {
+      let body = "";
+      res.setEncoding("utf8");
+      res.on("data", (chunk: string) => { body += chunk; });
+      res.once("end", () => resolve({ status: res.statusCode!, body }));
+    }));
+    upload.write(Buffer.alloc(1024));
+    expect(await answered).toEqual({ status: 409, body: JSON.stringify({ error: "The page's file picker is no longer open." }) });
+    // The rest of the body goes out after the answer came, as Node's fetch sends a FormData part by part.
+    const sent = new Promise<void>((resolve) => upload.end(Buffer.alloc(size - 1024), () => resolve()));
+    expect(await Promise.race([sent.then(() => "sent"), failed])).toBe("sent");
+    expect(fixture.answers).toEqual([]);
+    expect(existsSync(join(fixture.dataDir, "browser-uploads"))).toBe(false);
+  });
+
   it("takes one upload at a time from each person", async () => {
     const fixture = await serve();
     const [host, port] = fixture.origin.split(":");
