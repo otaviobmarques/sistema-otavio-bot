@@ -1,4 +1,4 @@
-import { Bot as BotIcon, Building2, CircleCheck, MessageSquare, Mic } from "lucide-react";
+import { Building2, CircleCheck, MessageSquare, Mic } from "lucide-react";
 import { Link, NavLink, Outlet, useLocation } from "react-router";
 import { useCounts } from "../state/store";
 import { Dot, Toasts, useIsMobile } from "./ui";
@@ -6,10 +6,8 @@ import { Dot, Toasts, useIsMobile } from "./ui";
 export function Logo({ compact = false }: { compact?: boolean }) {
   return (
     <Link to="/" className="flex items-center gap-2.5">
-      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-tavinho text-ink-900">
-        <BotIcon size={18} strokeWidth={2.2} />
-      </span>
-      {!compact && <span className="font-display text-[17px] font-semibold text-white">Otávio Bot</span>}
+      <img src="/favicon.svg" alt="" className="h-8 w-8 rounded-lg" />
+      {!compact && <span className="font-display text-[17px] font-semibold text-white">ArkoBot</span>}
     </Link>
   );
 }

@@ -14,6 +14,7 @@ import { BrowserSignInPage } from "./pair/BrowserSignInPage";
 import { PairPage } from "./pair/PairPage";
 import { HomeScreen, SignedOutAtHome } from "./components/HomeScreen";
 import { PageBoundary } from "./components/PageBoundary";
+import { mountOpening } from "./components/OpeningIntro";
 import { endedBeforeReload, forgetEndedSession } from "./lib/session-ended";
 import "./styles.css";
 
@@ -63,6 +64,7 @@ async function chooseRoot(): Promise<React.ReactNode> {
 
 // The window is named before the brand file is asked for: the answer only ever renames it.
 document.title = productName();
+mountOpening();
 void Promise.all([bootstrapBrand(), chooseRoot(), pageLanguage]).then(([, root]) => {
   createRoot(document.getElementById("root")!).render(<StrictMode><PageBoundary>{root}</PageBoundary></StrictMode>);
 });

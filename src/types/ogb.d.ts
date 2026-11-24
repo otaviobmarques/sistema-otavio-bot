@@ -388,6 +388,14 @@ const __APP_VERSION__: string;
         /** From the person's click on another server's page. */
         set(on: boolean): Promise<import("../../electron/desktop-prefs.mjs").WindowFrameState>;
       };
+      /** The opening video, this desktop's choice (Settings → Appearance). Absent on an older app and in a browser. */
+      opening?: {
+        /** `play` only for the first page that asks in this launch of the app, while the person keeps it on. */
+        claim(): Promise<{ play: boolean; sound: boolean }>;
+        state(): Promise<import("../../electron/desktop-prefs.mjs").OpeningChoice>;
+        /** From the person's click on another server's page. */
+        set(choice: Partial<import("../../electron/desktop-prefs.mjs").OpeningChoice>): Promise<import("../../electron/desktop-prefs.mjs").OpeningChoice>;
+      };
       /** The renderer-drawn Windows caption buttons; absent outside the
        * frameless Windows shell (macOS/Linux/browser keep native chrome). */
       windowControls?: {

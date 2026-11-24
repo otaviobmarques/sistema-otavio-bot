@@ -1697,7 +1697,7 @@ describe("harness HTTP API", () => {
       req.end();
     });
     expect(brand.status).toBe(200);
-    expect(Reflect.get(Object(Reflect.get(Object(brand.body), "brand")), "name")).toBe("OpenMausBot");
+    expect(Reflect.get(Object(Reflect.get(Object(brand.body), "brand")), "name")).toBe("ArkoBot");
     expect(await statusWithHeaders({ origin: "https://example.com" })).toBe(403);
     expect(await statusWithHeaders({ host: `127.0.0.2:${PORT}` })).toBe(200);
     expect(await statusWithHeaders({ host: `[::1]:${PORT}` })).toBe(200);
@@ -6336,7 +6336,7 @@ describe("harness HTTP API", () => {
         .find((message: { id: string }) => message.id === messageId);
       expect(directCard).toMatchObject({
         kind: "secret",
-        text: "Securely provide the OpenAI API key from OpenMausBot on your phone or computer. It is never added to chat.",
+        text: "Securely provide the OpenAI API key from ArkoBot on your phone or computer. It is never added to chat.",
       });
       expect(directCard.secret.description).toContain(
         `${bot.name} can use it but never read it back.`,
@@ -6477,7 +6477,7 @@ describe("harness HTTP API", () => {
       expect((await card(firstCard.messageId)).signIn).toMatchObject({ site: "example.com", superseded: true });
       expect(await card(secondCard.messageId)).toMatchObject({
         kind: "signin",
-        text: `${bot.name} needs you to sign in to example.com. Open this conversation in OpenMausBot to sign in, then press Done.`,
+        text: `${bot.name} needs you to sign in to example.com. Open this conversation in ArkoBot to sign in, then press Done.`,
         signIn: { url: "https://www.example.com/", site: "example.com", place: "browser", reason: "Still behind a login." },
       });
       expect((await card(secondCard.messageId)).signIn.superseded).toBeUndefined();
@@ -9021,7 +9021,7 @@ describe("harness HTTP API", () => {
 
       const page = await viaProxy("GET", callback.pathname + callback.search);
       expect(page.status).toBe(200);
-      expect(page.text).toBe("Signed in. You can close this tab and return to OpenMausBot.");
+      expect(page.text).toBe("Signed in. You can close this tab and return to ArkoBot.");
       expect(page.headers).toMatchObject({ "cache-control": "no-store", "referrer-policy": "no-referrer", "content-type": "text/plain; charset=utf-8" });
       expect(page.text).not.toContain(callback.searchParams.get("code"));
       expect(JSON.parse((await viaProxy("GET", `${base}/${auth.flowId}`, signedIn)).text).auth.phase).toBe("succeeded");
@@ -11063,7 +11063,7 @@ describe("harness HTTP API", () => {
         .find((message: { id: string }) => message.id === messageId);
       expect(roomCard).toMatchObject({
         kind: "secret",
-        text: "Securely provide the OpenAI API key from OpenMausBot on your phone or computer. It is never added to chat.",
+        text: "Securely provide the OpenAI API key from ArkoBot on your phone or computer. It is never added to chat.",
         from: { botId: second.id, name: second.name, color: second.color },
       });
 

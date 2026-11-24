@@ -58,6 +58,17 @@ export interface DesktopPrefs {
   /** True until the person turns the window's frame off. */
   windowFrame(): boolean;
   setWindowFrame(on: boolean): void;
+  /** True until the person turns the opening video off. */
+  opening(): boolean;
+  setOpening(on: boolean): void;
+  /** True until the person turns the opening's sound off. */
+  openingSound(): boolean;
+  setOpeningSound(on: boolean): void;
+}
+/** The opening video, this desktop's choice, as Settings reads and changes it. */
+export interface OpeningChoice {
+  on: boolean;
+  sound: boolean;
 }
 /** The window's frame, this desktop's choice, as Settings reads and changes it. */
 export interface WindowFrameState {
@@ -86,6 +97,8 @@ export declare function relabelDesktop(options: {
 export declare function registerDesktopPrefs(options: {
   /** Used instead of making a store from read/write. */
   prefs?: DesktopPrefs;
+  /** Whether this launch may play the opening video at all (opening.mjs openingAllowed). */
+  openingAllowed?(): boolean;
   ipcMain: { handle(channel: string, handler: (event: unknown, ...args: unknown[]) => unknown): void; on(channel: string, listener: (event: { returnValue?: unknown }) => void): void };
   read?(): unknown;
   write?(value: unknown): void;

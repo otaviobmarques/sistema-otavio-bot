@@ -41,7 +41,7 @@ function PredioDesktop() {
       <main className="px-7 pb-8 pt-7">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-[27px] font-semibold text-white">Prédio Otávio</h1>
+            <h1 className="text-[27px] font-semibold text-white">Prédio ArkoBot</h1>
             <p className="mt-1 text-[14.5px] text-muted">
               {companies.length} empresas · {counts.total} bots · {nowLabel}
             </p>
@@ -238,7 +238,7 @@ function PredioMobile() {
       <header className="flex items-center gap-3 px-4 pb-3 pt-12">
         <Logo compact />
         <div className="min-w-0 flex-1">
-          <h1 className="text-[17px] font-semibold leading-tight text-white">Prédio Otávio</h1>
+          <h1 className="text-[17px] font-semibold leading-tight text-white">Prédio ArkoBot</h1>
           <p className="text-[12px] text-muted">
             {companies.length} empresas · {counts.total} bots ativos
           </p>

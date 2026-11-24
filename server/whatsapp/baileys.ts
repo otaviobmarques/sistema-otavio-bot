@@ -5,6 +5,7 @@ import { chmodSync, mkdirSync, readdirSync, readFileSync, rmSync } from "node:fs
 import { join } from "node:path";
 
 import { writeFileAtomic } from "../atomic.ts";
+import { PRODUCT_NAME } from "../../shared/product-name.ts";
 import type { IncomingText, TransportClose, TransportEvents, TransportSession, WhatsAppTransport } from "./transport.ts";
 
 type Baileys = typeof import("@whiskeysockets/baileys");
@@ -98,7 +99,7 @@ export const baileysTransport: WhatsAppTransport = {
       ...(latest?.version ? { version: latest.version } : {}),
       auth: auth.state as never,
       logger: quiet as never,
-      browser: lib.Browsers.ubuntu("Otávio Bot"),
+      browser: lib.Browsers.ubuntu(PRODUCT_NAME),
       markOnlineOnConnect: false,
       syncFullHistory: false,
       shouldIgnoreJid: (jid: string) => Boolean(lib.isJidGroup(jid) || lib.isJidBroadcast(jid) || lib.isJidNewsletter(jid) || jid === "status@broadcast"),

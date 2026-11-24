@@ -1,10 +1,13 @@
-Otávio Bot
+ArkoBot
 Copyright 2026 Otávio Marques
 
-Otávio Bot is a modified version of OpenMausBot, used under the Apache
-License, Version 2.0. The enterprise/ folder of OpenMausBot is not included.
-OpenMausBot and MausBot are trademarks of Supamaus Software Private Limited;
-Otávio Bot is not affiliated with or endorsed by them.
+ArkoBot is a modified version of OpenMausBot, used under the Apache License,
+Version 2.0. The enterprise/ folder of OpenMausBot is not included. Internal
+identifiers (package and command names, data folders, protocol strings) keep
+OpenMausBot's names so the software stays compatible with it. OpenMausBot and
+MausBot are trademarks of Supamaus Software Private Limited; ArkoBot is not
+affiliated with or endorsed by them. The ArkoBot name and logo
+(docs/arkobot/) belong to Otávio Marques.
 
 ----
 

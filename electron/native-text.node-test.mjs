@@ -116,9 +116,10 @@ test("the shipped catalog: English reads every native key, and pt-br has them al
   const pt = JSON.parse(readFileSync(path.join(LOCALES_DIR, "pt-br.json"), "utf8"));
   const keys = Object.keys(en).filter((key) => key.startsWith("native."));
   assert.ok(keys.length > 100);
-  for (const key of keys) assert.equal(englishText.t(key), en[key], key);
+  const named = (text) => text.replaceAll("{app}", "ArkoBot");
+  for (const key of keys) assert.equal(englishText.t(key), named(en[key]), key);
   const text = createNativeText({ saved: "pt-BR" });
-  for (const key of keys) assert.equal(text.t(key), pt[key], key);
+  for (const key of keys) assert.equal(text.t(key), named(pt[key]), key);
   assert.equal(text.t("place.local"), pt["place.local"]);
 });
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Puts an archive made by backup.sh back into the Otávio Bot data volume.
+# Puts an archive made by backup.sh back into the ArkoBot data volume.
 # Run as root from the deploy folder:
 #   sudo ./restaurar-backup.sh /var/backups/otavio-bot/otavio-bot-AAAA-MM-DD-HHMM.tar.gz
 # The stack is stopped, what is in the volume now is saved first as one more
@@ -16,7 +16,7 @@ volume=""
 [ -n "$container" ] && volume="$(docker inspect -f '{{range .Mounts}}{{if eq .Destination "/data"}}{{.Name}}{{end}}{{end}}' "$container")"
 volume="${volume:-${COMPOSE_PROJECT_NAME:-otavio-bot}_data}"
 
-printf 'Isto troca TODOS os dados do Otávio Bot (volume %s) pelo backup\n  %s\nDigite SIM para continuar: ' "$volume" "$archive"
+printf 'Isto troca TODOS os dados do ArkoBot (volume %s) pelo backup\n  %s\nDigite SIM para continuar: ' "$volume" "$archive"
 read -r answer
 [ "$answer" = SIM ] || { echo "nada foi alterado"; exit 1; }
 

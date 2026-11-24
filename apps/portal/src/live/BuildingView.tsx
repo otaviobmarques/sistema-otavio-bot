@@ -45,7 +45,7 @@ export function BuildingView({ world, bots, approvals, t, frozen, compact = fals
 
   const levels = [5, 4, 3, 2, 1, 0];
   return (
-    <svg viewBox={vb} className="block h-full w-full select-none" role="img" aria-label="Prédio Otávio Bot em corte, com os andares das empresas">
+    <svg viewBox={vb} className="block h-full w-full select-none" role="img" aria-label="Prédio ArkoBot em corte, com os andares das empresas">
       <defs>
         <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#0a1020" />

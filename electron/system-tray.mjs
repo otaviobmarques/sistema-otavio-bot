@@ -1,4 +1,5 @@
 import nativeText from "./native-text.cjs";
+import productName from "./product-name.cjs";
 
 // Retain the Windows notification-area identity across app restarts.
 export function createSystemTray({ Tray, Menu, nativeImage, iconPath, getWindow, onQuit, t = nativeText.englishText.t }) {
@@ -20,7 +21,7 @@ export function createSystemTray({ Tray, Menu, nativeImage, iconPath, getWindow,
     { type: "separator" },
     { label: t("native.tray.quit"), click: onQuit },
   ]));
-  tray.setToolTip("OpenMaus Bot");
+  tray.setToolTip(productName.PRODUCT_NAME);
   label();
   tray.on("click", show);
   tray.on("double-click", show);

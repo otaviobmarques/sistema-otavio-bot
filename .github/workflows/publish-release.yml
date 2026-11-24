@@ -45,7 +45,7 @@ jobs:
           grep -qx "version: $VERSION" release/latest.yml || { echo "::error::latest.yml does not name version $VERSION"; exit 1; }
           cp release/*-setup.exe release/OtavioBot-setup.exe
           gh release create "v$VERSION" --repo otaviobmarques/otavio-bot-releases --target main \
-            --title "Otávio Bot $VERSION" --notes "${NOTES:-Versão $VERSION do Otávio Bot para Windows.}" \
+            --title "ArkoBot $VERSION" --notes "${NOTES:-Versão $VERSION do ArkoBot para Windows.}" \
             release/*.exe release/*.exe.blockmap release/latest.yml
 
   # The server image for the owner's VPS (docs/otavio-bot/VPS-24H.md), tagged

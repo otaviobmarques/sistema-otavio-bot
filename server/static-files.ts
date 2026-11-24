@@ -10,6 +10,8 @@ const MIME: Record<string, string> = {
   ".txt": "text/plain; charset=utf-8",
   ".svg": "image/svg+xml",
   ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".mp4": "video/mp4",
   ".ico": "image/x-icon",
   ".json": "application/json",
   ".webmanifest": "application/manifest+json",

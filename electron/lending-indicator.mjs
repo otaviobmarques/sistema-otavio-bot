@@ -1,4 +1,5 @@
 import nativeText from "./native-text.cjs";
+import productName from "./product-name.cjs";
 import { screenFixLabel, screenLine } from "./screen-words.mjs";
 
 /** The device word the person knows this computer by. */
@@ -34,7 +35,7 @@ export function createLendingIndicator({ Tray, Menu, nativeImage, iconPath, onPa
     if (!tray || tray.isDestroyed()) return;
     const { line, title, screen, pending } = indicatorText(view, device, t);
     const fix = screen ? screenFixLabel(view.screen, t) : null;
-    tray.setToolTip(`OpenMausBot: ${line}${pending ? `. ${pending}` : ""}${screen ? `. ${screen}` : ""}`);
+    tray.setToolTip(`${productName.PRODUCT_NAME}: ${line}${pending ? `. ${pending}` : ""}${screen ? `. ${screen}` : ""}`);
     // Electron shows a tray title beside the icon on macOS only.
     tray.setTitle?.(title);
     tray.setContextMenu(Menu.buildFromTemplate([

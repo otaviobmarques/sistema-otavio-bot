@@ -334,7 +334,7 @@ describe("what the person is told, in their language", () => {
     fx.person("scout-main", "@devs o botão travou");
     fx.advance(NO_ANSWER_MS);
     await fx.settle();
-    expect(fx.notices("scout-main")).toEqual(["notice: Relatório report-1 salvo neste computador, na pasta bug-reports dos dados do app. Você pode mandar o arquivo para quem cuida do seu Otávio Bot; ele inclui ada@example.com para que possam responder."]);
+    expect(fx.notices("scout-main")).toEqual(["notice: Relatório report-1 salvo neste computador, na pasta bug-reports dos dados do app. Você pode mandar o arquivo para quem cuida do seu ArkoBot; ele inclui ada@example.com para que possam responder."]);
     expect(fx.store.activePath("scout-main").at(-1)?.tool?.nameCode).toBeUndefined();
     fx.stop();
   });
@@ -348,7 +348,7 @@ describe("what the person is told, in their language", () => {
     fx.busy.add("scout-main");
     fx.reports.note("scout-main", true);
     const answer = await fx.call("scout", "scout-main", { went_wrong: "Bilder laden nicht" });
-    const line = "Fehlerbericht report-1 auf diesem Computer gespeichert, im Ordner bug-reports in den Daten der App. Du kannst die Datei an die Person schicken, die sich um deinen Otávio Bot kümmert; sie enthält ada@example.com, damit man dir antworten kann.";
+    const line = "Fehlerbericht report-1 auf diesem Computer gespeichert, im Ordner bug-reports in den Daten der App. Du kannst die Datei an die Person schicken, die sich um deinen ArkoBot kümmert; sie enthält ada@example.com, damit man dir antworten kann.";
     expect(answer.body.text).toBe(`Sent. Tell the person this line in your reply, word for word: "${line}"`);
     fx.bot("scout-main", "Ich schaue mir das an.", { turnId: "t1", turnSucceeded: true });
     fx.busy.delete("scout-main");
@@ -363,7 +363,7 @@ describe("what the person is told, in their language", () => {
     fx.busy.add("scout-main");
     fx.reports.note("scout-main", true);
     const answer = await fx.call("scout", "scout-main", { went_wrong: "offline" });
-    const waiting = "Noch nicht gesendet: der Server des MausBot-Teams war nicht erreichbar. Der Bericht ist gespeichert und wird so bald wie möglich von selbst gesendet, du musst ihn also nicht noch einmal senden.";
+    const waiting = "Noch nicht gesendet: der Server des ArkoBot-Teams war nicht erreichbar. Der Bericht ist gespeichert und wird so bald wie möglich von selbst gesendet, du musst ihn also nicht noch einmal senden.";
     expect(answer.body.text).toBe(`Not sent. Tell the person this line in your reply, word for word: "${waiting}"`);
     fx.bot("scout-main", waiting, { turnId: "t1", turnSucceeded: true });
     fx.busy.delete("scout-main");
@@ -371,7 +371,7 @@ describe("what the person is told, in their language", () => {
     expect(fx.notices("scout-main")).toEqual([]);
     fx.advance(RETRY_MS[0]);
     await fx.settle();
-    expect(fx.notices("scout-main")).toEqual(["notice: Fehlerbericht report-2 auf diesem Computer gespeichert, nachdem ein früherer Versuch nicht geklappt hat, im Ordner bug-reports in den Daten der App. Du kannst die Datei an die Person schicken, die sich um deinen Otávio Bot kümmert."]);
+    expect(fx.notices("scout-main")).toEqual(["notice: Fehlerbericht report-2 auf diesem Computer gespeichert, nachdem ein früherer Versuch nicht geklappt hat, im Ordner bug-reports in den Daten der App. Du kannst die Datei an die Person schicken, die sich um deinen ArkoBot kümmert."]);
     fx.stop();
   });
 });
@@ -382,7 +382,7 @@ describe("a report that cannot go yet", () => {
     fx.person("scout-main", "@devs offline");
     fx.advance(NO_ANSWER_MS);
     await fx.settle();
-    expect(fx.notices("scout-main")).toEqual(["notice: Not sent yet: the MausBot team's server could not be reached. The report is saved and goes on its own as soon as it can, so there is no need to send it again."]);
+    expect(fx.notices("scout-main")).toEqual(["notice: Not sent yet: the ArkoBot team's server could not be reached. The report is saved and goes on its own as soon as it can, so there is no need to send it again."]);
     const saved = JSON.parse(readFileSync(join(fx.dataDir, DEVS_REPORTS_FILE), "utf8"));
     expect(saved.outbox).toHaveLength(1);
     expect(saved.outbox[0].payload.description).toContain("offline");
@@ -397,7 +397,7 @@ describe("a report that cannot go yet", () => {
     await fx.settle();
     expect(fx.sent).toHaveLength(3);
     expect(fx.sent[2]).toEqual(fx.sent[0]);
-    expect(fx.notices("scout-main").at(-1)).toBe("notice: Bug report report-3 saved on this computer after an earlier try did not go through, in the bug-reports folder of the app's data. You can send the file to whoever looks after your Otávio Bot.");
+    expect(fx.notices("scout-main").at(-1)).toBe("notice: Bug report report-3 saved on this computer after an earlier try did not go through, in the bug-reports folder of the app's data. You can send the file to whoever looks after your ArkoBot.");
     expect(JSON.parse(readFileSync(join(fx.dataDir, DEVS_REPORTS_FILE), "utf8")).outbox).toEqual([]);
     fx.stop();
   });
@@ -407,7 +407,7 @@ describe("a report that cannot go yet", () => {
     fx.person("scout-main", "@devs refused");
     fx.advance(NO_ANSWER_MS);
     await fx.settle();
-    expect(fx.notices("scout-main")).toEqual(["notice: The MausBot team's server refused this bug report, so nothing was sent: description must be 1 to 10,000 characters of text."]);
+    expect(fx.notices("scout-main")).toEqual(["notice: The ArkoBot team's server refused this bug report, so nothing was sent: description must be 1 to 10,000 characters of text."]);
     fx.advance(RETRY_MS.at(-1)! * 2);
     await fx.settle();
     expect(fx.sent).toHaveLength(1);

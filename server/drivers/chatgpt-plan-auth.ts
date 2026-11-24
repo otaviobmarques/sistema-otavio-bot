@@ -263,16 +263,16 @@ export class ChatGptPlanAuthController {
         callback = new URL(request.url, flow.redirectUri);
         if (callback.origin !== new URL(flow.redirectUri).origin) throw new Error("Unexpected callback origin.");
       } catch {
-        response.writeHead(400).end("Invalid sign-in callback. Return to OpenMausBot and try again."); return;
+        response.writeHead(400).end("Invalid sign-in callback. Return to ArkoBot and try again."); return;
       }
       const actual = callback.searchParams.get("state") ?? "";
       if (request.method !== "GET" || callback.pathname !== "/auth/callback" || !flow || flow.server !== server || flow.consumed || flow.status.phase !== "waiting"
         || Buffer.byteLength(actual) !== Buffer.byteLength(flow.state) || !timingSafeEqual(Buffer.from(actual), Buffer.from(flow.state))
         || [...callback.searchParams.keys()].some((key) => callback.searchParams.getAll(key).length !== 1)) {
-        response.writeHead(400).end("Invalid or expired sign-in. Return to OpenMausBot and try again."); return;
+        response.writeHead(400).end("Invalid or expired sign-in. Return to ArkoBot and try again."); return;
       }
       flow.consumed = true;
-      response.end("Finishing sign-in. You can return to OpenMausBot.");
+      response.end("Finishing sign-in. You can return to ArkoBot.");
       server.close();
       void this.complete(flow, callback.searchParams);
     });

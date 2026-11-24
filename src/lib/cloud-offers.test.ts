@@ -46,7 +46,7 @@ afterEach(async () => {
   setCloudOffersForTest(false);
 });
 
-describe("with Cloud offers off, nothing offers MausBot Cloud", () => {
+describe("with Cloud offers off, nothing offers ArkoBot Cloud", () => {
   it("is off unless a test turns it on", () => {
     expect(cloudOffersEnabled()).toBe(false);
   });
@@ -85,11 +85,11 @@ describe("with Cloud offers off, nothing offers MausBot Cloud", () => {
     expect(document.querySelector("[data-place-add=own-server]")).not.toBeNull();
   });
 
-  it("the You menu has no MausBot Cloud row for someone signed in to no Cloud account, and keeps it for someone who is", () => {
+  it("the You menu has no ArkoBot Cloud row for someone signed in to no Cloud account, and keeps it for someone who is", () => {
     expect(cloudRow(null, false)).toBeNull();
     expect(cloudRow({ active: null } as never, false)).toBeNull();
-    expect(cloudRow({ active: { id: "a", email: "a@example.test" } } as never, false)).toBe("MausBot Cloud");
-    expect(cloudRow(null, true)).toBe("MausBot Cloud");
+    expect(cloudRow({ active: { id: "a", email: "a@example.test" } } as never, false)).toBe("ArkoBot Cloud");
+    expect(cloudRow(null, true)).toBe("ArkoBot Cloud");
   });
 });
 

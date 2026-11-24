@@ -1,4 +1,4 @@
-# Otávio Bot behind a reverse proxy that already holds ports 80/443 (an nginx,
+# ArkoBot behind a reverse proxy that already holds ports 80/443 (an nginx,
 # Caddy or Traefik of another project), on top of docker-compose.yml:
 #
 #   COMPOSE_FILE=docker-compose.yml:docker-compose.atras-de-proxy.yml   (in .env)
