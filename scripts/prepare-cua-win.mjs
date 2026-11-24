@@ -35,9 +35,13 @@ if (expectedVersion !== release.version) {
 async function binaryVersion(candidate) {
   if (!candidate || !existsSync(candidate)) return null;
   try {
-    const { stdout } = await run(candidate, ["--version"], { timeout: 5000, windowsHide: true });
-    return stdout.match(/cua-driver\s+([\d.]+)/)?.[1] ?? null;
-  } catch {
+    // A freshly extracted executable is scanned by Defender on first run, which can take well over 5 s on a CI runner.
+    const { stdout, stderr } = await run(candidate, ["--version"], { timeout: 60_000, windowsHide: true });
+    const version = stdout.match(/cua-driver\s+([\d.]+)/)?.[1] ?? null;
+    if (!version) console.warn(`${candidate} --version said: ${JSON.stringify({ stdout: stdout.slice(0, 500), stderr: stderr.slice(0, 500) })}`);
+    return version;
+  } catch (error) {
+    console.warn(`${candidate} --version failed: ${error?.code ?? ""} ${error?.signal ?? ""} ${String(error?.stderr ?? error?.message ?? error).slice(0, 500)}`);
     return null;
   }
 }
