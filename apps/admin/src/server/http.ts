@@ -3,10 +3,11 @@ import { Hono } from "hono";
 import { z } from "zod";
 import type { Actor } from "../audit.ts";
 import type { SessionAdmin } from "../auth/auth.ts";
+import type { SessionCustomer } from "../customer/auth.ts";
 import { DomainError } from "../domain/lifecycle.ts";
 
 export interface Env {
-  Variables: { admin: SessionAdmin; ip: string };
+  Variables: { admin: SessionAdmin; customer: SessionCustomer; ip: string };
   Bindings: { incoming?: { socket?: { remoteAddress?: string } } };
 }
 

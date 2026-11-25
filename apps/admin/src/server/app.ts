@@ -11,6 +11,7 @@ import type { Ctx, Env } from "./http.ts";
 import { authRoutes } from "./routes/auth.ts";
 import { billingRoutes } from "./routes/billing.ts";
 import { clientRoutes } from "./routes/clients.ts";
+import { contaRoutes } from "./routes/conta.ts";
 import { gatewayRoutes } from "./routes/gateway.ts";
 import { integrationRoutes } from "./routes/integrations.ts";
 import { auditRoutes, meRoutes } from "./routes/misc.ts";
@@ -28,8 +29,13 @@ export function clientIp(ctx: AppContext, headers: Headers, env: Env["Bindings"]
   return env?.incoming?.socket?.remoteAddress ?? "desconhecido";
 }
 
+export function isCustomerPath(path: string): boolean {
+  return path === "/api/conta" || path.startsWith("/api/conta/");
+}
+
 export function createApp(ctx: AppContext) {
   const app = new Hono<Env>();
+  const customerHost = new URL(ctx.config.customerPublicUrl).host.toLowerCase();
 
   app.use("*", async (c, next) => {
     c.set("ip", clientIp(ctx, c.req.raw.headers, c.env));
@@ -38,6 +44,18 @@ export function createApp(ctx: AppContext) {
     c.header("Referrer-Policy", "no-referrer");
     c.header("X-Frame-Options", "DENY");
     if (c.req.path.startsWith("/api/") || c.req.path.startsWith("/webhooks/")) c.header("Cache-Control", "no-store");
+  });
+
+  // One deployment, two hosts: the customer API answers only on the customer host and the operator API
+  // (with webhooks and cron) never does. Each host's session cookie is host-only, and writes must also
+  // come from that host's own origin.
+  app.use("*", async (c, next) => {
+    const path = c.req.path;
+    if ((path.startsWith("/api/") || path.startsWith("/webhooks/")) && path !== "/api/health") {
+      const onCustomerHost = new URL(c.req.url).host.toLowerCase() === customerHost;
+      if (onCustomerHost !== isCustomerPath(path)) return c.json({ error: "Rota inexistente" }, 404);
+    }
+    await next();
   });
 
   app.onError((error, c) => {
@@ -53,7 +71,7 @@ export function createApp(ctx: AppContext) {
 
   // Cookie-authenticated routes only accept writes from the panel's own origin.
   app.use("/api/*", async (c, next) => {
-    if (!SAFE_METHODS.has(c.req.method) && !c.req.path.startsWith("/api/cron/")) {
+    if (!SAFE_METHODS.has(c.req.method) && !c.req.path.startsWith("/api/cron/") && !isCustomerPath(c.req.path)) {
       const origin = c.req.header("origin");
       if (origin && origin !== ctx.config.publicUrl) return c.json({ error: "Origem não permitida" }, 403);
       if (!origin && c.req.header("sec-fetch-site") === "cross-site") return c.json({ error: "Origem não permitida" }, 403);
@@ -62,6 +80,7 @@ export function createApp(ctx: AppContext) {
   });
 
   app.route("/api/auth", authRoutes(ctx));
+  app.route("/api/conta", contaRoutes(ctx));
 
   const cron = async (c: Ctx) => {
     const expected = ctx.config.cronSecret;

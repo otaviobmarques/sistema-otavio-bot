@@ -2,7 +2,7 @@
 
 O painel interno da Domma Tecnologia para operar o ArkoBot como SaaS: clientes (CPF/CNPJ), planos, créditos ArkoBot (1 crédito = R$ 0,01), cobrança pelo Asaas, integrações e auditoria. Roda **separado das instâncias dos clientes**; os limites de uso só valem quando aplicados aqui e no gateway, nunca dentro da instância.
 
-A **Parte 1** fez o painel, a cobrança e os créditos; a **Parte 2** acrescenta o [gateway de IA](#gateway-de-ia-parte-2), que cobra os créditos da IA paga pela Domma. O provisionamento das instâncias e os computadores (VPS) vêm nas próximas partes; o banco já tem as tabelas deles.
+A **Parte 1** fez o painel, a cobrança e os créditos; a **Parte 2** acrescenta o [gateway de IA](#gateway-de-ia-parte-2), que cobra os créditos da IA paga pela Domma. O mesmo deploy também serve a [Área do cliente](#área-do-cliente-contaarkobotcombr) em `conta.arkobot.com.br`. O provisionamento das instâncias e os computadores (VPS) vêm nas próximas partes; o banco já tem as tabelas deles.
 
 ![Visão geral](screenshots/03-visao-geral.png)
 
@@ -22,18 +22,20 @@ Por que não Next.js: daria certo, mas o painel não ganha nada com SSR, e com H
 
 ```
 apps/admin
-├── migrations/            0001_init.sql (todas as tabelas), 0002_planos_iniciais.sql
+├── migrations/            0001_init.sql (todas as tabelas), 0002_planos_iniciais.sql, … 0005_area_do_cliente.sql
 ├── src/
 │   ├── auth/              login por e-mail + código, sessões, TOTP, limites de taxa
 │   ├── billing/           BillingProvider, Asaas (asaas.ts), webhooks, régua, máquina de estados
 │   ├── credits/ledger.ts  livro de créditos imutável e idempotente
+│   ├── customer/          Área do cliente: login por código, cadastro, assinatura, créditos, LGPD (catalog.ts: termos, pacotes)
 │   ├── gateway/           gateway de IA: proxy, reserva e liquidação, preços, tokens (processo próprio: node.ts)
 │   ├── domain/            clientes, CPF/CNPJ, efeitos de status em cliente e instâncias
 │   ├── jobs/              fila em Postgres e o "tick" do cron
 │   ├── security/          AES-256-GCM (SecretBox), TOTP
 │   ├── server/            app Hono, rotas, entradas Node (node.ts) e Vercel (vercel.ts)
 │   ├── cli/               migrate, create-admin, run-jobs, seed-demo
-│   └── web/               painel React
+│   ├── web/               painel React (index.html)
+│   └── conta/             Área do cliente em React (conta.html), reaproveitando web/ui.tsx
 ├── test/                  testes (Vitest) e o Asaas falso
 ├── scripts/               dev, build da Vercel, screenshots
 └── screenshots/           telas em 1440×900
@@ -49,7 +51,7 @@ cp apps/admin/.env.example apps/admin/.env     # preencha (veja abaixo)
 pnpm --filter admin migrate                    # cria/atualiza as tabelas
 pnpm --filter admin create-admin voce@domma.com.br --name=Você
 pnpm --filter admin seed:demo                  # opcional: clientes e pagamentos de exemplo
-pnpm --filter admin dev                        # API em :8790 e painel em http://localhost:5190
+pnpm --filter admin dev                        # API em :8790, painel em http://localhost:5190 e Área do cliente em http://localhost:5191
 ```
 
 Para o login, informe o e-mail; em desenvolvimento o código de 8 dígitos aparece no terminal da API (`[mailer:console]`).
@@ -68,6 +70,8 @@ Postgres rápido com Docker: `docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=ar
 | `ADMIN_ENCRYPTION_KEY_PREVIOUS` | não | A chave anterior, só durante uma rotação (abre o que foi cifrado com ela). |
 | `ADMIN_SESSION_SECRET` | sim | 32+ caracteres. Chave do HMAC dos códigos de login e dos limites de taxa. |
 | `ADMIN_PUBLIC_URL` | sim em produção | Endereço do painel, ex.: `https://admin.arkobot.com.br`. Escritas só são aceitas vindas dessa origem; o cookie fica `Secure` quando é https. Também forma a URL do webhook. |
+| `CUSTOMER_PUBLIC_URL` | não | Endereço da Área do cliente, ex.: `https://conta.arkobot.com.br` (padrão em produção; `http://localhost:5191` em desenvolvimento). Precisa ter host diferente de `ADMIN_PUBLIC_URL`. A API `/api/conta/*` só responde nesse host, e a API do painel, os webhooks e o cron nunca respondem nele. Também é lido no build da Vercel para servir `conta.html` nesse host. |
+| `CUSTOMER_MAIL_FROM` | não | Remetente dos códigos da Área do cliente. Padrão: `ArkoBot <conta@arkobot.com.br>`. |
 | `CRON_SECRET` | sim em produção | Protege `GET /api/cron/tick` (`Authorization: Bearer …`). A Vercel envia esse cabeçalho sozinha. |
 | `ADMIN_CLIENT_IP_HEADER` | não | Cabeçalho com o IP real, escrito pela borda. Na Vercel já é `x-real-ip`. |
 | `ADMIN_MAIL_FROM` | não | Remetente dos e-mails. |
@@ -91,7 +95,8 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"  
    As migrações ligam RLS em todas as tabelas sem nenhuma política: a API REST do Supabase (papéis `anon`/`authenticated`) não lê nada; o Admin conecta como dono das tabelas.
 2. **Projeto na Vercel.** Importe o repositório com **Root Directory = `apps/admin`**. O `vercel.json` já define `pnpm run build:vercel`, que gera `.vercel/output` (Build Output API): o painel estático e **uma função Node** que atende `/api/*` e `/webhooks/*`, mais o cron `*/5 * * * *` em `/api/cron/tick`.
 3. **Variáveis** (Production): `DATABASE_URL`, `ADMIN_ENCRYPTION_KEY`, `ADMIN_SESSION_SECRET`, `ADMIN_PUBLIC_URL`, `CRON_SECRET`, `RESEND_API_KEY`, `NODE_ENV=production`.
-4. **Domínio**: `admin.arkobot.com.br` → projeto. Proteja também com *Vercel Authentication* ou lista de IPs se quiser uma segunda barreira.
+4. **Domínios**: `admin.arkobot.com.br` e `conta.arkobot.com.br` → o mesmo projeto (*Settings → Domains → Add*). No DNS de `arkobot.com.br`, um `CNAME` de `conta` para `cname.vercel-dns.com` (como o de `admin`). Defina `CUSTOMER_PUBLIC_URL=https://conta.arkobot.com.br` e faça um novo deploy: o build usa essa variável para mandar as páginas desse host para `conta.html`. Não ligue *Vercel Authentication* no projeto inteiro, porque a Área do cliente é pública; se quiser uma barreira extra para o painel, use regra de firewall só para o host `admin.`.
+   Depois rode a migração `0005_area_do_cliente.sql` (`pnpm --filter admin migrate` com a `DATABASE_URL` de produção).
 5. **Primeiro admin** (da sua máquina, com a `DATABASE_URL` de produção): `pnpm --filter admin create-admin seu@domma.com.br`. Depois entre e ligue o 2º fator em *Minha conta*.
 
 Observações:
@@ -141,7 +146,7 @@ Cada evento é gravado bruto em `billing_events` (único por conta + id do event
 - Sessão: token aleatório em cookie `HttpOnly`, `Secure`, `SameSite=Strict`; o banco guarda só o hash. Expira em 12 h sem uso. Escritas precisam vir da origem `ADMIN_PUBLIC_URL`.
 - Perfis: `owner` e `operator` alteram; `viewer` só lê.
 - `audit_log` e `credit_ledger` têm gatilhos que recusam `UPDATE`, `DELETE` e `TRUNCATE`.
-- `terms_acceptances` guarda versão, data e IP de cada aceite (o portal do cliente vai gravar; o painel mostra no detalhe do cliente).
+- `terms_acceptances` guarda versão, data, IP e navegador de cada aceite (gravado pela Área do cliente; o painel mostra no detalhe do cliente).
 
 ## Planos iniciais
 
@@ -167,7 +172,34 @@ O gateway tem `test/gateway.test.ts` e `test/gateway-admin.test.ts`, com um prov
 
 Cobrem: cifra (ida e volta, adulteração, contexto, rotação de chave), TOTP (vetores do RFC 6238), login por código e seus limites, 2º fator, sessões revogadas/expiradas, permissões (anônimo, viewer, origem, cron), cliente Asaas contra um servidor falso (`test/fake-asaas.ts`), idempotência de webhook e de créditos (inclusive corrida), transições da assinatura, estorno, chargeback, régua de inadimplência, adicionais e a fila de tarefas com `SKIP LOCKED`.
 
+A Área do cliente tem `test/customer.test.ts`: login por código e limites, separação de hosts (cookie do cliente não abre o painel e vice-versa, origem das escritas), validação do cadastro e gravação dos aceites, cadastro → assinatura no Asaas falso → fatura → webhook, compra de créditos, computadores adicionais, cancelamento, exportação, pedido de exclusão e isolamento entre organizações.
+
 Screenshots: com o painel rodando e dados de demonstração, `pnpm --filter admin screenshots` (usa o Playwright com Chromium).
+
+## Área do cliente (conta.arkobot.com.br)
+
+O cliente se cadastra, assina e acompanha a conta sozinho. Roda no **mesmo deploy** do painel, separado pelo host:
+
+| | Painel (`admin.`) | Área do cliente (`conta.`) |
+| --- | --- | --- |
+| Página | `index.html` (`src/web`) | `conta.html` (`src/conta`) |
+| API | `/api/*`, `/webhooks/*`, `/api/cron/*` | só `/api/conta/*` |
+| Cookie | `arko_admin_session`, `SameSite=Strict` | `arko_conta_session`, `SameSite=Lax` |
+| Escritas aceitas da origem | `ADMIN_PUBLIC_URL` | `CUSTOMER_PUBLIC_URL` |
+
+Os dois cookies são `HttpOnly`, `Secure` e sem `Domain` (valem só no próprio host), e o banco guarda só o hash do token. Em qualquer outro host a API do cliente responde 404; no host do cliente, a do painel também. `Lax` no cliente é para ele continuar logado ao voltar da página de pagamento do Asaas.
+
+**Fluxo**
+1. **Entrar / criar conta** (`/entrar`, `/cadastro?plano=essencial|profissional|empresa`): só e-mail; código de 8 dígitos com as mesmas regras e limites do login do painel (3 códigos por e-mail a cada 15 min, 5 pedidos/min e 10 verificações/min por IP, 5 tentativas, 10 min). A conta (`accounts`) só é criada quando o código confere. Sessão de 7 dias, renovada com o uso.
+2. **Boas-vindas**: nome, celular, empresa (CPF ou CNPJ com dígitos verificadores) e o aceite obrigatório dos [Termos de Uso](https://arkobot.com.br/termos/) e da [Política de Privacidade](https://arkobot.com.br/privacidade/). Cada documento vira uma linha em `terms_acceptances` com versão, IP (`ADMIN_CLIENT_IP_HEADER`/`x-real-ip`) e navegador. Cria a organização com a conta como `owner`. As versões ficam em `src/customer/catalog.ts` (`LEGAL_DOCUMENTS`, hoje `2026-11-25`); um teste confere com a data "em vigor a partir de" dos textos em `apps/site/conteudo/legal/`. **Ao mudar um texto, mude a data lá**: quem aceitou a versão anterior precisa aceitar de novo no próximo acesso.
+3. **Plano**: plano (pré-escolhido pelo site), computadores adicionais (R$ 159/mês cada) e Pix, boleto ou cartão. Cria a assinatura no Asaas pela conta *ativa para novos* (`startSubscription` + `setSubscriptionAddon`) e mostra o link da primeira fatura. O cartão é digitado na página do Asaas; nunca passa por aqui. Sem conta Asaas ativa, a tela diz que os pagamentos ainda não estão disponíveis e leva ao WhatsApp.
+4. **Painel**: situação da assinatura (pendente, em dia, em atraso, suspensa, cancelada) com o próximo passo, pagamentos com o link da fatura/boleto/Pix, saldo de créditos (plano e avulsos) e extrato, compra de pacotes de créditos (`CREDIT_PACKAGES`: 5.000, 10.000 e 25.000 créditos = R$ 50, R$ 100 e R$ 250), quantidade de computadores adicionais, cancelamento (com motivo; marca na auditoria se foi dentro dos 7 dias de arrependimento, para o reembolso manual), exportação dos dados (JSON) e pedido de exclusão.
+
+**Pedido de exclusão**: grava `account_deletion_requests` e a auditoria; nada é apagado sozinho. No painel, a ficha do cliente mostra um aviso e a aba *Pedidos de exclusão*, onde o operador registra o que fez (*Atendido* ou *Recusado*). Pagamentos, notas, o extrato de créditos e a auditoria ficam pelo prazo legal.
+
+Cada cliente só enxerga a própria organização: nenhuma rota recebe id de organização; tudo sai da `memberships` da conta da sessão. Um membro (`member`) só lê; mudanças de cobrança são do `owner`/`admin`. Cada conta pode gerar até 10 cobranças por hora.
+
+Em desenvolvimento, `pnpm --filter admin dev` abre a Área do cliente em `http://localhost:5191` (use `localhost`, não `127.0.0.1`, porque a API compara o host com `CUSTOMER_PUBLIC_URL`).
 
 ## Gateway de IA (Parte 2)
 
@@ -256,4 +288,4 @@ No servidor do ArkoBot, `OMB_CLOUD_AI_GATEWAY_URL` (raiz do gateway, https) e `O
 - **Instâncias**: provisionar o contêiner `cloud-home` por cliente (`OMB_CLOUD_*`), nó compartilhado do modo limitado, saúde e pareamento assinados.
 - **Gateway**: e-mail dos avisos de 50/80/100% (`UsageAlertNotifier`), emissão automática do token no provisionamento da instância, preços por faixa de contexto longo.
 - **Computadores (VPS)**: interface `VpsProvider` com a Hostinger primeiro (`vps_machines`, `vps_provider_accounts`).
-- `Mailer` real, troca de plano com pró-rata, emissão de NFS-e quando a conta PJ estiver ativa, portal do cliente (aceite de termos, compra de créditos).
+- Troca de plano com pró-rata (também na Área do cliente), emissão de NFS-e quando a conta PJ estiver ativa, convites de membros para a organização.

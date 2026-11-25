@@ -1,7 +1,7 @@
 import type { Queryable } from "./db/db.ts";
 
 export interface Actor {
-  type: "admin" | "system" | "webhook" | "cli";
+  type: "admin" | "system" | "webhook" | "cli" | "customer";
   id?: string | null;
   label?: string | null;
   ip?: string | null;

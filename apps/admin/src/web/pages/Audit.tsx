@@ -15,7 +15,7 @@ const GROUPS: [string, string][] = [
   ["plan.", "Planos"], ["billing_account.", "Contas de cobrança"], ["ai_key.", "Chaves de IA"], ["vps_account.", "Hostinger"], ["admin.", "Administradores"],
 ];
 
-const ACTOR_TONE: Record<string, "cyan" | "violet" | "slate" | "amber"> = { admin: "cyan", webhook: "violet", system: "slate", cli: "amber" };
+const ACTOR_TONE: Record<string, "cyan" | "violet" | "slate" | "amber" | "green"> = { admin: "cyan", webhook: "violet", system: "slate", cli: "amber", customer: "green" };
 
 export function AuditPage() {
   const [action, setAction] = useState("");

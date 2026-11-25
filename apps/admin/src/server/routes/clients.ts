@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { BILLING_TYPES } from "../../billing/provider.ts";
 import { cancelSubscription, createCreditCharge, setSubscriptionAddon, startSubscription } from "../../billing/service.ts";
+import { audit } from "../../audit.ts";
 import type { AppContext } from "../../context.ts";
 import { DomainError, setOrganizationStatus } from "../../domain/lifecycle.ts";
 import { adjustCredits, createOrganization } from "../../domain/organizations.ts";
@@ -79,7 +80,7 @@ export function clientRoutes(ctx: AppContext) {
     const id = param(c, "id");
     const org = (await ctx.db.query("SELECT * FROM organizations WHERE id = $1", [id])).rows[0];
     if (!org) throw new DomainError("Cliente não encontrado", 404);
-    const [members, subscription, wallet, ledger, payments, instances, auditRows, terms, addons, tokens, usage] = await Promise.all([
+    const [members, subscription, wallet, ledger, payments, instances, auditRows, terms, addons, tokens, usage, deletions] = await Promise.all([
       ctx.db.query(`SELECT a.id, a.email, a.name, a.phone, m.role, m.created_at FROM memberships m JOIN accounts a ON a.id = m.account_id
                     WHERE m.organization_id = $1 ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, a.email`, [id]),
       ctx.db.query(`${SUBSCRIPTION_SQL} WHERE s.organization_id = $1 ORDER BY (s.status = 'canceled'), s.created_at DESC LIMIT 1`, [id]),
@@ -99,11 +100,16 @@ export function clientRoutes(ctx: AppContext) {
                     FROM gateway_tokens t LEFT JOIN instances i ON i.id = t.instance_id WHERE t.organization_id = $1 ORDER BY t.revoked_at NULLS FIRST, t.created_at DESC`, [id]),
       ctx.db.query(`SELECT count(*)::int AS requests, COALESCE(SUM(credits), 0)::bigint AS credits, COALESCE(SUM(cost_brl_cents), 0)::float8 AS cost_brl_cents
                     FROM usage_events WHERE organization_id = $1 AND created_at >= $2`, [id, new Date(ctx.now().getTime() - 30 * 86_400_000)]),
+      ctx.db.query(`SELECT d.id, d.status, d.reason, d.created_at, d.resolved_at, d.resolution_note, d.ip, a.email, ad.email AS resolved_by_email
+                    FROM account_deletion_requests d JOIN accounts a ON a.id = d.account_id LEFT JOIN admins ad ON ad.id = d.resolved_by
+                    WHERE d.organization_id = $1 OR d.account_id IN (SELECT account_id FROM memberships WHERE organization_id = $1)
+                    ORDER BY d.created_at DESC LIMIT 20`, [id]),
     ]);
     return c.json({
       client: org, members: members.rows, subscription: subscription.rows[0] ?? null, addons: addons.rows,
       wallet: wallet.rows[0] ?? { plan_balance: 0, extra_balance: 0 }, ledger: ledger.rows, payments: payments.rows,
       instances: instances.rows, audit: auditRows.rows, terms: terms.rows, gatewayTokens: tokens.rows, usage30d: usage.rows[0],
+      deletionRequests: deletions.rows,
     });
   });
 
@@ -113,6 +119,25 @@ export function clientRoutes(ctx: AppContext) {
     const target = input.action === "suspend" ? "suspended" : input.action === "cancel" ? "canceled" : "active";
     const changed = await ctx.db.tx((q) => setOrganizationStatus(q, actorOf(c), id, target, target === "active" ? null : "manual", input.reason));
     if (!changed) throw new DomainError("O cliente já está nesse estado");
+    return c.json({ ok: true });
+  });
+
+  app.post("/:id/deletion-requests/:requestId/resolve", async (c) => {
+    const id = param(c, "id");
+    const requestId = param(c, "requestId");
+    const input = await body(c, z.object({ status: z.enum(["completed", "rejected"]), note: reason }));
+    const actor = actorOf(c);
+    await ctx.db.tx(async (q) => {
+      const { rows } = await q.query<{ account_id: string }>(
+        `UPDATE account_deletion_requests SET status = $3, resolved_at = $4, resolved_by = $5, resolution_note = $6
+         WHERE id = $2 AND status = 'requested'
+           AND (organization_id = $1 OR account_id IN (SELECT account_id FROM memberships WHERE organization_id = $1))
+         RETURNING account_id`,
+        [id, requestId, input.status, ctx.now(), actor.id, input.note]);
+      if (!rows[0]) throw new DomainError("Pedido não encontrado ou já resolvido", 404);
+      await audit(q, actor, { action: `account.deletion_${input.status}`, targetType: "account", targetId: rows[0].account_id,
+        organizationId: id, reason: input.note, data: { requestId } });
+    });
     return c.json({ ok: true });
   });
 

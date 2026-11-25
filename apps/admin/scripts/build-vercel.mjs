@@ -7,9 +7,11 @@ import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
+// The static pages are told apart by host at the edge; the default matches the server's production default.
+const customerHost = new URL(process.env.CUSTOMER_PUBLIC_URL?.trim() || "https://conta.arkobot.com.br").host.toLowerCase();
 const output = join(root, ".vercel", "output");
 const web = join(root, "dist", "web");
-if (!existsSync(join(web, "index.html"))) throw new Error("Rode `pnpm build` antes: dist/web não existe.");
+if (!existsSync(join(web, "index.html")) || !existsSync(join(web, "conta.html"))) throw new Error("Rode `pnpm build` antes: dist/web não existe.");
 
 rmSync(output, { recursive: true, force: true });
 cpSync(web, join(output, "static"), { recursive: true });
@@ -37,13 +39,16 @@ writeFileSync(join(fn, ".vc-config.json"), JSON.stringify({
   maxDuration: 60,
 }, null, 2));
 
+const pageHeaders = { "x-frame-options": "DENY", "referrer-policy": "no-referrer", "x-robots-tag": "noindex" };
 writeFileSync(join(output, "config.json"), JSON.stringify({
   version: 3,
   routes: [
     { src: "^/assets/(.*)$", headers: { "cache-control": "public, max-age=31536000, immutable" }, continue: true },
     { src: "^/(api|webhooks)(/.*)?$", dest: "/api" },
+    { src: "^/(index\\.html)?$", has: [{ type: "host", value: customerHost }], dest: "/conta.html", headers: pageHeaders },
     { handle: "filesystem" },
-    { src: "^/(.*)$", dest: "/index.html", headers: { "x-frame-options": "DENY", "referrer-policy": "no-referrer", "x-robots-tag": "noindex" } },
+    { src: "^/(.*)$", has: [{ type: "host", value: customerHost }], dest: "/conta.html", headers: pageHeaders },
+    { src: "^/(.*)$", dest: "/index.html", headers: pageHeaders },
   ],
   crons: [{ path: "/api/cron/tick", schedule: "*/5 * * * *" }],
 }, null, 2));

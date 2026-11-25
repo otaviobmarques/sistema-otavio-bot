@@ -30,6 +30,9 @@ export async function tick(ctx: AppContext, limit = 50): Promise<TickSummary> {
   const jobs = await runJobs(ctx, JOB_HANDLERS, { limit });
   await sweepRateLimits(ctx.db, ctx.now());
   const expiredReservations = await expireReservations(ctx.db, ctx.now());
-  await ctx.db.query("DELETE FROM admin_sessions WHERE expires_at < $1", [new Date(ctx.now().getTime() - 7 * 24 * 60 * 60_000)]);
+  const weekAgo = new Date(ctx.now().getTime() - 7 * 24 * 60 * 60_000);
+  await ctx.db.query("DELETE FROM admin_sessions WHERE expires_at < $1", [weekAgo]);
+  await ctx.db.query("DELETE FROM account_sessions WHERE expires_at < $1", [weekAgo]);
+  await ctx.db.query("DELETE FROM account_otps WHERE expires_at < $1", [ctx.now()]);
   return { jobs, dunning, expiredReservations };
 }

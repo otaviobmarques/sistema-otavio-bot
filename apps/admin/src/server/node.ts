@@ -13,9 +13,14 @@ const webRoot = fileURLToPath(new URL("../../dist/web", import.meta.url));
 
 if (existsSync(webRoot)) {
   const index = readFileSync(`${webRoot}/index.html`, "utf8");
+  const conta = readFileSync(`${webRoot}/conta.html`, "utf8");
+  const customerHost = new URL(ctx.config.customerPublicUrl).host.toLowerCase();
   app.use("/assets/*", serveStatic({ root: webRoot }));
   app.use("/favicon.svg", serveStatic({ root: webRoot }));
-  app.get("*", (c) => (c.req.path.startsWith("/api/") || c.req.path.startsWith("/webhooks/") ? c.notFound() : c.html(index)));
+  app.get("*", (c) => {
+    if (c.req.path.startsWith("/api/") || c.req.path.startsWith("/webhooks/")) return c.notFound();
+    return c.html(new URL(c.req.url).host.toLowerCase() === customerHost ? conta : index);
+  });
 }
 
 const port = Number(process.env.PORT) || 8790;

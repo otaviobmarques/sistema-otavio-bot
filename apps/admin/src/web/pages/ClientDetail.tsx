@@ -27,7 +27,17 @@ interface Detail {
   terms: { document: string; version: string; accepted_at: string; ip: string; email: string }[];
   gatewayTokens: GatewayToken[];
   usage30d: { requests: number; credits: number; cost_brl_cents: number };
+  deletionRequests: DeletionRequest[];
 }
+
+interface DeletionRequest {
+  id: string; status: "requested" | "completed" | "rejected"; reason: string | null; created_at: string; resolved_at: string | null;
+  resolution_note: string | null; ip: string; email: string; resolved_by_email: string | null;
+}
+
+const DELETION_STATUS: Record<string, [string, "amber" | "green" | "slate"]> = {
+  requested: ["Aguardando", "amber"], completed: ["Atendido", "green"], rejected: ["Recusado", "slate"],
+};
 
 interface GatewayToken {
   id: string; token_prefix: string; label: string; instance_id: string | null; instance_slug: string | null; created_at: string; last_used_at: string | null;
@@ -39,7 +49,7 @@ interface PlansData {
   addons: { id: string; name: string; price_cents: number; unit: string; active: boolean }[];
 }
 
-type Section = "ledger" | "payments" | "audit" | "terms";
+type Section = "ledger" | "payments" | "audit" | "terms" | "deletion";
 type Dialog = null | "suspend" | "reactivate" | "cancel" | "credits" | "charge" | "subscribe" | "unsubscribe";
 
 const MODE: Record<string, string> = { dedicated: "Dedicada", shared_limited: "Compartilhada (limitada)", desktop: "No PC do cliente" };
@@ -53,6 +63,7 @@ export function ClientDetailPage() {
   const { data, error, loading, reload } = useApi<Detail>(`/api/clients/${id}`);
   const [section, setSection] = useState<Section>("ledger");
   const [dialog, setDialog] = useState<Dialog>(null);
+  const [resolving, setResolving] = useState<DeletionRequest | null>(null);
   if (loading && !data) return <Loading />;
   if (!data) return <ErrorNote message={error} />;
   const { client, subscription, wallet } = data;
@@ -76,6 +87,11 @@ export function ClientDetailPage() {
           <p className="mt-1 text-sm text-slate-500">
             {client.document_type.toUpperCase()} {documentFormat(client.document)} · cliente desde {date(client.created_at)} · <Mono>{client.slug}</Mono>
           </p>
+          {data.deletionRequests.some((row) => row.status === "requested") ? (
+            <p className="mt-2 rounded-lg bg-red-50 px-3 py-1.5 text-sm text-red-700">
+              O cliente pediu a exclusão da conta. Veja em <button className="font-medium underline" onClick={() => setSection("deletion")}>Pedidos de exclusão</button>.
+            </p>
+          ) : null}
           {client.status !== "active" && client.status_reason ? (
             <p className="mt-2 rounded-lg bg-amber-50 px-3 py-1.5 text-sm text-amber-800">
               Motivo ({REASON[client.status_reason_code ?? ""] ?? "—"}): {client.status_reason}
@@ -177,6 +193,7 @@ export function ClientDetailPage() {
           { value: "payments", label: "Pagamentos", count: data.payments.length },
           { value: "audit", label: "Auditoria", count: data.audit.length },
           { value: "terms", label: "Aceites de termos", count: data.terms.length },
+          { value: "deletion", label: "Pedidos de exclusão", count: data.deletionRequests.length },
         ]} />
         <Card padded={false}>
           {section === "ledger" ? (
@@ -218,8 +235,23 @@ export function ClientDetailPage() {
                 </tr>
               ))}
             </Table>
+          ) : section === "deletion" ? (
+            <Table head={["Pedido em", "Pessoa", "Motivo", "Situação", ""]} empty="Nenhum pedido de exclusão.">
+              {data.deletionRequests.map((row) => (
+                <tr key={row.id}>
+                  <td className={`${td} whitespace-nowrap`}>{dateTime(row.created_at)}<div className="text-xs text-slate-400"><Mono>{row.ip}</Mono></div></td>
+                  <td className={td}>{row.email}</td>
+                  <td className={`${td} text-slate-600`}>{row.reason ?? "—"}</td>
+                  <td className={td}>
+                    <StatusBadge map={DELETION_STATUS} value={row.status} />
+                    {row.resolved_at ? <div className="mt-1 text-xs text-slate-500">{dateTime(row.resolved_at)} · {row.resolved_by_email} · {row.resolution_note}</div> : null}
+                  </td>
+                  <td className={td}>{writable && row.status === "requested" ? <Button size="sm" variant="secondary" onClick={() => setResolving(row)}>Resolver</Button> : null}</td>
+                </tr>
+              ))}
+            </Table>
           ) : (
-            <Table head={["Documento", "Versão", "Pessoa", "Aceito em", "IP"]} empty="Nenhum aceite registrado. O portal do cliente grava versão, data e IP quando a pessoa aceita os termos.">
+            <Table head={["Documento", "Versão", "Pessoa", "Aceito em", "IP"]} empty="Nenhum aceite registrado. A área do cliente grava versão, data e IP quando a pessoa aceita os termos.">
               {data.terms.map((row, i) => (
                 <tr key={i}>
                   <td className={td}>{TERMS[row.document] ?? row.document}</td>
@@ -238,8 +270,32 @@ export function ClientDetailPage() {
       <CreditsDialog open={dialog === "credits"} clientId={client.id} onClose={close} onDone={done} />
       <ChargeDialog open={dialog === "charge"} clientId={client.id} onClose={close} onDone={reload} />
       <SubscribeDialog open={dialog === "subscribe"} clientId={client.id} onClose={close} onDone={done} />
+      <ResolveDeletionDialog request={resolving} clientId={client.id} onClose={() => setResolving(null)} onDone={() => {
+        setResolving(null);
+        reload();
+      }} />
       <UnsubscribeDialog open={dialog === "unsubscribe"} clientId={client.id} onClose={close} onDone={done} />
     </>
+  );
+}
+
+function ResolveDeletionDialog({ request, clientId, onClose, onDone }: { request: DeletionRequest | null; clientId: string; onClose: () => void; onDone: () => void }) {
+  const [status, setStatus] = useState("completed");
+  const [note, setNote] = useState("");
+  const { busy, error, submit } = useSubmit(onDone, "Pedido de exclusão resolvido");
+  return (
+    <Modal title="Resolver pedido de exclusão" open={request !== null} onClose={onClose} footer={<>
+      <Button variant="secondary" onClick={onClose}>Voltar</Button>
+      <Button busy={busy} disabled={note.trim().length < 5} onClick={() => submit(`/api/clients/${clientId}/deletion-requests/${request!.id}/resolve`, { status, note })}>Registrar</Button>
+    </>}>
+      <p className="text-sm text-slate-600">
+        Apague ou anonimize os dados pessoais de <b>{request?.email}</b> que não precisam ser guardados. Pagamentos, notas fiscais, o extrato de créditos e a auditoria ficam pelo prazo legal.
+        Cancele antes a assinatura, se ainda houver.
+      </p>
+      <Field label="Resultado"><Select value={status} onChange={(e) => setStatus(e.target.value)}><option value="completed">Atendido</option><option value="rejected">Recusado</option></Select></Field>
+      <Field label="O que foi feito" hint="Obrigatório. Vai para a auditoria."><Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ex.: nome e telefone anonimizados em 26/11; dados fiscais mantidos" /></Field>
+      <ErrorNote message={error} />
+    </Modal>
   );
 }
 
