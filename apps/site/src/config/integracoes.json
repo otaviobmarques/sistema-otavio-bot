@@ -1,0 +1,191 @@
+{
+  "ias": [
+    {
+      "id": "openai",
+      "nome": "OpenAI",
+      "produto": "ChatGPT",
+      "pacote": "lobehub",
+      "arquivo": "openai.svg",
+      "mono": true
+    },
+    {
+      "id": "claude",
+      "nome": "Anthropic",
+      "produto": "Claude",
+      "pacote": "lobehub",
+      "arquivo": "claude-color.svg"
+    },
+    {
+      "id": "gemini",
+      "nome": "Google",
+      "produto": "Gemini",
+      "pacote": "lobehub",
+      "arquivo": "gemini-color.svg"
+    },
+    {
+      "id": "grok",
+      "nome": "xAI",
+      "produto": "Grok",
+      "pacote": "lobehub",
+      "arquivo": "grok.svg",
+      "mono": true
+    },
+    {
+      "id": "kimi",
+      "nome": "Moonshot AI",
+      "produto": "Kimi",
+      "pacote": "lobehub",
+      "arquivo": "kimi.svg",
+      "mono": true
+    },
+    {
+      "id": "deepseek",
+      "nome": "DeepSeek",
+      "produto": "DeepSeek",
+      "pacote": "lobehub",
+      "arquivo": "deepseek-color.svg"
+    },
+    {
+      "id": "nvidia",
+      "nome": "NVIDIA",
+      "produto": "Nemotron",
+      "pacote": "lobehub",
+      "arquivo": "nvidia-color.svg"
+    },
+    {
+      "id": "mistral",
+      "nome": "Mistral AI",
+      "produto": "Mistral",
+      "pacote": "lobehub",
+      "arquivo": "mistral-color.svg"
+    },
+    {
+      "id": "meta",
+      "nome": "Meta",
+      "produto": "Llama e Muse",
+      "pacote": "lobehub",
+      "arquivo": "meta-color.svg"
+    },
+    {
+      "id": "qwen",
+      "nome": "Alibaba",
+      "produto": "Qwen",
+      "pacote": "lobehub",
+      "arquivo": "qwen-color.svg"
+    },
+    {
+      "id": "minimax",
+      "nome": "MiniMax",
+      "produto": "MiniMax",
+      "pacote": "lobehub",
+      "arquivo": "minimax-color.svg"
+    },
+    {
+      "id": "openrouter",
+      "nome": "OpenRouter",
+      "produto": "OpenRouter",
+      "pacote": "lobehub",
+      "arquivo": "openrouter.svg",
+      "mono": true
+    },
+    {
+      "id": "groq",
+      "nome": "Groq",
+      "produto": "Groq",
+      "pacote": "lobehub",
+      "arquivo": "groq.svg",
+      "mono": true
+    },
+    {
+      "id": "cerebras",
+      "nome": "Cerebras",
+      "produto": "Cerebras",
+      "pacote": "lobehub",
+      "arquivo": "cerebras-color.svg"
+    },
+    {
+      "id": "copilot",
+      "nome": "GitHub",
+      "produto": "Copilot",
+      "pacote": "lobehub",
+      "arquivo": "githubcopilot.svg",
+      "mono": true,
+      "soConta": true
+    },
+    {
+      "id": "cursor",
+      "nome": "Cursor",
+      "produto": "Cursor",
+      "pacote": "lobehub",
+      "arquivo": "cursor.svg",
+      "mono": true,
+      "soConta": true
+    }
+  ],
+  "servicos": [
+    {
+      "id": "whatsapp",
+      "nome": "WhatsApp",
+      "como": "Aprovações e avisos no seu celular",
+      "pacote": "simple-icons",
+      "arquivo": "whatsapp.svg",
+      "cor": "#25D366"
+    },
+    {
+      "id": "gmail",
+      "nome": "Gmail",
+      "como": "Ler, responder e enviar e-mails",
+      "pacote": "simple-icons",
+      "arquivo": "gmail.svg",
+      "cor": "#EA4335"
+    },
+    {
+      "id": "googlecalendar",
+      "nome": "Google Agenda",
+      "como": "Marcar e consultar compromissos",
+      "pacote": "simple-icons",
+      "arquivo": "googlecalendar.svg",
+      "cor": "#4285F4"
+    },
+    {
+      "id": "googledrive",
+      "nome": "Google Drive",
+      "como": "Buscar e salvar arquivos",
+      "pacote": "simple-icons",
+      "arquivo": "googledrive.svg",
+      "cor": "#4285F4"
+    },
+    {
+      "id": "notion",
+      "nome": "Notion",
+      "como": "Documentos e bases",
+      "pacote": "simple-icons",
+      "arquivo": "notion.svg",
+      "mono": true
+    },
+    {
+      "id": "hubspot",
+      "nome": "HubSpot",
+      "como": "CRM e negócios",
+      "pacote": "simple-icons",
+      "arquivo": "hubspot.svg",
+      "cor": "#FF7A59"
+    },
+    {
+      "id": "github",
+      "nome": "GitHub",
+      "como": "Código, issues e pull requests",
+      "pacote": "simple-icons",
+      "arquivo": "github.svg",
+      "mono": true
+    },
+    {
+      "id": "linear",
+      "nome": "Linear",
+      "como": "Tarefas e projetos",
+      "pacote": "simple-icons",
+      "arquivo": "linear.svg",
+      "cor": "#5E6AD2"
+    }
+  ]
+}
