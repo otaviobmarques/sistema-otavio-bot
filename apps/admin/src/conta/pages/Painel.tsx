@@ -19,6 +19,7 @@ interface Panel {
   subscription: null | {
     id: string; status: string; billing_type: string | null; price_cents: number; total_cents: number; credits_per_month: number; plan_code: string; plan_name: string;
     included_vps: number; next_due_date: string | null; current_period_end: string | null; past_due_since: string | null; canceled_at: string | null; created_at: string;
+    courtesy: boolean; courtesy_until: string | null;
   };
   addons: { code: string; name: string; quantity: number; unit_price_cents: number }[];
   payments: Payment[];
@@ -56,6 +57,10 @@ function statusCopy(panel: Panel): { title: string; text: ReactNode; tone: strin
       return { title: "Aguardando o primeiro pagamento", tone: "bg-cyan-soft text-cyan-ink",
         text: <>Assim que o pagamento for confirmado, a assinatura fica em dia e os {int(sub.credits_per_month)} créditos do plano entram na sua conta. Pix e cartão confirmam em minutos; boleto em até 3 dias úteis.</> };
     case "active":
+      if (sub.courtesy) {
+        return { title: `Plano ${sub.plan_name} — cortesia (sem cobrança)`, tone: "bg-violet-50 text-violet-900",
+          text: <>{sub.courtesy_until ? <>Válida até <b>{date(sub.courtesy_until)}</b>. </> : null}Os {int(sub.credits_per_month)} créditos do plano renovam todo mês, sem cobrança. Para mudar de plano ou encerrar a cortesia, fale com a gente.</> };
+      }
       return { title: "Tudo em dia", tone: "bg-emerald-50 text-emerald-800",
         text: <>Sua equipe está funcionando. {sub.next_due_date ? <>A próxima cobrança vence em <b>{date(sub.next_due_date)}</b>.</> : null}</> };
     case "past_due":
@@ -103,7 +108,7 @@ export function PainelPage({ state, onChanged }: { state: CustomerState; onChang
 
       {sub && copy ? (
         <Card title={<span className="flex items-center gap-2">Assinatura <StatusBadge map={CUSTOMER_SUB_STATUS} value={sub.status} /></span>}
-          actions={canManage && live ? <Button size="sm" variant="ghost" onClick={() => setDialog("cancel")}><XCircle className="h-3.5 w-3.5" /> Cancelar assinatura</Button> : null}>
+          actions={canManage && live && !live.courtesy ? <Button size="sm" variant="ghost" onClick={() => setDialog("cancel")}><XCircle className="h-3.5 w-3.5" /> Cancelar assinatura</Button> : null}>
           <div className={cx("rounded-xl p-4", copy.tone)}>
             <div className="font-semibold">{copy.title}</div>
             <p className="mt-1 text-sm">{copy.text}</p>
@@ -111,13 +116,14 @@ export function PainelPage({ state, onChanged }: { state: CustomerState; onChang
               {live && sub.status !== "active" ? <PayButton payment={invoice} /> : null}
               {sub.status === "canceled" && canManage ? <Link to="/assinar" className="inline-flex h-10 items-center rounded-lg bg-navy-950 px-4 text-sm font-medium text-white hover:bg-navy-800">Assinar de novo</Link> : null}
               {sub.status === "suspended" || sub.status === "past_due" ? <WhatsAppButton>Preciso de ajuda</WhatsAppButton> : null}
+              {live?.courtesy ? <WhatsAppButton message="Olá! Quero falar sobre a cortesia do meu plano ArkoBot.">Falar com a gente</WhatsAppButton> : null}
             </div>
             {live && sub.status !== "active" && !invoice ? <p className="mt-2 text-xs opacity-80">A fatura aparece aqui em instantes; ela também foi enviada para o seu e-mail.</p> : null}
           </div>
           <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-4">
             <div><dt className="text-xs uppercase tracking-wide text-slate-500">Plano</dt><dd className="mt-1 font-semibold">{sub.plan_name}</dd></div>
-            <div><dt className="text-xs uppercase tracking-wide text-slate-500">Valor por mês</dt><dd className="mt-1 font-semibold tabular">{brl(sub.total_cents)}</dd></div>
-            <div><dt className="text-xs uppercase tracking-wide text-slate-500">Forma de pagamento</dt><dd className="mt-1 font-semibold">{sub.billing_type ? CUSTOMER_BILLING_LABEL[sub.billing_type] ?? sub.billing_type : "—"}</dd></div>
+            <div><dt className="text-xs uppercase tracking-wide text-slate-500">Valor por mês</dt><dd className="mt-1 font-semibold tabular">{sub.courtesy ? "Sem cobrança" : brl(sub.total_cents)}</dd></div>
+            <div><dt className="text-xs uppercase tracking-wide text-slate-500">Forma de pagamento</dt><dd className="mt-1 font-semibold">{sub.courtesy ? "Cortesia" : sub.billing_type ? CUSTOMER_BILLING_LABEL[sub.billing_type] ?? sub.billing_type : "—"}</dd></div>
             <div><dt className="text-xs uppercase tracking-wide text-slate-500">Créditos do plano</dt><dd className="mt-1 font-semibold tabular">{int(sub.credits_per_month)}/mês</dd></div>
           </dl>
         </Card>
@@ -136,7 +142,7 @@ export function PainelPage({ state, onChanged }: { state: CustomerState; onChang
         </Card>
 
         <Card title={<span className="flex items-center gap-2"><Monitor className="h-4 w-4 text-cyan-ink" /> Computadores individuais</span>}
-          actions={canManage && live && data.extraComputer ? <Button size="sm" variant="secondary" onClick={() => setDialog("computers")}>Alterar</Button> : null}>
+          actions={canManage && live && !live.courtesy && data.extraComputer ? <Button size="sm" variant="secondary" onClick={() => setDialog("computers")}>Alterar</Button> : null}>
           <div className="font-display text-4xl font-bold tabular">{(live?.included_vps ?? 0) + computers}</div>
           <div className="mt-1 text-sm text-slate-500">
             {live?.included_vps ? `${live.included_vps} incluído${live.included_vps > 1 ? "s" : ""} no plano` : "Nenhum incluído no plano"}
@@ -146,7 +152,7 @@ export function PainelPage({ state, onChanged }: { state: CustomerState; onChang
         </Card>
       </div>
 
-      <Card title={<span className="flex items-center gap-2"><ReceiptText className="h-4 w-4 text-cyan-ink" /> Pagamentos</span>} padded={false}>
+      {live?.courtesy && data.payments.length === 0 ? null : <Card title={<span className="flex items-center gap-2"><ReceiptText className="h-4 w-4 text-cyan-ink" /> Pagamentos</span>} padded={false}>
         <Table head={["Vencimento", "Descrição", "Valor", "Forma", "Situação", ""]} empty="Nenhum pagamento ainda.">
           {data.payments.map((p) => (
             <tr key={p.id}>
@@ -165,7 +171,7 @@ export function PainelPage({ state, onChanged }: { state: CustomerState; onChang
             </tr>
           ))}
         </Table>
-      </Card>
+      </Card>}
 
       <Card title="Extrato de créditos" padded={false}>
         {data.ledger.length === 0 ? (

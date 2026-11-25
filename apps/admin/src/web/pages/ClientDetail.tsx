@@ -1,4 +1,4 @@
-import { ArrowLeft, Ban, Boxes, Coins, KeyRound, Play, QrCode, RotateCcw, XCircle } from "lucide-react";
+import { ArrowLeft, Ban, Boxes, Coins, Gift, KeyRound, Play, QrCode, RotateCcw, XCircle } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
 import { api, useApi } from "../api.ts";
@@ -17,6 +17,7 @@ interface Detail {
     id: string; status: string; plan_name: string; plan_code: string; plan_free: boolean; billing_type: string | null; total_cents: number; price_cents: number;
     credits_per_month: number; provider_subscription_id: string | null; next_due_date: string | null; current_period_start: string | null;
     current_period_end: string | null; past_due_since: string | null; canceled_at: string | null; cancel_reason: string | null;
+    courtesy: boolean; courtesy_reason: string | null; courtesy_until: string | null; courtesy_granted_by_email: string | null;
   };
   addons: { addon_id: string; quantity: number; unit_price_cents: number; name: string; code: string }[];
   wallet: { plan_balance: number; extra_balance: number };
@@ -50,7 +51,7 @@ interface PlansData {
 }
 
 type Section = "ledger" | "payments" | "audit" | "terms" | "deletion";
-type Dialog = null | "suspend" | "reactivate" | "cancel" | "credits" | "charge" | "subscribe" | "unsubscribe";
+type Dialog = null | "suspend" | "reactivate" | "cancel" | "credits" | "charge" | "subscribe" | "unsubscribe" | "courtesy" | "endCourtesy";
 
 const MODE: Record<string, string> = { dedicated: "Dedicada", shared_limited: "Compartilhada (limitada)", desktop: "No PC do cliente" };
 const ROLE: Record<string, string> ={ owner: "Dono", admin: "Admin", member: "Membro" };
@@ -110,15 +111,31 @@ export function ClientDetailPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card title="Assinatura" className="lg:col-span-2" actions={writable ? (live
-          ? <Button size="sm" variant="ghost" onClick={() => setDialog("unsubscribe")}>Cancelar assinatura</Button>
-          : <Button size="sm" onClick={() => setDialog("subscribe")} disabled={client.status === "canceled"}><Play className="h-3.5 w-3.5" /> Iniciar assinatura</Button>) : null}>
+        <Card title="Assinatura" className="lg:col-span-2" actions={writable ? (
+          <div className="flex flex-wrap gap-2">
+            {!live || live.status === "pending" ? (
+              <Button size="sm" variant="secondary" onClick={() => setDialog("courtesy")} disabled={client.status === "canceled"}><Gift className="h-3.5 w-3.5" /> Liberar sem cobrança (cortesia)</Button>
+            ) : null}
+            {live?.courtesy ? <Button size="sm" variant="ghost" onClick={() => setDialog("endCourtesy")}>Encerrar cortesia</Button>
+              : live ? <Button size="sm" variant="ghost" onClick={() => setDialog("unsubscribe")}>Cancelar assinatura</Button>
+              : <Button size="sm" onClick={() => setDialog("subscribe")} disabled={client.status === "canceled"}><Play className="h-3.5 w-3.5" /> Iniciar assinatura</Button>}
+          </div>
+        ) : null}>
           {subscription ? (
             <div className="grid gap-6 md:grid-cols-2">
+              {subscription.courtesy ? (
+                <div className="md:col-span-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-900">
+                  <div className="flex flex-wrap items-center gap-2 font-semibold">
+                    <Gift className="h-4 w-4" /> Cortesia — sem cobrança
+                    <span className="font-normal">· {subscription.courtesy_until ? `válida até ${date(subscription.courtesy_until)}` : "sem prazo"}</span>
+                  </div>
+                  <p className="mt-1">Motivo: {subscription.courtesy_reason}{subscription.courtesy_granted_by_email ? <span className="text-violet-700"> · liberada por {subscription.courtesy_granted_by_email}</span> : null}</p>
+                </div>
+              ) : null}
               <KeyValue items={[
-                ["Plano", <>{subscription.plan_name} {subscription.plan_free ? <Badge tone="cyan">grátis</Badge> : null}</>],
+                ["Plano", <>{subscription.plan_name} {subscription.plan_free ? <Badge tone="cyan">grátis</Badge> : null}{subscription.courtesy ? <Badge tone="violet">cortesia</Badge> : null}</>],
                 ["Situação", <StatusBadge map={SUB_STATUS} value={subscription.status} />],
-                ["Valor mensal", <span className="tabular">{brl(subscription.total_cents)}</span>],
+                ["Valor mensal", subscription.courtesy ? "sem cobrança" : <span className="tabular">{brl(subscription.total_cents)}</span>],
                 ["Forma", subscription.billing_type ? BILLING_TYPE[subscription.billing_type] : "—"],
                 ["Cota mensal", `${int(subscription.credits_per_month)} créditos`],
               ]} />
@@ -129,7 +146,7 @@ export function ClientDetailPage() {
                 ["Asaas", subscription.provider_subscription_id ? <Mono>{subscription.provider_subscription_id}</Mono> : "—"],
                 ...(subscription.canceled_at ? [["Cancelada em", `${dateTime(subscription.canceled_at)} — ${subscription.cancel_reason ?? ""}`] as [string, ReactNode]] : []),
               ]} />
-              {live && !live.plan_free ? <AddonsEditor detail={data} writable={writable} onChanged={reload} /> : null}
+              {live && !live.plan_free && !live.courtesy ? <AddonsEditor detail={data} writable={writable} onChanged={reload} /> : null}
             </div>
           ) : (
             <Empty title="Sem assinatura">Inicie uma assinatura: o cliente é criado no Asaas com o CPF/CNPJ e a cobrança sai pela conta ativa para novos.</Empty>
@@ -275,6 +292,8 @@ export function ClientDetailPage() {
         reload();
       }} />
       <UnsubscribeDialog open={dialog === "unsubscribe"} clientId={client.id} onClose={close} onDone={done} />
+      <CourtesyDialog open={dialog === "courtesy"} clientId={client.id} replacesPending={live?.status === "pending"} onClose={close} onDone={done} />
+      <EndCourtesyDialog open={dialog === "endCourtesy"} clientId={client.id} onClose={close} onDone={done} />
     </>
   );
 }
@@ -456,6 +475,67 @@ function UnsubscribeDialog({ open, clientId, onClose, onDone }: { open: boolean;
     </>}>
       <p className="text-sm text-slate-600">A assinatura é cancelada no Asaas (para de gerar cobranças) e aqui. O cliente fica suspenso até iniciar outra.</p>
       <Field label="Motivo"><Textarea value={reason} onChange={(e) => setReason(e.target.value)} /></Field>
+      <ErrorNote message={error} />
+    </Modal>
+  );
+}
+
+function CourtesyDialog({ open, clientId, replacesPending, onClose, onDone }: { open: boolean; clientId: string; replacesPending: boolean; onClose: () => void; onDone: () => void }) {
+  const { data } = useApi<PlansData>(open ? "/api/plans" : null);
+  const plans = (data?.plans ?? []).filter((plan) => plan.active && !plan.free);
+  const [planId, setPlanId] = useState("");
+  const [withEnd, setWithEnd] = useState(false);
+  const [until, setUntil] = useState("");
+  const [reason, setReason] = useState("");
+  const { busy, error, submit } = useSubmit(() => {
+    setReason("");
+    setWithEnd(false);
+    setUntil("");
+    onDone();
+  }, "Cortesia liberada");
+  const selected = plans.find((plan) => plan.id === (planId || plans[0]?.id));
+  return (
+    <Modal title="Liberar sem cobrança (cortesia)" open={open} onClose={onClose} footer={<>
+      <Button variant="secondary" onClick={onClose}>Cancelar</Button>
+      <Button busy={busy} disabled={!selected || reason.trim().length < 5 || (withEnd && !until)}
+        onClick={() => submit(`/api/clients/${clientId}/courtesy`, { planId: selected!.id, until: withEnd ? until : null, reason })}>Liberar cortesia</Button>
+    </>}>
+      <p className="text-sm text-slate-600">
+        O cliente recebe o plano sem nenhuma cobrança no Asaas: fica em dia na hora, ganha a cota de créditos agora e uma nova cota a cada mês.
+        Se estiver suspenso por cobrança, é reativado.
+      </p>
+      {replacesPending ? (
+        <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">A assinatura aguardando o 1º pagamento será cancelada (também no Asaas) e substituída pela cortesia.</p>
+      ) : null}
+      <Field label="Plano">
+        <Select value={selected?.id ?? ""} onChange={(e) => setPlanId(e.target.value)}>
+          {plans.map((plan) => <option key={plan.id} value={plan.id}>{plan.name} · {int(plan.credits_per_month)} créditos/mês (normalmente {brl(plan.price_cents)}/mês)</option>)}
+        </Select>
+      </Field>
+      <Field label="Válida até" hint={withEnd ? "No dia seguinte a cortesia termina e o cliente volta para a escolha de plano." : "A cortesia continua até alguém encerrá-la."}>
+        <Select value={withEnd ? "date" : "none"} onChange={(e) => setWithEnd(e.target.value === "date")}>
+          <option value="none">Sem prazo</option>
+          <option value="date">Até uma data</option>
+        </Select>
+      </Field>
+      {withEnd ? <Field label="Último dia da cortesia"><Input type="date" value={until} min={new Date().toISOString().slice(0, 10)} onChange={(e) => setUntil(e.target.value)} /></Field> : null}
+      <Field label="Motivo" hint="Obrigatório. Aparece na ficha e fica na auditoria com o seu nome."><Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ex.: parceiro de lançamento, 3 meses de teste" /></Field>
+      <p className="text-xs text-slate-500">Computadores adicionais não entram na cortesia. Para cobrar o cliente depois, encerre a cortesia e inicie uma assinatura.</p>
+      <ErrorNote message={error} />
+    </Modal>
+  );
+}
+
+function EndCourtesyDialog({ open, clientId, onClose, onDone }: { open: boolean; clientId: string; onClose: () => void; onDone: () => void }) {
+  const [reason, setReason] = useState("");
+  const { busy, error, submit } = useSubmit(() => { setReason(""); onDone(); }, "Cortesia encerrada");
+  return (
+    <Modal title="Encerrar cortesia" open={open} onClose={onClose} footer={<>
+      <Button variant="secondary" onClick={onClose}>Voltar</Button>
+      <Button variant="danger" busy={busy} disabled={reason.trim().length < 5} onClick={() => submit(`/api/clients/${clientId}/courtesy/revoke`, { reason })}>Encerrar cortesia</Button>
+    </>}>
+      <p className="text-sm text-slate-600">A cortesia termina agora. O cliente fica suspenso até assinar um plano, como numa assinatura encerrada; os créditos que ainda tem continuam no saldo.</p>
+      <Field label="Motivo" hint="Fica na auditoria com o seu nome."><Textarea value={reason} onChange={(e) => setReason(e.target.value)} /></Field>
       <ErrorNote message={error} />
     </Modal>
   );

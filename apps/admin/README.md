@@ -22,7 +22,7 @@ Por que não Next.js: daria certo, mas o painel não ganha nada com SSR, e com H
 
 ```
 apps/admin
-├── migrations/            0001_init.sql (todas as tabelas), 0002_planos_iniciais.sql, … 0005_area_do_cliente.sql
+├── migrations/            0001_init.sql (todas as tabelas), 0002_planos_iniciais.sql, … 0006_cortesia.sql
 ├── src/
 │   ├── auth/              login por e-mail + código, sessões, TOTP, limites de taxa
 │   ├── billing/           BillingProvider, Asaas (asaas.ts), webhooks, régua, máquina de estados
@@ -174,6 +174,8 @@ Cobrem: cifra (ida e volta, adulteração, contexto, rotação de chave), TOTP (
 
 A Área do cliente tem `test/customer.test.ts`: login por código e limites, separação de hosts (cookie do cliente não abre o painel e vice-versa, origem das escritas), validação do cadastro e gravação dos aceites, cadastro → assinatura no Asaas falso → fatura → webhook, compra de créditos, computadores adicionais, cancelamento, exportação, pedido de exclusão e isolamento entre organizações.
 
+A cortesia tem `test/courtesy.test.ts`: liberação com créditos na hora, recusa com assinatura paga, troca da assinatura pendente (cancelada no Asaas pela fila), renovação mensal idempotente, fim pela data (dia de Brasília) e pelo operador, régua que não a toca, permissões e o que a Área do cliente mostra.
+
 Screenshots: com o painel rodando e dados de demonstração, `pnpm --filter admin screenshots` (usa o Playwright com Chromium).
 
 ## Área do cliente (conta.arkobot.com.br)
@@ -200,6 +202,18 @@ Os dois cookies são `HttpOnly`, `Secure` e sem `Domain` (valem só no próprio 
 Cada cliente só enxerga a própria organização: nenhuma rota recebe id de organização; tudo sai da `memberships` da conta da sessão. Um membro (`member`) só lê; mudanças de cobrança são do `owner`/`admin`. Cada conta pode gerar até 10 cobranças por hora.
 
 Em desenvolvimento, `pnpm --filter admin dev` abre a Área do cliente em `http://localhost:5191` (use `localhost`, não `127.0.0.1`, porque a API compara o host com `CUSTOMER_PUBLIC_URL`).
+
+## Cortesia
+
+Para liberar um plano **sem cobrança** (parceiro, teste estendido, compensação): na ficha do cliente, **Liberar sem cobrança (cortesia)** → plano, *Válida até* (padrão *Sem prazo*) e motivo (obrigatório). Só `owner` e `operator`; o `viewer` não vê o botão e a API recusa. Precisa da migração `0006_cortesia.sql` (`pnpm --filter admin migrate`).
+
+- Cria uma assinatura `active` marcada `courtesy`, com preço 0, sem conta Asaas e sem assinatura no Asaas (um `CHECK` do banco garante isso), período de agora a +1 mês e a cota do plano creditada na hora (`courtesy:<id>:<início do período>`). Se o cliente estava suspenso por cobrança ou assinatura encerrada, volta a ficar ativo. A auditoria guarda quem liberou e o motivo.
+- Assinatura **paga** em andamento (em dia, em atraso ou suspensa): recusa; cancele-a antes, para nunca derrubar um cliente pagante sem querer. Assinatura **aguardando o 1º pagamento** (por exemplo, criada na Área do cliente): é cancelada aqui, as faturas em aberto viram canceladas e o cancelamento no Asaas sai pela fila (`billing.cancel_provider_subscription`).
+- **Renovação** no cron: ao fim de cada período, a cota do mês seguinte entra como numa renovação paga (o que sobrou do plano expira, avulsos ficam), uma vez por período. A régua de inadimplência ignora cortesias.
+- **Fim**: no dia seguinte a *Válida até* (horário de Brasília) ou em **Encerrar cortesia** (com motivo), a assinatura é cancelada ("Cortesia encerrada") e o cliente fica suspenso por assinatura encerrada, como num `SUBSCRIPTION_DELETED`; na Área do cliente aparece *Assinar de novo*. Os créditos que sobraram continuam no saldo.
+- Computadores adicionais não entram na cortesia: os adicionais entram no valor da assinatura e no MRR, e a cortesia não tem cobrança. Os incluídos no plano valem normalmente.
+- **Área do cliente**: conta como assinatura em dia (painel, créditos e gateway funcionam) e mostra "Plano X — cortesia (sem cobrança)" e a data final, sem valor, faturas nem forma de pagamento. Cancelar e mudar computadores mandam falar com a equipe pelo WhatsApp; comprar créditos avulsos segue a regra de sempre (precisa de conta Asaas ativa).
+- Na Visão geral a cortesia não conta como pagante; as listas de clientes e de assinaturas mostram o selo *cortesia*.
 
 ## Gateway de IA (Parte 2)
 

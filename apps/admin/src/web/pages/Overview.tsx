@@ -24,7 +24,7 @@ export function OverviewPage() {
       <PageHeader title="Visão geral" subtitle="Números do banco do Admin, em tempo real." />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Stat label="Clientes ativos" value={int(s.active_clients)} icon={<Building2 className="h-4 w-4" />}
-          hint={`${plural(s.paying, "pagante", "pagantes")} · ${plural(s.suspended_clients, "suspenso", "suspensos")}`} />
+          hint={`${plural(s.paying, "pagante", "pagantes")}${Number(s.courtesy) ? ` · ${plural(s.courtesy, "cortesia", "cortesias")}` : ""} · ${plural(s.suspended_clients, "suspenso", "suspensos")}`} />
         <Stat label="MRR" value={brl(s.mrr_cents)} icon={<TrendingUp className="h-4 w-4" />} hint={`Recebido no mês: ${brl(s.received_month_cents)}`} />
         <Stat label="Margem de IA (mês)" value={brl(Number(s.ai_credits_month) - Number(s.ai_cost_brl_cents_month))} icon={<Gauge className="h-4 w-4" />}
           tone={Number(s.ai_credits_month) - Number(s.ai_cost_brl_cents_month) < 0 ? "alert" : "default"}

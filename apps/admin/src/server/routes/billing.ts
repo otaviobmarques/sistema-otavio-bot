@@ -124,7 +124,7 @@ export function billingRoutes(ctx: AppContext) {
       filter = "WHERE s.status = $1";
     }
     const { rows } = await ctx.db.query(
-      `SELECT s.id, s.status, s.billing_type, s.provider_subscription_id, s.next_due_date, s.past_due_since, s.current_period_end, s.created_at,
+      `SELECT s.id, s.status, s.courtesy, s.courtesy_until, s.billing_type, s.provider_subscription_id, s.next_due_date, s.past_due_since, s.current_period_end, s.created_at,
          (s.price_cents + COALESCE((SELECT SUM(a.quantity * a.unit_price_cents) FROM subscription_addons a WHERE a.subscription_id = s.id), 0))::int AS total_cents,
          o.id AS organization_id, o.name AS organization_name, p.name AS plan_name, p.free AS plan_free, b.label AS billing_account_label
        FROM subscriptions s JOIN organizations o ON o.id = s.organization_id JOIN plans p ON p.id = s.plan_id

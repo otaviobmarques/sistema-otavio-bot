@@ -28,6 +28,8 @@ describe("máquina de estados da assinatura", () => {
     ["active", "provider_ended", "canceled"],
     ["canceled", "provider_ended", null],
     ["pending", "admin_cancel", "canceled"],
+    ["active", "courtesy_expired", "canceled"],
+    ["canceled", "courtesy_expired", null],
   ];
   it.each(cases)("%s + %s → %s", (from, signal, to) => {
     expect(nextSubscriptionStatus(from, signal)).toBe(to);
