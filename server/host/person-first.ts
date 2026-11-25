@@ -6,6 +6,7 @@
 // question, a sign-in) or on a computer is never stopped this way.
 import type { RuntimeEvent } from "../contracts.ts";
 import { conversationLanguage, serverLine } from "../server-lines.ts";
+import { PRODUCT_NAME } from "../../shared/product-name.ts";
 
 export const PERSON_FIRST_MS = 60_000;
 /** How soon a turn that was waiting on the person or a computer when its time came is looked at again. */
@@ -57,7 +58,7 @@ export function stoppedLine(ms: number, language?: string): string {
 
 /** What the model is told after the person's words, in the turn that answers them. */
 export function stoppedNote(label: string, ms: number): string {
-  return `[OpenMausBot: your step ${JSON.stringify(label)} had run for ${ranFor(ms)} with this message unread, so it was stopped for you to answer first. Answer this now. If that step still matters, do not wait inside a command again: check it once, then use wait_until or a one-time trigger to check back.]`;
+  return `[${PRODUCT_NAME}: your step ${JSON.stringify(label)} had run for ${ranFor(ms)} with this message unread, so it was stopped for you to answer first. Answer this now. If that step still matters, do not wait inside a command again: check it once, then use wait_until or a one-time trigger to check back.]`;
 }
 
 function toolLabel(event: Extract<RuntimeEvent, { type: "item.started" }>): string {

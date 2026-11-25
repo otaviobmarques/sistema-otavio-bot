@@ -2,6 +2,7 @@ import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runPair, type CliOptions } from "./cli.ts";
+import { qrToString } from "./cli-pairing.ts";
 import { removeTempDir } from "./testing/cleanup.ts";
 
 const mocks = vi.hoisted(() => ({
@@ -92,7 +93,7 @@ describe("openmausbot pair", () => {
     expect(printed()).toMatch(new RegExp(`Pairing code {3}${code} {3}works once, until .+ · everything`));
     expect(printed()).toContain(`Link           ${advertisedOrigin}/pair#code=${code}`);
     expect(printed()).toMatch(/[▀▄█]/);
-    expect(printed()).toContain("For a phone (chat and approvals only)   openmausbot pair --phone");
+    expect(printed()).toContain("For a phone (chat and approvals only)   arkobot pair --phone");
     expect(printed()).not.toContain("doesn't reach");
   });
 
@@ -127,14 +128,14 @@ describe("openmausbot pair", () => {
     });
     expect(await runPair(options)).toBe(0);
     expect(printed()).toContain(`http://127.0.0.1:${options.port}/pair#code=${code}`);
-    expect(printed()).toContain("pick a way in first: openmausbot serve --help");
+    expect(printed()).toContain("pick a way in first: arkobot serve --help");
     expect(printed()).not.toMatch(/[▀▄█]/);
   });
 
   it("says how to start a server when none runs", async () => {
     fetchMock.mockImplementation(async () => { throw new Error("offline"); });
     expect(await runPair(options)).toBe(1);
-    expect(console.error).toHaveBeenCalledWith(expect.stringContaining("No MausBot server is running here. Start it: openmausbot serve"));
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining("No ArkoBot server is running here. Start it: arkobot serve"));
   });
 });
 
@@ -152,12 +153,13 @@ describe("the phone-app link `openmausbot pair --phone android` scans", () => {
     });
   };
 
-  it("builds the invite for --public-url from the server's credential and name, and never prints it as text", async () => {
+  it("gives an Android phone the server's own web link, never the native app's link or the credential", async () => {
     pairingResponse({ url: null, inviteUrl: null });
     expect(await runPair({ ...options, phone: "android", publicUrl: explicitOrigin })).toBe(0);
     expect(printed()).not.toContain("openmausbot://");
     expect(printed()).not.toContain(credential);
-    expect(printed()).toContain("scan this with the MausBot app");
+    expect(printed()).toContain(qrToString(`${explicitOrigin}/pair#code=${code}`));
+    expect(printed()).toContain("scan with the camera, connect, then add ArkoBot to the home screen");
   });
 
   it("keeps a proxy path in the web link", async () => {

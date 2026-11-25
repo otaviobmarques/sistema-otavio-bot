@@ -7,6 +7,7 @@ import type { McpServerSpec } from "./contracts.ts";
 import { discoverMcpAuth, type McpAuthMetadata } from "./mcp-oauth-discovery.ts";
 import { McpOAuthStore, type McpOAuthRecord, type McpOAuthTokens } from "./mcp-oauth-store.ts";
 import type { McpOAuthClientConfig } from "./mcp-registry.ts";
+import { PRODUCT_NAME } from "../shared/product-name.ts";
 
 export type McpSignInPhase = "waiting" | "succeeded" | "failed" | "cancelled" | "expired";
 
@@ -443,7 +444,7 @@ export class McpOAuthManager {
     });
     const body = await response.json().catch(() => ({})) as { client_id?: unknown };
     if (!response.ok || typeof body.client_id !== "string" || !body.client_id) {
-      throw new RegistrationRefused("This server would not register OpenMausBot for sign-in. Try again later.");
+      throw new RegistrationRefused(`This server would not register ${PRODUCT_NAME} for sign-in. Try again later.`);
     }
     return body.client_id;
   }

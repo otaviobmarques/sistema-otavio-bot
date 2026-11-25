@@ -116,7 +116,7 @@ describe("MCP approval cards", () => {
     expect(await after.respond(requestId, "allow")).toMatchObject({ status: 200, body: { alreadySettled: false, result: { state: "expired" } } });
     expect(after.apply).not.toHaveBeenCalled();
     expect(after.answers).toHaveLength(1);
-    expect(after.answers[0]).toContain("OpenMausBot restarted, so this request expired. Ask again if you still need it.");
+    expect(after.answers[0]).toContain("ArkoBot restarted, so this request expired. Ask again if you still need it.");
     expect(after.store.rows[0]!.card).toMatchObject({ expired: true, options: [], held: "ArkoBot restarted, so this request expired.", mcpRequest: { resumed: true } });
   });
 
@@ -128,7 +128,7 @@ describe("MCP approval cards", () => {
     expect(after.cards.decided(THREAD, messageId)).toBe(true);
     const parked: string[] = [];
     expect(after.cards.resume(THREAD, messageId, (text) => { parked.push(text); return true; })).toBe(true);
-    expect(parked[0]).toContain("OpenMausBot restarted, so this request expired. Ask again if you still need it.");
+    expect(parked[0]).toContain("ArkoBot restarted, so this request expired. Ask again if you still need it.");
     expect(after.waiting()).toEqual([]);
 
     const turnOn = service();

@@ -6,6 +6,7 @@ import { createHash, randomUUID } from "node:crypto";
 
 import type { ServiceCredential } from "./included-services.ts";
 import { dollarsText, readCapped, tregAuthHeaders, tregErrorFor, X_MESSAGES, XResearchError } from "./x-research.ts";
+import { PRODUCT_NAME } from "../shared/product-name.ts";
 
 /** A catalog id, or a hub tool's versioned id; never a path or a URL (those would reach a team's own tools). */
 export const RESEARCH_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,159}(?:@[A-Za-z0-9._-]{1,40})?$/;
@@ -21,8 +22,8 @@ const RESEARCH_INSTEAD = "Tell the person research isn't available here and offe
 
 export const RESEARCH_MESSAGES = {
   unavailable: "Research is temporarily unavailable. Try again shortly.",
-  notOffered: `MausBot Cloud doesn't offer research yet. ${RESEARCH_INSTEAD}`,
-  off: `Research isn't on for this MausBot Cloud plan right now, so research_search and research_call can't be used. ${RESEARCH_INSTEAD}`,
+  notOffered: `${PRODUCT_NAME} Cloud doesn't offer research yet. ${RESEARCH_INSTEAD}`,
+  off: `Research isn't on for this ${PRODUCT_NAME} Cloud plan right now, so research_search and research_call can't be used. ${RESEARCH_INSTEAD}`,
 } as const;
 
 export interface ResearchCallInput {

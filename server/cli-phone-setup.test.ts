@@ -76,7 +76,7 @@ describe("optional phone setup", () => {
     const result = await runPhoneSetup(options, ui.io, deps);
     expect(result).toEqual({ options });
     expect(result.options).toBe(options);
-    expect(ui.io.choose).toHaveBeenCalledWith("Use OpenMausBot on your phone?", expect.any(Array), 0);
+    expect(ui.io.choose).toHaveBeenCalledWith("Use ArkoBot on your phone?", expect.any(Array), 0);
     expect(deps.accountReady).not.toHaveBeenCalled();
     expect(deps.login).not.toHaveBeenCalled();
     ui.consumed();
@@ -113,7 +113,7 @@ describe("optional phone setup", () => {
     const ui = prompts({ choices: [2, 0], confirms: [true] });
     expect((await runPhoneSetup(options, ui.io, deps)).phone).toBe("android");
     expect(deps.login).not.toHaveBeenCalled();
-    expect(ui.lines.join("\n")).toContain("saved OpenMausBot account");
+    expect(ui.lines.join("\n")).toContain("saved ArkoBot account");
     ui.consumed();
   });
 
@@ -226,20 +226,21 @@ describe("phone pairing instructions", () => {
     expect(text).not.toContain("localhost");
   });
 
-  it("describes iOS browser/native options without claiming an app-store release", () => {
+  it("opens an iPhone in Safari and keeps the web app on the Home Screen, with no app store", () => {
     const text = phonePairingInstructions("ios", { origin: "https://maus.example", ready: true }).join("\n");
     expect(text).toContain("Safari");
-    expect(text).toContain("already have");
+    expect(text).toContain("Share → Add to Home Screen");
     expect(text).toContain("https://maus.example/pair");
     expect(text).toContain("does not mean the phone is paired");
     expect(text).toContain("not settings or pairing administration");
     expect(text).not.toMatch(/apps\.apple|testflight|play\.google/);
   });
 
-  it("sends an Android phone to the app first, and still offers the browser", () => {
+  it("opens an Android phone in Chrome and installs the web app from its menu, with no other app", () => {
     const text = phonePairingInstructions("android", { origin: "https://maus.example", ready: true }).join("\n");
-    expect(text).toContain("open the OpenMausBot app and scan the QR with its pairing scanner");
-    expect(text).toContain("Camera will not open it in a browser");
+    expect(text).toContain("open it in Chrome");
+    expect(text).toContain("Install app");
+    expect(text).not.toMatch(/pairing scanner|apps\.apple|play\.google|\.apk/);
     expect(text).toContain("https://maus.example/pair");
     expect(text).not.toContain("not the Android native pairing scanner");
     expect(text).toContain("five minutes");

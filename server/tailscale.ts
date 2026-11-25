@@ -4,6 +4,7 @@ import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { tailscaleCandidates, tailscaleEnvironment } from "../companion/src/listener.ts";
+import { PRODUCT_NAME } from "../shared/product-name.ts";
 
 export interface TailscaleStatus {
   cli: string;
@@ -49,7 +50,7 @@ export function explainTailscaleFailure(reason: TailscaleFailure): string {
     case "https-not-enabled":
       return "HTTPS certificates are off for this tailnet: enable them at https://login.tailscale.com/admin/dns (HTTPS Certificates), then try again";
     case "other-server":
-      return "this machine's tailnet name already fronts a different MausBot server: stop that one, or pass --port for this one";
+      return `this machine's tailnet name already fronts a different ${PRODUCT_NAME} server: stop that one, or pass --port for this one`;
     default:
       return "Tailscale reported an error; run `tailscale status` and `tailscale serve status` to see it";
   }

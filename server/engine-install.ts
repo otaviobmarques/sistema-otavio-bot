@@ -10,6 +10,7 @@ import { registerStandaloneBinDirs, standaloneAssetFor, standaloneRunEnv } from 
 import { STANDALONE_RELEASES } from "./standalone-releases.ts";
 import { augmentedPath, findCliCandidates, registerPathDir, resetPathCache } from "./env-path.ts";
 import { execCli, killCliTree, spawnCli } from "./procs.ts";
+import { PRODUCT_NAME } from "../shared/product-name.ts";
 
 const MAX_OUTPUT = 64 * 1024;
 export const NPM_INSTALL_TIMEOUT_MS = 10 * 60_000;
@@ -216,7 +217,7 @@ export function runNpm(args: string[], env: NodeJS.ProcessEnv, cwd: string, time
     try {
       child = spawnCli("npm", args, { env, cwd, stdio: ["pipe", "pipe", "pipe"] });
     } catch {
-      rejectRun(new Error("npm could not start on this server. Install Node.js with npm for the user running OpenMausBot, then try again."));
+      rejectRun(new Error(`npm could not start on this server. Install Node.js with npm for the user running ${PRODUCT_NAME}, then try again.`));
       return;
     }
     child.stdin.end();
@@ -240,8 +241,8 @@ export function runNpm(args: string[], env: NodeJS.ProcessEnv, cwd: string, time
       if (timedOut) return;
       clearTimeout(timer);
       rejectRun(new Error(error.code === "ENOENT"
-        ? "npm is not installed on this server. Install Node.js with npm for the user running OpenMausBot, then try again."
-        : "npm could not start on this server. Check that Node.js is installed for the user running OpenMausBot."));
+        ? `npm is not installed on this server. Install Node.js with npm for the user running ${PRODUCT_NAME}, then try again.`
+        : `npm could not start on this server. Check that Node.js is installed for the user running ${PRODUCT_NAME}.`));
     });
     child.once("close", (code) => {
       clearTimeout(timer);

@@ -41,7 +41,7 @@ import { sameModelSelection } from "../shared/thread-model.ts";
 import { initialGreetingMessage } from "./initial-greeting.ts"; import { createDefaultBot, defaultBotRefusal, type DefaultBotIntro } from "./default-bot.ts";
 import { appsFromCreator } from "./inherited-apps.ts";
 import { ThreadCache, type ThreadState } from "./thread-cache.ts";
-import { titleFromMessage, UNTITLED_TASK } from "./thread-title.ts";
+import { titleFromMessage, UNTITLED_TASK } from "./thread-title.ts"; import { PRODUCT_NAME } from "../shared/product-name.ts";
 export { titleFromMessage, UNTITLED_TASK } from "./thread-title.ts";
 export type {
   BotActivity, GroupDefaultResponder, OptionCardData,
@@ -946,7 +946,7 @@ export class Store {
       detail: string;
       finishedAt: number;
     } | null,
-    fallbackDetail = "OpenMausBot restarted before this goal finished.",
+    fallbackDetail = `${PRODUCT_NAME} restarted before this goal finished.`,
     fallbackFinishedAt = Date.now(),
   ): number {
     const ownedThreadIds = new Set<string>(this.bots.flatMap((bot) => (bot.tasks ?? []).map((task) => task.threadId)));

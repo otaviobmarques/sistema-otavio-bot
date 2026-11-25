@@ -4,6 +4,7 @@ import { accessSync, constants, existsSync } from "node:fs";
 import { createInterface } from "node:readline";
 import { delimiter, join } from "node:path";
 import { homedir } from "node:os";
+import { PRODUCT_NAME } from "../../shared/product-name.ts";
 
 type Json = Record<string, unknown>;
 type Device = { serial: string; state: string; model: string; connection: "usb" | "network" | "emulator" };
@@ -65,7 +66,7 @@ export function resolveAdbPath(env: NodeJS.ProcessEnv = process.env, platform = 
 
 async function runAdb(args: string[], options: { binary?: boolean; timeoutMs?: number } = {}): Promise<Buffer> {
   const adb = resolveAdbPath();
-  if (!adb) throw new Error("Android platform tools are unavailable. Reopen OpenMausBot or install adb.");
+  if (!adb) throw new Error(`Android platform tools are unavailable. Reopen ${PRODUCT_NAME} or install adb.`);
   return new Promise((resolve, reject) => {
     const child = spawn(adb, args, { stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
     const stdout: Buffer[] = [];
@@ -300,9 +301,9 @@ export function createPhoneClaim(
       if (response.status === 401 || response.status === 403) {
         return { ok: false, message: "This turn no longer has phone access. Start a new turn to use the phone." };
       }
-      return { ok: false, message: "OpenMausBot could not reserve the phone for this call. This call was not performed; try again, or start a new turn if it keeps failing." };
+      return { ok: false, message: `${PRODUCT_NAME} could not reserve the phone for this call. This call was not performed; try again, or start a new turn if it keeps failing.` };
     } catch {
-      return { ok: false, message: "OpenMausBot could not be reached to reserve the phone. This call was not performed; try again." };
+      return { ok: false, message: `${PRODUCT_NAME} could not be reached to reserve the phone. This call was not performed; try again.` };
     }
   };
 }

@@ -11,7 +11,7 @@ import { augmentedPath, resolveCliSpawn } from "./env-path.ts";
 import { workspacePreparationDockerfile } from "./container-workspace.ts";
 import { DATA_DIR } from "./config.ts";
 import { PIDS_LIMIT, raisePidsLimit } from "./container-limits.ts";
-import { SPAWNED_PROXIES } from "./proxy-paths.ts";
+import { SPAWNED_PROXIES } from "./proxy-paths.ts"; import { PRODUCT_NAME } from "../shared/product-name.ts";
 
 const run = promisify(execFile);
 const SCREENSHOT_STATUS_TTL_MS = 10_000;
@@ -364,7 +364,7 @@ function statusProblem(status: ContainerComputerStatus): string | null {
 
 function existingContainerProblem(status: ContainerComputerStatus): string | null {
   if (!status.imageMatches) return "The existing Local VM uses an older desktop or Cua Driver; recreate it";
-  if (!status.managed) return "The existing container was not created by OpenMausBot; recreate it";
+  if (!status.managed) return `The existing container was not created by ${PRODUCT_NAME}; recreate it`;
   if (status.network === "unsafe") return "The existing Local VM exposes its viewer publicly; recreate it";
   if (status.security === "unsafe") return "The existing Local VM is missing safety limits; recreate it";
   if (status.persistence === "unsafe") return "The existing Local VM is missing its durable folder; recreate it";
@@ -960,7 +960,7 @@ export async function containerComputerAction(
   if (action === "remove" && !before.managed) {
     throw Object.assign(
       new Error(
-        `The existing container named ${target.containerName} was not created by OpenMausBot; remove it manually in ${runtime}`,
+        `The existing container named ${target.containerName} was not created by ${PRODUCT_NAME}; remove it manually in ${runtime}`,
       ),
       { status: 409 },
     );

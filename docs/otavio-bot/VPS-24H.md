@@ -253,8 +253,11 @@ Cada aparelho entra uma vez com um código de uso único (vale 10 minutos).
 ### Gerar um código (no VPS)
 
 ```sh
-cd /opt/otavio-bot/deploy && docker compose exec omb openmausbot pair --label "PC do Otávio"
+cd /opt/otavio-bot/deploy && docker compose exec omb arkobot pair --label "PC do Otávio"
 ```
+
+(Numa imagem anterior ao ArkoBot o comando ainda se chama `openmausbot`; ele
+continua funcionando nas imagens novas também.)
 
 Ele mostra um código (ex.: `ABCD-EFGH-JKLM`) e um link
 `https://bots.seudominio.com.br/pair#code=...`, além de um QR code.
@@ -267,7 +270,7 @@ Ele mostra um código (ex.: `ABCD-EFGH-JKLM`) e um link
    (Outro jeito: com o link copiado, menu **Servidor** → **Adicionar servidor
    pelo link de pareamento copiado…**.)
 3. Cole o link em **Link ou endereço**. O app procura o servidor e mostra
-   algo como `✓ bots.seudominio.com.br · MausBot 0.2.0`.
+   algo como `✓ bots.seudominio.com.br · ArkoBot 0.2.0`.
 4. Clique em **Conectar a bots.seudominio.com.br**. A janela abre o servidor do
    VPS, já pareado.
 
@@ -302,12 +305,20 @@ Gere outro código no VPS. Com `--phone`, o celular pode conversar, aprovar e
 ler, mas não muda configurações (tire o `--phone` se quiser acesso total):
 
 ```sh
-cd /opt/otavio-bot/deploy && docker compose exec omb openmausbot pair --phone --label "Celular"
+cd /opt/otavio-bot/deploy && docker compose exec omb arkobot pair --phone --label "Celular"
 ```
 
-No celular, abra o link mostrado (ou leia o QR code com a câmera). O navegador
-fica pareado; no menu do navegador use **Adicionar à tela inicial** para virar
-um ícone de app.
+No celular, leia o QR code com a câmera (ou abra o link mostrado,
+`https://bots.seudominio.com.br/pair#code=…`) e toque em **Conectar**. O app do
+celular é o próprio site do servidor, instalado na tela inicial; não há nada
+para baixar de loja:
+
+- **iPhone (Safari):** Compartilhar → **Adicionar à Tela de Início**.
+- **Android (Chrome):** menu (⋮) → **Instalar app**.
+
+O ícone ArkoBot abre em tela cheia, como um app. Se o iPhone pedir o código de
+novo dentro do ícone, gere outro com o comando acima (o Safari guarda o ícone
+separado do navegador).
 
 Com o PC já pareado, também dá para fazer pelo app, sem terminal:
 **Configurações → Computador → Acesso remoto → Parear um celular ou outro

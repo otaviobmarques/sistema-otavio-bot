@@ -11,6 +11,7 @@ import { quoteInNote } from "../peer-provenance.ts";
 import { RepeatDetector, callKey, toolItemKey } from "../repeat-detector.ts";
 import { RepeatStreak, failureDigest } from "../repeat-streak.ts";
 import { COMMAND_SUMMARY_MAX, previewIsPartial } from "../tool-summary.ts";
+import { PRODUCT_NAME } from "../../shared/product-name.ts";
 
 const COUNT_MIN = 2;
 const COUNT_MAX = 1000;
@@ -128,9 +129,9 @@ function quoted(call: CountedCall): string {
   return `“${quoteInNote(`${call.tool}: ${call.args}`, CALL_QUOTE_MAX).replace(/[“”]/g, '"')}”`;
 }
 
-/** Opened as `[OpenMausBot …]`, which model-written text cannot open, and never carrying what the command printed. */
+/** Opened as `[ArkoBot …]`, which model-written text cannot open, and never carrying what the command printed. */
 function loopNote(call: string, streak: number): string {
-  return `[OpenMausBot: this exact call has failed the same way ${streak} times in a row: ${call}. Change approach, or stop and report what is blocking.]`;
+  return `[${PRODUCT_NAME}: this exact call has failed the same way ${streak} times in a row: ${call}. Change approach, or stop and report what is blocking.]`;
 }
 
 function loopCause(call: string, streak: number): string {

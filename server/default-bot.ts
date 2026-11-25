@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { writeFileAtomic } from "./atomic.ts";
 import { DEFAULT_BOT_COLOR, DEFAULT_BOT_NAME, defaultBotPerson } from "../shared/default-bot.ts";
-import { LEGACY_DEFAULT_BOT_NAME } from "../shared/product-name.ts";
+import { LEGACY_DEFAULT_BOT_NAME, UPSTREAM_NAME } from "../shared/product-name.ts";
 import { takeImportName } from "../shared/import-name.ts";
 import type { BotRecord, Message, Store } from "./store.ts";
 
@@ -134,6 +134,27 @@ export function ensureDefaultBot(store: DefaultBotStore, options: { dataDir: str
   }
   remember(options.dataDir, person, bot.id);
   return bot;
+}
+
+/** Where it is recorded that this data folder's helpers named before the rename were renamed, so it happens once. */
+const RENAMED = "default-bot-renamed.json";
+
+/** Once per data folder: each built-in helper (every place's and member's, and a new install's first bot from before it
+ * was marked) still called by a name it was given before this product had its own, MausBot or OpenMausBot, is called
+ * ArkoBot. Any other name was the person's choice and stays. Returns the ids renamed. */
+export function renameLegacyDefaultBots(store: Pick<Store, "bots" | "patchBot">, dataDir: string): string[] {
+  const marker = join(dataDir, RENAMED);
+  if (existsSync(marker)) return [];
+  const seeded = seededMausBot(store.bots);
+  const renamed: string[] = [];
+  for (const bot of store.bots) {
+    if (![LEGACY_DEFAULT_BOT_NAME, UPSTREAM_NAME].includes(bot.name) || (!bot.defaultBot && bot.id !== seeded?.id)) continue;
+    const person = defaultBotPerson(bot);
+    const taken = new Set(person ? [] : store.bots.filter((other) => other.id !== bot.id).map((other) => other.name.trim().toLowerCase()));
+    if (store.patchBot(bot.id, { name: takeImportName(DEFAULT_BOT_NAME, taken) })) renamed.push(bot.id);
+  }
+  writeFileAtomic(marker, JSON.stringify({ v: 1, from: [LEGACY_DEFAULT_BOT_NAME, UPSTREAM_NAME], to: DEFAULT_BOT_NAME, renamed }), { mode: 0o600 });
+  return renamed;
 }
 
 /** A move brought this place's MausBot from another computer: it becomes the one MausBot here, and the one this place

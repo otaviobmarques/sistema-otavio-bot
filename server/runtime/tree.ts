@@ -1,10 +1,13 @@
 // "Since this turn began" is read from event ids (one global order), never timestamps: a clock can step back.
 import type { RuntimeStore } from "./store.ts";
 import { terminal, type Assignee, type Assignment, type Mode, type Owner, type TurnEvidence } from "./types.ts";
+import { PRODUCT_NAME, UPSTREAM_NAME } from "../../shared/product-name.ts";
 
-export const CUT_TWICE = "Interrupted by another OpenMausBot restart after resuming once; not resumed again. Some of its steps may already have taken effect.";
+export const CUT_TWICE = `Interrupted by another ${PRODUCT_NAME} restart after resuming once; not resumed again. Some of its steps may already have taken effect.`;
 
-export const INTERRUPTED_OUTWARD = "Interrupted by an OpenMausBot restart after it already";
+export const INTERRUPTED_OUTWARD = `Interrupted by an ${PRODUCT_NAME} restart after it already`;
+/** Outcomes saved before the rename name the upstream project. */
+const INTERRUPTED_OUTWARD_SAVED = [INTERRUPTED_OUTWARD, `Interrupted by an ${UPSTREAM_NAME} restart after it already`];
 
 const OUTWARD_SHOWN = 4;
 const OUTWARD_LABEL_MAX = 48;
@@ -33,7 +36,7 @@ export function outwardDetail(labels: readonly string[]): string {
 }
 
 export const outwardInterrupted = (a: Assignment): boolean =>
-  a.outcome === "interrupted" && (a.outcomeDetail?.startsWith(INTERRUPTED_OUTWARD) ?? false);
+  a.outcome === "interrupted" && INTERRUPTED_OUTWARD_SAVED.some((lead) => a.outcomeDetail?.startsWith(lead) ?? false);
 
 export const NO_PROGRESS_STRIKES = 2;
 export const SAME_ERROR_STRIKES = 3;
@@ -150,8 +153,8 @@ export function ownsConversation(n: Assignment, owner: Owner): boolean {
 export function restartNote(n: Assignment, children: readonly Assignment[], nameOf: (child: Assignment) => string): string {
   if (!n.restart) return "";
   const own = n.restart === "rerun"
-    ? "OpenMausBot restarted while your previous turn here was running and cut it off; this turn continues it. First check what that turn already did (files, commits, messages, anything sent or started) and verify anything uncertain, so nothing is done twice; then finish and report as usual. A restart alone is not a blocker."
-    : n.restart === "cut" ? "OpenMausBot restarted before your previous turn here finished, after it sent work to teammates. Check what that turn already did before repeating any of it." : "";
+    ? `${PRODUCT_NAME} restarted while your previous turn here was running and cut it off; this turn continues it. First check what that turn already did (files, commits, messages, anything sent or started) and verify anything uncertain, so nothing is done twice; then finish and report as usual. A restart alone is not a blocker.`
+    : n.restart === "cut" ? `${PRODUCT_NAME} restarted before your previous turn here finished, after it sent work to teammates. Check what that turn already did before repeating any of it.` : "";
   const cut = children.filter(child => child.restarts > 0 || outwardInterrupted(child)).map(child => `${nameOf(child)} (${
     outwardInterrupted(child) ? "cut after an outward action, not resumed: see its result"
       : child.outcome === "interrupted" ? "cut again while resuming, so not resumed a second time: it may be partly done"

@@ -119,13 +119,11 @@ describe("openmausbot command line", () => {
       expect(pairingBlock({ ...base, link: null, localLink: "http://localhost:8080/pair#code=X", localPlace: "docker" })).toContain("Browser on the Docker host   http://localhost:8080/pair#code=X");
     });
 
-    it("gives an Android phone the app-scheme QR, because its scanner rejects https", () => {
-      const invite = `openmausbot://pair?address=https%3A%2F%2Fmini.example&token=omb_pair_${"a".repeat(43)}&name=mini`;
-      const out = pairingBlock({ ...base, chatOnly: true, inviteUrl: invite, phone: "android" });
-      expect(out).toContain(qrToString(invite));
-      expect(out).not.toContain(qrToString(link));
-      expect(out).not.toContain(invite);
-      expect(pairingBlock({ ...base, inviteUrl: invite, phone: "ios" })).toContain(qrToString(link));
+    it("gives every phone the server's own web address, which opens in its browser and installs from there", () => {
+      const out = pairingBlock({ ...base, chatOnly: true });
+      expect(out).toContain(qrToString(link));
+      expect(out).toContain("add ArkoBot to the home screen");
+      expect(out).not.toMatch(/openmausbot:\/\/|the ArkoBot app/);
     });
 
     it("says until when as a clock time, and tomorrow when a code outlives today", () => {
@@ -138,7 +136,7 @@ describe("openmausbot command line", () => {
       const guided = browserSignInLines(local, "ABCD-EFGH-JKLM", Date.now() + 60_000);
       expect(guided).toContain(local);
       expect(guided).toContain("ABCD-EFGH-JKLM");
-      expect(guided).toContain("openmausbot pair");
+      expect(guided).toContain("arkobot pair");
     });
   });
 
@@ -180,7 +178,7 @@ describe("openmausbot command line", () => {
       expect(out).toContain('server "cli test"');
       expect(out).toMatch(/Reach {4}✗ https:\/\/mini\.example doesn't reach this server/);
       expect(out, "not a terminal: no code goes into a log").not.toMatch(/Pairing code {3}[A-Z2-9]{4}-/);
-      expect(out).toContain("Get a pairing code: openmausbot pair");
+      expect(out).toContain("Get a pairing code: arkobot pair");
       expect(out).not.toContain("Ctrl+C");
       const paired = spawnSync(process.execPath, ["--experimental-strip-types", join(SERVER_DIR, "openmausbot.ts"), "pair", "--port", String(port)], { cwd: join(SERVER_DIR, ".."), env: { PATH: process.env.PATH ?? "", HOME: home }, encoding: "utf8" });
       expect(paired.stdout).toMatch(/Pairing code {3}[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4} {3}works once, until .+ · everything/);
@@ -281,7 +279,7 @@ describe("terminal onboarding commands", () => {
     expect(setup.runSetup).toHaveBeenCalledWith({ dataDir: options.dataDir, port: options.port });
     expect(setup.isSetupComplete).not.toHaveBeenCalled();
     expect(serve).not.toHaveBeenCalled();
-    expect(output.log).toHaveBeenCalledWith(expect.stringContaining("Start with: openmausbot"));
+    expect(output.log).toHaveBeenCalledWith(expect.stringContaining("Start with: arkobot"));
     expect(phoneSetup).toHaveBeenCalledOnce();
     expect(setup.saveCliStartup).toHaveBeenCalledWith(options.dataDir, { access: "local" });
   });
@@ -461,7 +459,7 @@ describe.skipIf(process.platform === "win32")("serve --tunnel", () => {
     child.stderr?.on("data", (chunk) => (err += String(chunk)));
     try {
       expect(await exited(child)).toBe(1);
-      expect(err).toContain("run openmausbot login first");
+      expect(err).toContain("run arkobot login first");
       let dead = false;
       try {
         await fetch(`http://127.0.0.1:${port}/api/health`);

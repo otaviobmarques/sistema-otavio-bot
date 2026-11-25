@@ -2,6 +2,7 @@
 // folder. It fails closed: any agent request, or any tool call it reports, ends the call.
 import type { TextGenerationOptions, TextGenerationUsage } from "../../contracts.ts";
 import type { killCliTree, spawnCli } from "../../procs.ts";
+import { PRODUCT_NAME } from "../../../shared/product-name.ts";
 
 export const BACKGROUND_TEXT_TIMEOUT_MS = 120_000;
 export const BACKGROUND_TEXT_MAX_CHARS = 200_000;
@@ -27,7 +28,7 @@ export interface AcpOneShotInput {
   timeoutMs?: number;
 }
 
-const REFUSAL = "OpenMausBot background text allows no tools, files, terminals or approvals.";
+const REFUSAL = `${PRODUCT_NAME} background text allows no tools, files, terminals or approvals.`;
 
 export function runAcpOneShot(input: AcpOneShotInput): Promise<string> {
   const { signal, onUsage } = input.options ?? {};

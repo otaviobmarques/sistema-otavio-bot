@@ -35,6 +35,7 @@ if (existsSync(enterpriseBundle)) {
   }
 }
 cpSync(join(root, "LICENSE"), join(out, "LICENSE"));
+cpSync(join(root, "NOTICE"), join(out, "NOTICE"));
 
 // The bin lives next to the bundle so serverEntry() finds index.js by path.
 writeFileSync(join(out, "cli.js"), `#!/usr/bin/env node\nimport "./dist-server/openmausbot.js";\n`);
@@ -48,7 +49,7 @@ writeFileSync(
       description: "Run the OpenMausBot server anywhere and pair your devices to it",
       license: "Apache-2.0",
       type: "module",
-      bin: { openmausbot: "cli.js" },
+      bin: { openmausbot: "cli.js", arkobot: "cli.js" },
       // Never bundled, so npm installs them beside the server: DuckDB and
       // resvg are native addons that npm picks per platform from their
       // optional packages, and the 1Password SDK reads its WebAssembly core
@@ -58,7 +59,7 @@ writeFileSync(
         "@duckdb/node-api": app.dependencies["@duckdb/node-api"],
         "@resvg/resvg-js": app.dependencies["@resvg/resvg-js"],
       },
-      files: ["cli.js", "dist-server", "dist", "skills", "enterprise", "LICENSE", "README.md"],
+      files: ["cli.js", "dist-server", "dist", "skills", "enterprise", "LICENSE", "NOTICE", "README.md"],
       engines: { node: ">=24" },
       repository: { type: "git", url: "https://github.com/milind-soni/OpenMausBot.git" },
       homepage: "https://github.com/milind-soni/OpenMausBot#readme",

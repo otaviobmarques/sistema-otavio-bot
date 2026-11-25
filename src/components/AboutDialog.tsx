@@ -1,7 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+
+import notice from "../../NOTICE?raw";
 
 import {
-  APP_NAME,
   APP_REPOSITORY,
   DOCS_URL,
   LICENSE_URL,
@@ -30,6 +31,7 @@ export function aboutVersionLines({ app, bundle, platform, server }: {
 export function AboutDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const server = useOtherServerName(open);
+  const [licenses, setLicenses] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -57,7 +59,7 @@ export function AboutDialog({ open, onClose }: { open: boolean; onClose: () => v
         role="dialog"
         aria-modal="true"
         aria-labelledby="about-dialog-title"
-        className="w-full max-w-[360px] rounded-2xl border border-hairline/50 bg-panel p-6 text-center shadow-2xl"
+        className={`max-h-full w-full overflow-y-auto rounded-2xl border border-hairline/50 bg-panel p-6 text-center shadow-2xl ${licenses ? "max-w-[660px]" : "max-w-[360px]"}`}
       >
         <img src="/app-icon.svg" alt="" width={56} height={56} className="mx-auto size-14" />
         <h2 id="about-dialog-title" className="mt-3 text-[17px] font-semibold text-ink">
@@ -66,14 +68,18 @@ export function AboutDialog({ open, onClose }: { open: boolean; onClose: () => v
         <p className="mt-1 text-[13px] text-ink-secondary">{version}</p>
         {connected && <p className="mt-0.5 text-[13px] text-ink-secondary">{connected}</p>}
         <p className="mt-3 text-[13px] leading-relaxed text-ink-secondary">
-          {t("about.tagline", { app: APP_NAME })}
+          {t("about.tagline")}
         </p>
         <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-[13px]">
           <AboutLink href={APP_REPOSITORY} label="GitHub" />
           <AboutLink href={DOCS_URL} label={t("about.docs")} />
           <AboutLink href={RELEASES_URL} label={t("about.releases")} />
           <AboutLink href={LICENSE_URL} label={t("about.license")} />
+          <button type="button" aria-expanded={licenses} onClick={() => setLicenses((shown) => !shown)} className="text-accent hover:underline">
+            {t("about.thirdParty")}
+          </button>
         </div>
+        {licenses && <ThirdPartyNotices />}
         <button
           ref={closeRef}
           type="button"
@@ -96,5 +102,15 @@ function AboutLink({ href, label }: { href: string; label: string }) {
     >
       {label}
     </button>
+  );
+}
+
+/** The NOTICE file that ships beside the app: whose work this product is built on, and under which licenses. */
+export function ThirdPartyNotices() {
+  return (
+    <section aria-label={t("about.thirdParty")} data-third-party-notices className="mt-4 text-left">
+      <h3 className="text-[13px] font-semibold text-ink">{t("about.thirdParty")}</h3>
+      <pre className="mt-2 max-h-[45vh] overflow-auto whitespace-pre rounded-lg bg-inset p-3 font-mono text-[11px] leading-relaxed text-ink-secondary">{notice}</pre>
+    </section>
   );
 }

@@ -16,6 +16,7 @@ import { isLoopbackHost, isProxied, provesSameOrigin, requestOrigin, type Reques
 import { serverLine, type ServerLineKey } from "../server-lines.ts";
 import { appLabel } from "../team-connections.ts";
 import { runsElsewhere } from "./mcp-config.ts";
+import { PRODUCT_NAME } from "../../shared/product-name.ts";
 
 interface CardStore {
   messagesFor(threadId: string): readonly Message[];
@@ -77,11 +78,11 @@ export function isCardOwnerLive(store: Pick<CardStore, "messagesFor">, owner: st
 
 /** What the bot hears when the person signs in: the turn it resumes mounts the server with the new sign-in if it is on. */
 const signedInText = (name: string, on: boolean) => (on
-  ? `OpenMausBot MCP sign-in: the person signed in to ${name}. Its tools are yours from this turn. Continue the task that paused for this sign-in. Do not ask them to sign in again.`
-  : `OpenMausBot MCP sign-in: the person signed in to ${name}, but it is off, so its tools aren't yours yet. Call mcp_server with action enable, then continue the task that paused for this sign-in. Do not ask them to sign in again.`);
+  ? `${PRODUCT_NAME} MCP sign-in: the person signed in to ${name}. Its tools are yours from this turn. Continue the task that paused for this sign-in. Do not ask them to sign in again.`
+  : `${PRODUCT_NAME} MCP sign-in: the person signed in to ${name}, but it is off, so its tools aren't yours yet. Call mcp_server with action enable, then continue the task that paused for this sign-in. Do not ask them to sign in again.`);
 const signedInUnreachableText = (name: string, reason: string) =>
-  `OpenMausBot MCP sign-in: the person signed in to ${name}, but its tools aren't yours: ${reason} Continue the task that paused for this sign-in without them. Do not ask them to sign in again.`;
-const notSignedInText = (name: string) => `OpenMausBot MCP sign-in for ${name}: The person didn't sign in. The server stays on but signed out.`;
+  `${PRODUCT_NAME} MCP sign-in: the person signed in to ${name}, but its tools aren't yours: ${reason} Continue the task that paused for this sign-in without them. Do not ask them to sign in again.`;
+const notSignedInText = (name: string) => `${PRODUCT_NAME} MCP sign-in for ${name}: The person didn't sign in. The server stays on but signed out.`;
 
 export function createMcpSignInCards(deps: McpSignInCardDeps) {
   const { store } = deps;
@@ -186,7 +187,7 @@ export function createMcpSignInCards(deps: McpSignInCardDeps) {
   function unreachable(threadId: string, card: McpCard, server: Unreachable): Reply {
     const error = server.reason(deps.language(threadId));
     patch(threadId, card.id, { status: "failed", error });
-    const said = `OpenMausBot MCP sign-in for ${card.connector.slug}: ${server.reason(undefined)} Nothing was signed in.`;
+    const said = `${PRODUCT_NAME} MCP sign-in for ${card.connector.slug}: ${server.reason(undefined)} Nothing was signed in.`;
     if (!find(threadId, card.id)!.connector.resumed && deps.answer(threadId, card.id, said)) patch(threadId, card.id, { resumed: true });
     return { status: server.status, body: { error } };
   }
@@ -235,7 +236,7 @@ export function createMcpSignInCards(deps: McpSignInCardDeps) {
      * showed for the same server is set aside, so the chat shows one. */
     request(at: { bot: { name: string }; threadId: string; from?: Message["from"] }, name: string, server: StoredRemoteMcpServer): { posted: true } | Refusal {
       if (!signer(name, at.threadId)) {
-        return { status: 409, error: `${name} is each person's own, and this chat isn't one person's alone, so nobody can sign in to it here. Each person signs in to their own on their team's page in MausBot Cloud.` };
+        return { status: 409, error: `${name} is each person's own, and this chat isn't one person's alone, so nobody can sign in to it here. Each person signs in to their own on their team's page in ${PRODUCT_NAME} Cloud.` };
       }
       const replaced: string[] = [];
       for (const old of store.messagesFor(at.threadId)) {

@@ -2,7 +2,7 @@
 
 Este é o teste que prova a Fase 1: dois ou três bots respondendo pelas suas assinaturas do Claude e do ChatGPT.
 
-Por enquanto, os textos dentro do app ainda dizem "OpenMausBot" e "MausBot". O rebrand completo vem numa etapa própria.
+Os textos do app dizem ArkoBot. O nome OpenMausBot só aparece em identificadores internos (pastas, variáveis, esquema de link) e na tela de licenças (Sobre → Licenças de terceiros).
 
 ## Antes de começar
 

@@ -57,7 +57,7 @@ describe("publishing a page", () => {
     const f = setup();
     writeSite(join(f.work, "site"));
     const outcome = await f.publish({ path: "site" });
-    expect(outcome).toEqual({ status: 403, text: "Publishing a page needs a MausBot account. Sign in to MausBot in the app's Settings, then ask again." });
+    expect(outcome).toEqual({ status: 403, text: "Publishing a page needs an ArkoBot account. Sign in to ArkoBot in the app's Settings, then ask again." });
     expect(f.service.minted).toEqual([]);
     expect(f.cards).toEqual([]);
   });
@@ -80,7 +80,7 @@ describe("publishing a page", () => {
     expect(f.service.minted).toEqual([]);
     expect(f.cards).toEqual([]);
     applyIncludedPagesMessage({ type: "openmausbot:included-pages", access: null });
-    expect((await f.publish({ path: "site" })).text).toMatch(/^Publishing a page needs a MausBot account/u);
+    expect((await f.publish({ path: "site" })).text).toMatch(/^Publishing a page needs an ArkoBot account/u);
   });
 
   it("publishes a folder to a new link with a card showing the link and the usage, and remembers it", async () => {

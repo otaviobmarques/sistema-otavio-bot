@@ -35,6 +35,7 @@ import type { SessionRegistry } from "../sessions.ts";
 import type { Store } from "../store.ts";
 import type { BusyFlag, ConfigStatus } from "./config.ts";
 import { PASS, type RouteHandler } from "./table.ts";
+import { PRODUCT_NAME } from "../../shared/product-name.ts";
 
 export interface InstanceRouteDeps {
   store: Pick<Store, "bots" | "tasks">;
@@ -279,7 +280,7 @@ export function createInstanceRoutes(deps: InstanceRouteDeps): RouteHandler {
         }
         if (action === "install") {
           const installed = await registry.installRuntime(instanceId);
-          if (!installed) return json(res, 404, { error: "Installing this engine from Settings is not available on this server. Use the install command on the machine running OpenMausBot." });
+          if (!installed) return json(res, 404, { error: `Installing this engine from Settings is not available on this server. Use the install command on the machine running ${PRODUCT_NAME}.` });
           const usingAppCopy = installed !== true && await useAppCopy(instanceId, installed.useCli);
           return json(res, 200, { instances: await describeInstances(), ...(usingAppCopy ? { usingAppCopy: true } : {}) });
         }
@@ -288,7 +289,7 @@ export function createInstanceRoutes(deps: InstanceRouteDeps): RouteHandler {
           if (!instance) return json(res, 404, { error: "unknown instance" });
           // The official local OAuth callback terminates on this machine, not a phone or a remote browser.
           if (instance.authenticationMethod === "browser-pkce" && (isProxied(req) || !isLoopbackHost(req.socket.remoteAddress))) {
-            return json(res, 403, { error: "Continue with ChatGPT on the computer running OpenMausBot. Hosted Pro sign-in requires OpenAI's hosted-app approval." });
+            return json(res, 403, { error: `Continue with ChatGPT on the computer running ${PRODUCT_NAME}. Hosted Pro sign-in requires OpenAI's hosted-app approval.` });
           }
           const started = await providerAuthSessions.start(instance, owner);
           if (started.phase === "succeeded") registry.forgetSnapshots();

@@ -29,6 +29,7 @@ export function openSyncState(file) {
     failures() { return db.prepare("SELECT folder, path, error FROM failures WHERE count >= 3 ORDER BY folder, path").all().map((row) => ({ folderId: row.folder, path: row.path, error: row.error })); },
     meta(key) { return db.prepare("SELECT value FROM meta WHERE key = ?").get(key)?.value ?? null; },
     setMeta(key, value) { db.prepare("INSERT OR REPLACE INTO meta VALUES (?, ?)").run(key, value); },
+    metas(prefix) { return db.prepare("SELECT key, value FROM meta WHERE substr(key, 1, length(?)) = ?").all(prefix, prefix).map((row) => ({ key: row.key, value: row.value })); },
     reset() { db.exec("DELETE FROM base; DELETE FROM places; DELETE FROM failures; DELETE FROM meta;"); },
     close() { db.close(); },
   };

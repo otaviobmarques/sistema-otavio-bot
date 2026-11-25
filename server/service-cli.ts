@@ -9,6 +9,7 @@ import {
 } from "./service-unit.ts";
 import { defaultSentinelOut, outRefusal } from "./sentinel/paths.ts";
 import { cliCommand } from "./cli-invocation.ts";
+import { PRODUCT_NAME } from "../shared/product-name.ts";
 
 export interface ServiceInstallInput {
   action: "install" | "uninstall";
@@ -60,7 +61,7 @@ export function runServiceCommand(input: ServiceInstallInput, io: ServiceIo): nu
   if (input.sentinel) return runSentinelService(input, platform, home, io);
   const plan = servicePlan(platform, input.dataDir, home);
   if (!plan) {
-    io.error("services are written for Linux (systemd) and macOS (launchd); on Windows, use Task Scheduler to run `openmausbot serve` at startup");
+    io.error("services are written for Linux (systemd) and macOS (launchd); on Windows, use Task Scheduler to run `arkobot serve` at startup");
     return 1;
   }
   if (input.action === "uninstall") {
@@ -94,7 +95,7 @@ export function runServiceCommand(input: ServiceInstallInput, io: ServiceIo): nu
   for (const line of plan.activate) io.log(`  ${line}`);
   io.log("");
   if (input.domain && platform === "linux") io.log("the unit grants Caddy the capability for ports 80 and 443, so no setcap is needed under the service");
-  io.log(`logs: ${platform === "darwin" ? `${input.dataDir}/logs/service.log` : "journalctl -u openmausbot -f"}`);
+  io.log(`logs: ${platform === "darwin" ? `${input.dataDir}/logs/service.log` : "journalctl -u arkobot -f"}`);
   io.log(`change options later by running \`${cliCommand("service install")}\` again with the new ones, then: ${platform === "darwin" ? plan.activate[1] : "sudo systemctl daemon-reload && sudo systemctl restart openmausbot"}`);
   return 0;
 }
@@ -109,7 +110,7 @@ function pinnedCopy(input: ServiceInstallInput, io: ServiceIo): string | null {
   }
   const prefix = join(input.dataDir, "app", version ?? "latest");
   const command = `npm install --prefix ${prefix} openmausbot@${version ?? "latest"}`;
-  io.log(`this run comes from npx's cache, which npm prunes: installing openmausbot ${version ?? ""} into ${prefix} for the service`.replace("  ", " "));
+  io.log(`this run comes from npx's cache, which npm prunes: installing arkobot ${version ?? ""} into ${prefix} for the service`.replace("  ", " "));
   const installed = (input.installCopy ?? installWithNpm)(prefix, version ?? "latest");
   const script = join(prefix, "node_modules", "openmausbot", "dist-server", "openmausbot.js");
   if (installed && (input.exists ?? existsSync)(script)) return script;
@@ -139,7 +140,7 @@ function runSentinelService(input: ServiceInstallInput, platform: NodeJS.Platfor
     // command line as one argument, with its own quotes escaped
     const command = sentinelCommand({ ...input, out }).map((arg) => `\\"${arg}\\"`).join(" ");
     io.error("services are written for Linux (systemd) and macOS (launchd); on Windows, use Task Scheduler to run Sentinel every two minutes:");
-    io.error(`  schtasks /Create /SC MINUTE /MO 2 /TN "OpenMausBot Sentinel" /TR "${command}"`);
+    io.error(`  schtasks /Create /SC MINUTE /MO 2 /TN "${PRODUCT_NAME} Sentinel" /TR "${command}"`);
     return 1;
   }
   if (input.action === "uninstall") {
@@ -185,6 +186,6 @@ function runSentinelService(input: ServiceInstallInput, platform: NodeJS.Platfor
   io.log("");
   io.log(`issues: ${join(out, "issues.jsonl")}`);
   io.log(`logs: ${platform === "darwin" ? join(out, "sentinel.log") : "journalctl --user -u openmausbot-sentinel"}`);
-  io.log("after an app update or a Node upgrade, check the schedule still points at both: openmausbot sentinel --check-install");
+  io.log("after an app update or a Node upgrade, check the schedule still points at both: arkobot sentinel --check-install");
   return 0;
 }

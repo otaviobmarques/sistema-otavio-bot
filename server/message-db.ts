@@ -12,7 +12,7 @@ import { ensureMemoryIndex } from "./message-db-memory-index.ts";
 import { attentionSelect } from "./message-db-attention.ts";
 import { MessageSearchWorker } from "./message-search-worker.ts";
 import { searchMessagesInDatabase, type SearchHit } from "./message-search-query.ts";
-import type { Notification, NotificationLogEntry } from "../shared/notification.ts"; import { notifyTaps } from "./notification-taps.ts";
+import type { Notification, NotificationLogEntry } from "../shared/notification.ts"; import { notifyTaps } from "./notification-taps.ts"; import { PRODUCT_NAME } from "../shared/product-name.ts";
 export type { SearchHit } from "./message-search-query.ts";
 
 const DB_FILE = () => join(DATA_DIR, "messages.db");
@@ -109,7 +109,7 @@ export function describeMissingFts5(error: unknown): Error | null {
   const message = error instanceof Error ? error.message : String(error);
   if (!/no such module:\s*fts5/i.test(message)) return null;
   return new Error(
-    `OpenMausBot needs SQLite with FTS5, which is built into Node 24 and newer (and into the app). ` +
+    `${PRODUCT_NAME} needs SQLite with FTS5, which is built into Node 24 and newer (and into the app). ` +
     `This Node (${process.version}) has none: install Node 24 or newer. (${message})`,
   );
 }

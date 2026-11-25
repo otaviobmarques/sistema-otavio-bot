@@ -10,3 +10,6 @@ export const PRODUCT_MARK = "/app-icon.svg";
 
 /** The name a person's first bot was given before this product had its own. */
 export const LEGACY_DEFAULT_BOT_NAME = "MausBot";
+
+/** The command people type on a server: `arkobot pair`, `arkobot serve`. Its first name, `openmausbot`, works too. */
+export const CLI_NAME = "arkobot";

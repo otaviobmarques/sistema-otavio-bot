@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { DesktopWorkspaceSwitcher } from "../components/DesktopWorkspaceSwitcher";
 import { productName } from "../lib/brand";
+import { CLI_NAME } from "../../shared/product-name";
 
 import {
   defaultDeviceLabel,
@@ -16,7 +17,7 @@ import {
 } from "../lib/session";
 import { pairedDestination } from "../lib/phone-pairing";
 import { t } from "../lib/i18n";
-import { formatPairingCode, PAIRING_INPUT_PROBLEM_KEY, readPairingInput } from "../../shared/pairing-code";
+import { PAIRING_INPUT_PROBLEM_KEY, readPairingInput } from "../../shared/pairing-code";
 import { isPrivateHost } from "../../shared/private-host";
 
 const input = "mt-1 w-full rounded-md border border-hairline/40 bg-inset px-3 py-2 text-[14px] text-ink outline-none focus:border-accent-border";
@@ -43,13 +44,6 @@ export function codeProblem(code: string): string | null {
 export function codeReady(code: string): boolean {
   const kind = readPairingInput(code).kind;
   return kind === "code" || kind === "credential";
-}
-
-/** The phone app opens this server with the code already filled in. */
-export function openInAppLink(origin: string, code: string): string {
-  const read = readPairingInput(code);
-  const filled = read.kind === "code" ? `&code=${encodeURIComponent(formatPairingCode(read.code))}` : "";
-  return `openmausbot://pair?address=${encodeURIComponent(origin)}${filled}`;
 }
 
 /** Plain http to the open internet: the session cookie and every chat would cross it readable. */
@@ -248,15 +242,10 @@ export function PairPage({ initialCode, initialEmail = null, reason }: { initial
             <button type="submit" disabled={busy || !codeReady(code)} className={button}>
               {t(busy ? "pair.connecting" : "pair.connect")}
             </button>
-            {where?.origin ? (
-              <p className="mt-3 text-[13px] text-ink-secondary">
-                {t("pair.onPhone")}{" "}
-                <a href={openInAppLink(where.origin, code)} className="text-accent underline">{t("pair.openInApp", { app: productName() })}</a>
-              </p>
-            ) : null}
+            {where?.origin ? <PhoneInstallHint /> : null}
             {ownServer ? (
               <p className="mt-3 text-[13px] text-ink-secondary">
-                {t("pair.noCode")} <code className="select-all rounded bg-inset px-1.5 py-0.5 text-[12px] text-ink">npx openmausbot pair</code>
+                {t("pair.noCode")} <code className="select-all rounded bg-inset px-1.5 py-0.5 text-[12px] text-ink">{`${CLI_NAME} pair`}</code>
               </p>
             ) : null}
             {emailOffered ? (
@@ -271,5 +260,18 @@ export function PairPage({ initialCode, initialEmail = null, reason }: { initial
         )}
       </div>
     </main>
+  );
+}
+
+/** On a phone this page is the app itself: once connected, it goes on the home screen from the browser's own menu. */
+export function PhoneInstallHint() {
+  return (
+    <div data-pair-install className="mt-3 text-[13px] text-ink-secondary">
+      <p>{t("pair.onPhone")} {t("pair.install.intro", { app: productName() })}</p>
+      <ul className="mt-1 inline-block list-disc pl-5 text-left">
+        <li>{t("pair.install.iphone")}</li>
+        <li>{t("pair.install.android")}</li>
+      </ul>
+    </div>
   );
 }

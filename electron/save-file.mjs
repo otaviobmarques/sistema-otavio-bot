@@ -114,18 +114,22 @@ export async function withSavableFile(
 
 // Untrusted path: nothing here opens, reads or runs it. Network shares are refused, since merely looking one up can hand
 // this computer's sign-in to whoever runs that server.
-export async function revealInFolder(rawPath, { reveal, fsp = fs.promises, pathApi = path }) {
+/** `moved`: where a path saved before a folder was renamed is now (outputs-folder.mjs movedOutputPath). */
+export async function revealInFolder(rawPath, { reveal, fsp = fs.promises, pathApi = path, moved = (file) => file }) {
   const local = (value) => !/^[\\/]{2}/.test(value) && pathApi.isAbsolute(value);
   if (typeof rawPath !== "string" || rawPath.includes("\0") || /^[a-z][a-z\d+.-]+:/i.test(rawPath) || !local(rawPath)) {
     return "invalid";
   }
-  const target = pathApi.normalize(rawPath);
+  let target = pathApi.normalize(rawPath);
   if (!local(target)) return "invalid";
   let stats;
   try {
     stats = await fsp.stat(target);
   } catch {
-    return "missing";
+    const now = moved(target);
+    if (now === target || !local(now)) return "missing";
+    try { stats = await fsp.stat(now); } catch { return "missing"; }
+    target = now;
   }
   if (!stats.isFile() && !stats.isDirectory()) return "invalid";
   reveal(target);

@@ -27,6 +27,7 @@ import { parseProtocolAskQuestions, questionAnswersById, type ProtocolAskQuestio
 import type { EffortLevel } from "../../shared/wire.ts";
 import { promptHalves, readPromptSplitReceipt, splitSessionPrompt, writePromptSplitReceipt, type PromptSplitReceipt } from "./prompt-split.ts";
 import { turnStdioMcpServers } from "./turn-mcp.ts";
+import { PRODUCT_NAME } from "../../shared/product-name.ts";
 
 const DRIVER_KIND = "museCode";
 const PROVIDER_ID = "meta";
@@ -571,7 +572,7 @@ export const MuseCodeDriver: ProviderDriver<MuseConfig> = {
       attach(state, host);
       if (servers.length && !host.grantedMcp) {
         emit({ type: "runtime.notice", threadId: state.threadId, turnId,
-          message: "This Muse Code cannot take OpenMausBot's tools (browser, teammates, apps). Update Muse Code to use them." });
+          message: `This Muse Code cannot take ${PRODUCT_NAME}'s tools (browser, teammates, apps). Update Muse Code to use them.` });
       }
       const config = servers.length && host.grantedMcp ? { config: { mcpServers } } : {};
       const resumeId = cursor ?? state.sessionId;

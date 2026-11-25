@@ -17,8 +17,8 @@
     <key>LSBackgroundOnly</key>
     <true/>
     <key>NSMicrophoneUsageDescription</key>
-    <string>OpenMausBot listens while you dictate messages or talk to a bot.</string>
+    <string>ArkoBot listens while you dictate messages or talk to a bot.</string>
     <key>NSSpeechRecognitionUsageDescription</key>
-    <string>OpenMausBot converts your speech into text during dictation and calls.</string>
+    <string>ArkoBot converts your speech into text during dictation and calls.</string>
   </dict>
 </plist>

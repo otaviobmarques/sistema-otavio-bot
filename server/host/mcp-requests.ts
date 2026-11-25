@@ -3,6 +3,7 @@ import type { OptionCardData } from "../../shared/wire.ts";
 import { redactSecretsInText } from "../../shared/redact.ts";
 import { newId } from "../contracts.ts";
 import { serverLine, type ServerLineKey } from "../server-lines.ts";
+import { PRODUCT_NAME } from "../../shared/product-name.ts";
 
 export type McpCardAction = McpChangeRequest["action"];
 export type McpChangeResult = NonNullable<McpChangeRequest["result"]>;
@@ -15,7 +16,7 @@ type Decision = "card-shown" | "user-approved" | "user-denied";
 
 const MCP_CARD_PROPOSED = "A card is now visible to the person. End this turn and wait for the decision.";
 export const MCP_KEY_EXPIRED = "The key expired. Ask for it again with request_credential.";
-const RESTARTED = "OpenMausBot restarted, so this request expired. Ask again if you still need it.";
+const RESTARTED = `${PRODUCT_NAME} restarted, so this request expired. Ask again if you still need it.`;
 
 /** The negative option is "Cancel": phones send deny only for Deny, Cancel, Dismiss or Skip. */
 const CARDS: Record<McpCardAction, { title: ServerLineKey; option: string; denied: (name: string) => string }> = {

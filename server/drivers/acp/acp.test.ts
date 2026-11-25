@@ -492,7 +492,7 @@ describe("ACP turns (fake CLI)", () => {
       .toBe("Standing rules.\n\nMemory: likes quiet hours.\n\nfirst");
     expect(await send("second", "Memory: likes quiet hours.")).toBe("second");
     expect(await send("third", "Memory: moved to Toronto."))
-      .toBe("Context from OpenMausBot updated since this conversation started; it replaces any earlier copy:\n\nMemory: moved to Toronto.\n\nthird");
+      .toBe("Context from ArkoBot updated since this conversation started; it replaces any earlier copy:\n\nMemory: moved to Toronto.\n\nthird");
     expect(await send("fourth", "")).toContain("have been cleared");
     expect(await send("fifth", "")).toBe("fifth");
   });
@@ -1190,7 +1190,7 @@ describe("ACP turns (fake CLI)", () => {
     });
   });
 
-  it("hands an agent that reaches MCP servers by URL OpenMausBot's own servers as endpoints of this server, no proxy process", async () => {
+  it("hands an agent that reaches MCP servers by URL ArkoBot's own servers as endpoints of this server, no proxy process", async () => {
     await create(createAcpDriver({ ...SELECT_MODEL_SUPPORT, driverKind: "httpMcpTest", selectModel: undefined, ownMcpOverHttp: true }));
     const dump = join(scratch, "own-http.json");
     process.env.FAKE_ACP_DUMP = dump;
@@ -1365,7 +1365,7 @@ describe("ACP turns (fake CLI)", () => {
   it.each([
     ["advertises no remote transport", undefined],
     ["advertises http and sse", "http,sse"],
-  ])("mounts every url server as OpenMausBot's connector for an agent that %s", async (_name, transports) => {
+  ])("mounts every url server as ArkoBot's connector for an agent that %s", async (_name, transports) => {
     if (transports) process.env.FAKE_ACP_MCP_TRANSPORTS = transports;
     try {
       await create();
@@ -1388,7 +1388,7 @@ describe("ACP turns (fake CLI)", () => {
   });
 
   // The fake agent connects each mounted server with grok 1.0.25's handshake, which a strict server refuses.
-  it("lists a strict url server's tools through OpenMausBot's connector, even for an agent that speaks http", async () => {
+  it("lists a strict url server's tools through ArkoBot's connector, even for an agent that speaks http", async () => {
     const strict = await startFakeHttpMcp({ strictInitialize: "http-400", strictSchema: "2025-11-25",
       tools: [{ name: "report", inputSchema: { type: "object" } }, { name: "campaigns", inputSchema: { type: "object" } }],
       requireHeader: { name: "Authorization", value: "Bearer tok-voluum" } });

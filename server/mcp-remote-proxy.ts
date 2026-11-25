@@ -32,6 +32,7 @@ import { fitToolListResult } from "./mcp-tool-schema.ts";
 import { toolSchemaProfileFromEnv } from "./tool-schema-profile.ts";
 import { capToolListResult, toolLimitFromEnv } from "./tool-count-limit.ts";
 import { APP_EXTENSION_KEY } from "../shared/app.ts";
+import { PRODUCT_NAME } from "../shared/product-name.ts";
 
 type Json = Record<string, unknown>;
 function isRecord(value: unknown): value is Json {
@@ -50,7 +51,7 @@ function fail(message: string): never {
 }
 
 const CREDENTIALS_REFUSED = "This MCP server refused its credentials (HTTP 401). If it uses a sign-in, send the message again: "
-  + "OpenMausBot refreshes sign-ins when a message starts. If it still fails, open Plugins → MCP servers and sign in to it again, "
+  + `${PRODUCT_NAME} refreshes sign-ins when a message starts. If it still fails, open Plugins → MCP servers and sign in to it again, `
   + "or check its header values.";
 
 /** A refusal of our own: its words carry nothing remote, so they are relayed. */

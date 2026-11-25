@@ -35,9 +35,13 @@ if (expectedVersion !== release.version) {
 async function binaryVersion(candidate) {
   if (!candidate || !existsSync(candidate)) return null;
   try {
-    const { stdout } = await run(candidate, ["--version"], { timeout: 5000, windowsHide: true });
-    return stdout.match(/cua-driver\s+([\d.]+)/)?.[1] ?? null;
-  } catch {
+    // A freshly extracted executable is scanned by Defender on first run, which can take well over 5 s on a CI runner.
+    const { stdout, stderr } = await run(candidate, ["--version"], { timeout: 60_000, windowsHide: true });
+    const version = stdout.match(/cua-driver\s+([\d.]+)/)?.[1] ?? null;
+    if (!version) console.warn(`${candidate} --version said: ${JSON.stringify({ stdout: stdout.slice(0, 500), stderr: stderr.slice(0, 500) })}`);
+    return version;
+  } catch (error) {
+    console.warn(`${candidate} --version failed: ${error?.code ?? ""} ${error?.signal ?? ""} ${String(error?.stderr ?? error?.message ?? error).slice(0, 500)}`);
     return null;
   }
 }
@@ -63,13 +67,15 @@ async function officialBinary() {
   }
   const archive = join(cache, release.file);
   await writeFile(archive, bytes);
-  await run("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command",
-    "Expand-Archive -LiteralPath $env:OMB_CUA_ARCHIVE -DestinationPath $env:OMB_CUA_EXTRACT"], {
-    env: { ...process.env, OMB_CUA_ARCHIVE: archive, OMB_CUA_EXTRACT: cache },
-    timeout: 60_000,
-    windowsHide: true,
-  });
+  // Windows' own bsdtar reads zip archives. Expand-Archive with the paths in environment variables started returning
+  // success without extracting anything on the November 2026 runners (Node 24.22.3), so the paths go as arguments.
+  const systemTar = join(process.env.SystemRoot ?? "C:\\Windows", "System32", "tar.exe");
+  await run(systemTar, ["-xf", archive, "-C", cache], { timeout: 60_000, windowsHide: true });
   if ((await binaryVersion(cachedBinary)) !== expectedVersion) {
+    if (!existsSync(cachedBinary)) {
+      const { readdir } = await import("node:fs/promises");
+      console.warn(`after extraction ${cache} holds: ${(await readdir(cache)).join(", ")}`);
+    }
     throw new Error(`downloaded CUA Driver does not report version ${expectedVersion}`);
   }
   return cachedBinary;

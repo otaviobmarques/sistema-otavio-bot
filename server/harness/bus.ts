@@ -10,9 +10,10 @@ import { capThreadLog, currentThreadLogCap } from "../thread-log-rotation.ts";
 import { newId, type ProviderAdapter, type ProviderInstance, type RuntimeEvent, type RuntimeEventListener } from "../contracts.ts";
 import { LiveSteps } from "./live-steps.ts";
 import { ProgressGate } from "./progress-gate.ts";
+import { PRODUCT_NAME } from "../../shared/product-name.ts";
 
 const INCOMPLETE_LOG_MESSAGE =
-  "Canonical event history is incomplete: OpenMausBot could not write one or more events to disk. Live updates will continue.";
+  `Canonical event history is incomplete: ${PRODUCT_NAME} could not write one or more events to disk. Live updates will continue.`;
 
 const DELTA_MERGE_MS = 50;
 
