@@ -67,12 +67,10 @@ async function officialBinary() {
   }
   const archive = join(cache, release.file);
   await writeFile(archive, bytes);
-  await run("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command",
-    "Expand-Archive -LiteralPath $env:OMB_CUA_ARCHIVE -DestinationPath $env:OMB_CUA_EXTRACT"], {
-    env: { ...process.env, OMB_CUA_ARCHIVE: archive, OMB_CUA_EXTRACT: cache },
-    timeout: 60_000,
-    windowsHide: true,
-  });
+  // Windows' own bsdtar reads zip archives. Expand-Archive with the paths in environment variables started returning
+  // success without extracting anything on the November 2026 runners (Node 24.22.3), so the paths go as arguments.
+  const systemTar = join(process.env.SystemRoot ?? "C:\\Windows", "System32", "tar.exe");
+  await run(systemTar, ["-xf", archive, "-C", cache], { timeout: 60_000, windowsHide: true });
   if ((await binaryVersion(cachedBinary)) !== expectedVersion) {
     if (!existsSync(cachedBinary)) {
       // The archive's checksum matched, so a missing executable means something removed it after extraction (antivirus).
