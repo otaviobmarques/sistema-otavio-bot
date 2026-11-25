@@ -8,15 +8,7 @@ import { Logo } from './Logo';
 import { BotaoContato } from './ui';
 
 export function Cabecalho() {
-  const [rolou, setRolou] = useState(false);
   const [aberto, setAberto] = useState(false);
-
-  useEffect(() => {
-    const aoRolar = () => setRolou(window.scrollY > 12);
-    aoRolar();
-    window.addEventListener('scroll', aoRolar, { passive: true });
-    return () => window.removeEventListener('scroll', aoRolar);
-  }, []);
 
   useEffect(() => {
     if (!aberto) return;
@@ -26,30 +18,29 @@ export function Cabecalho() {
   }, [aberto]);
 
   return (
-    <header
-      className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
-        rolou || aberto ? 'border-b border-white/10 bg-noite/80 backdrop-blur-xl' : 'border-b border-transparent'
-      }`}
-    >
-      <div className="mx-auto flex h-16 max-w-7xl items-center gap-6 px-4 sm:px-6 lg:h-18 lg:px-8">
-        <a href="#inicio" className="h-8 text-lg" aria-label="ArkoBot, voltar ao início">
-          <Logo className="h-8" />
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-linha bg-white/85 backdrop-blur-xl">
+      <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4 sm:px-6">
+        <a href="#inicio" className="h-7 text-base" aria-label="ArkoBot, voltar ao início">
+          <Logo className="h-7" />
         </a>
-        <nav aria-label="Principal" className="ml-auto hidden items-center gap-1 lg:flex">
+        <nav aria-label="Principal" className="ml-6 hidden items-center gap-1 lg:flex">
           {navegacao.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              className="rounded-full px-3.5 py-2 text-sm font-medium text-suave transition hover:bg-white/5 hover:text-white"
-            >
+            <a key={item.href} href={item.href} className="rounded-full px-3 py-2 text-[15px] text-cinza transition hover:text-tinta">
               {item.rotulo}
             </a>
           ))}
         </nav>
-        <BotaoContato acao="assinar" className="!hidden !px-5 !py-2.5 !text-sm lg:!inline-flex">Começar agora</BotaoContato>
+        <div className="ml-auto hidden items-center gap-2 lg:flex">
+          <BotaoContato variante="secundario" className="!px-4 !py-2 !text-sm">
+            Falar com um especialista
+          </BotaoContato>
+          <BotaoContato acao="assinar" className="!px-4 !py-2 !text-sm" seta={false}>
+            Começar agora
+          </BotaoContato>
+        </div>
         <button
           type="button"
-          className="ml-auto grid h-10 w-10 place-items-center rounded-full border border-white/10 text-white lg:hidden"
+          className="ml-auto grid h-10 w-10 place-items-center rounded-full border border-linha text-tinta lg:hidden"
           aria-expanded={aberto}
           aria-controls="menu-celular"
           aria-label={aberto ? 'Fechar menu' : 'Abrir menu'}
@@ -66,7 +57,7 @@ export function Cabecalho() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden border-t border-white/10 lg:hidden"
+            className="overflow-hidden border-t border-linha bg-white lg:hidden"
           >
             <div className="flex flex-col gap-1 px-4 py-4">
               {navegacao.map((item) => (
@@ -74,12 +65,15 @@ export function Cabecalho() {
                   key={item.href}
                   href={item.href}
                   onClick={() => setAberto(false)}
-                  className="rounded-xl px-4 py-3 text-base font-medium text-texto hover:bg-white/5"
+                  className="rounded-xl px-4 py-3 text-base text-tinta hover:bg-cartao"
                 >
                   {item.rotulo}
                 </a>
               ))}
-              <BotaoContato acao="assinar" className="mt-2">Começar agora</BotaoContato>
+              <BotaoContato acao="assinar" className="mt-2">
+                Começar agora
+              </BotaoContato>
+              <BotaoContato variante="secundario">Falar com um especialista</BotaoContato>
             </div>
           </motion.nav>
         )}

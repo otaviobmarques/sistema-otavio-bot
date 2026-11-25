@@ -419,83 +419,111 @@ function fimDoCiclo(frame: number, duracao: number) {
   return interpolate(frame, [duracao - 16, duracao], [1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
 }
 
+type Estado = { texto: string; tom: 'ambar' | 'verde' | 'neutro'; hora: string };
+
+function estadoDe(id: string, frame: number): Estado {
+  const entre = (a: number, b: number) => frame >= a && frame < b;
+  switch (id) {
+    case 'leo':
+      return frame < 72 ? { texto: 'Lendo o seu pedido…', tom: 'verde', hora: 'agora' } : { texto: 'Dividiu a campanha', tom: 'neutro', hora: '9:01' };
+    case 'nina':
+      if (entre(125, 165)) return { texto: 'Pesquisando concorrentes…', tom: 'verde', hora: 'agora' };
+      return frame >= 165 ? { texto: 'Pesquisa entregue', tom: 'neutro', hora: '9:04' } : { texto: 'Dias úteis às 8h', tom: 'neutro', hora: '8:00' };
+    case 'duda':
+      if (entre(202, 240)) return { texto: 'Criando os posts…', tom: 'verde', hora: 'agora' };
+      return frame >= 240 ? { texto: 'Posts prontos', tom: 'neutro', hora: '9:06' } : { texto: 'Todo dia às 10h', tom: 'neutro', hora: 'ontem' };
+    case 'ana':
+      if (entre(320, 350)) return { texto: 'Escrevendo o e-mail…', tom: 'verde', hora: 'agora' };
+      if (entre(350, APROVA_EM)) return { texto: 'Esperando o seu sim', tom: 'ambar', hora: 'agora' };
+      return frame >= APROVA_EM ? { texto: 'E-mail enviado', tom: 'neutro', hora: '9:09' } : { texto: 'Dias úteis às 9h', tom: 'neutro', hora: '9:00' };
+    case 'beto':
+      if (entre(481, 515)) return { texto: 'Somando o custo…', tom: 'verde', hora: 'agora' };
+      return frame >= 515 ? { texto: 'Custo dentro da verba', tom: 'neutro', hora: '9:11' } : { texto: 'Segundas às 9h', tom: 'neutro', hora: 'seg.' };
+    case 'caio':
+      return frame >= CAIO_DIGITA ? { texto: 'Respondendo um cliente…', tom: 'verde', hora: 'agora' } : { texto: 'A cada 30 minutos', tom: 'neutro', hora: '8:30' };
+    case 'rafa':
+      return { texto: 'Dias úteis às 8h', tom: 'neutro', hora: '8:00' };
+    default:
+      return { texto: 'Segundas às 6h', tom: 'neutro', hora: 'seg.' };
+  }
+}
+
+const COR_ESTADO = { ambar: CORES.ambar, verde: CORES.verde, neutro: CORES.suave };
+
+function LinhaDaLista({ bot, frame }: { bot: BotDaEquipe; frame: number }) {
+  const e = estadoDe(bot.id, frame);
+  return (
+    <div style={{ display: 'flex', gap: 11, alignItems: 'center', padding: '8px 10px', borderRadius: 12, background: e.tom === 'ambar' ? 'rgba(245,165,36,0.1)' : 'transparent' }}>
+      <div style={{ position: 'relative' }}>
+        <AvatarBot bot={bot} tamanho={38} />
+        {e.tom !== 'neutro' && (
+          <span style={{ position: 'absolute', right: -2, bottom: -2, width: 11, height: 11, borderRadius: 9, background: COR_ESTADO[e.tom], boxShadow: '0 0 0 2px #0A1028' }} />
+        )}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+          <span style={{ color: '#fff', fontWeight: 600, fontSize: 14 }}>{bot.nome}</span>
+          <span style={{ color: CORES.suave, fontSize: 11.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{bot.funcao}</span>
+          <span style={{ marginLeft: 'auto', color: CORES.suave, fontSize: 11 }}>{e.hora}</span>
+        </div>
+        <div style={{ color: e.tom === 'neutro' ? CORES.suave : COR_ESTADO[e.tom], fontSize: 12.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: e.tom === 'ambar' ? 600 : 400 }}>
+          {e.texto}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ConversaDesktop() {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
-  const cursorX = interpolate(frame, [360, 404], [1180, 398], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const cursorX = interpolate(frame, [360, 404], [1180, 478], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
   const cursorY = interpolate(frame, [360, 404], [760, 616], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
   const clique = interpolate(frame, [APROVA_EM - 4, APROVA_EM + 10], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
   const mostraCursor = frame > 356 && frame < 440;
 
   return (
     <AbsoluteFill style={{ background: CORES.noite, fontFamily: FONTE, display: 'flex', flexDirection: 'row' }}>
-      <div style={{ width: 250, background: '#0A1028', borderRight: `1px solid ${CORES.borda}`, padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-          <MarcaBot tamanho={28} />
-          <span style={{ fontFamily: FONTE_TITULO, fontWeight: 800, fontSize: 21, color: '#fff' }}>
+      <div style={{ width: 300, background: '#0A1028', borderRight: `1px solid ${CORES.borda}`, padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 6px 12px' }}>
+          <MarcaBot tamanho={26} />
+          <span style={{ fontFamily: FONTE_TITULO, fontWeight: 800, fontSize: 19, color: '#fff' }}>
             arko<span style={{ color: CORES.ciano }}>bot</span>
           </span>
+          <span style={{ marginLeft: 'auto', color: CORES.suave, fontSize: 20 }}>+</span>
         </div>
-        {['Caixa de entrada', 'Prédio', 'Sala do conselho'].map((t) => (
-          <div key={t} style={{ padding: '8px 10px', borderRadius: 10, color: CORES.texto, fontSize: 14.5 }}>
-            {t}
+        <div style={{ margin: '0 4px 8px', padding: '8px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: `1px solid ${CORES.borda}`, color: CORES.suave, fontSize: 13.5 }}>
+          Buscar
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '8px 10px', borderRadius: 12, background: 'rgba(0,232,248,0.1)' }}>
+          <div style={{ width: 38, height: 38, borderRadius: 11, background: 'rgba(0,232,248,0.15)', display: 'grid', placeItems: 'center', color: CORES.ciano, fontWeight: 800, fontSize: 18 }}>#</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ color: '#fff', fontWeight: 600, fontSize: 14 }}>Loja Online</div>
+            <div style={{ color: CORES.suave, fontSize: 12.5 }}>Sala · 6 bots e você</div>
           </div>
+        </div>
+        <div style={{ margin: '10px 10px 2px', color: CORES.suave, fontSize: 11, fontWeight: 700, letterSpacing: 1.2 }}>BOTS</div>
+        {equipe.map((b) => (
+          <LinhaDaLista key={b.id} bot={b} frame={frame} />
         ))}
-        <div style={{ marginTop: 12, color: CORES.suave, fontSize: 11.5, fontWeight: 700, letterSpacing: 1.2 }}>SALAS</div>
-        {['Loja Online', 'Financeiro', 'Atendimento'].map((t, i) => (
-          <div
-            key={t}
-            style={{
-              padding: '8px 10px',
-              borderRadius: 10,
-              fontSize: 14.5,
-              color: i === 0 ? '#fff' : CORES.texto,
-              background: i === 0 ? 'rgba(0,232,248,0.12)' : 'transparent',
-              fontWeight: i === 0 ? 600 : 400,
-            }}
-          >
-            # {t}
-          </div>
-        ))}
-        <div style={{ marginTop: 12, color: CORES.suave, fontSize: 11.5, fontWeight: 700, letterSpacing: 1.2 }}>EQUIPE</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginTop: 4 }}>
-          {equipe.map((b) => {
-            const ativo = ROTEIRO.some((m) => m.de === b.id && 'digita' in m && frame >= m.em - m.digita) || (b.id === 'caio' && frame >= CAIO_DIGITA);
-            return (
-              <div key={b.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-                <div style={{ position: 'relative' }}>
-                  <AvatarBot bot={b} tamanho={44} />
-                  <span
-                    style={{
-                      position: 'absolute',
-                      right: -2,
-                      bottom: -2,
-                      width: 12,
-                      height: 12,
-                      borderRadius: 9,
-                      background: ativo ? CORES.verde : '#64748B',
-                      boxShadow: `0 0 0 2px #0A1028${ativo ? ', 0 0 10px #22C55E' : ''}`,
-                    }}
-                  />
-                </div>
-                <span style={{ color: CORES.texto, fontSize: 11 }}>{b.nome}</span>
-              </div>
-            );
-          })}
+        <div style={{ marginTop: 'auto', display: 'flex', gap: 16, padding: '10px 10px 2px', color: CORES.suave, fontSize: 13 }}>
+          <span>Automações</span>
+          <span>Apps</span>
+          <span>Prédio</span>
         </div>
       </div>
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', opacity: fimDoCiclo(frame, durationInFrames) }}>
-        <div style={{ height: 68, display: 'flex', alignItems: 'center', gap: 14, padding: '0 28px', borderBottom: `1px solid ${CORES.borda}` }}>
+        <div style={{ height: 64, display: 'flex', alignItems: 'center', gap: 14, padding: '0 26px', borderBottom: `1px solid ${CORES.borda}` }}>
           <div>
             <div style={{ color: '#fff', fontWeight: 700, fontSize: 17 }}># Loja Online</div>
-            <div style={{ color: CORES.suave, fontSize: 13 }}>Campanha de Black Friday · 6 bots e você</div>
+            <div style={{ color: CORES.suave, fontSize: 13 }}>Campanha de Black Friday</div>
           </div>
           <div style={{ marginLeft: 'auto' }}>
-            <Pilha tamanho={30} />
+            <Pilha tamanho={28} />
           </div>
         </div>
-        <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '0 28px 14px' }}>
+        <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '0 26px 14px' }}>
           <Mensagens frame={frame} compacto={false} />
         </div>
         <Compositor compacto={false} />

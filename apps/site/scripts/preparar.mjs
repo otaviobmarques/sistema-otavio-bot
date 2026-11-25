@@ -18,20 +18,23 @@ for (const tamanho of [192, 512]) {
 const quadrado = Buffer.from(marca.toString().replace('rx="224"', 'rx="0"'));
 await sharp(quadrado, { density: 300 }).resize(180, 180).png().toFile(destino('apple-touch-icon.png'));
 
-await copyFile(raiz('public/abertura/arkobot.mp4'), destino('arkobot.mp4'));
-await sharp(raiz('public/abertura/arkobot-poster.jpg')).webp({ quality: 82 }).toFile(destino('arkobot-poster.webp'));
-
 const PASTAS = {
   lobehub: join(dirname(exigir.resolve('@lobehub/icons-static-svg/package.json')), 'icons'),
-  'simple-icons': join(dirname(exigir.resolve('simple-icons/icons/whatsapp.svg')), ''),
+  'simple-icons': dirname(exigir.resolve('simple-icons/icons/whatsapp.svg')),
 };
+const TINTA = '#0B1230';
+const pintar = (svg, cor) =>
+  svg.includes('fill="currentColor"') ? svg.replace('fill="currentColor"', `fill="${cor}"`) : svg.replace('<svg ', `<svg fill="${cor}" `);
+
 const integracoes = JSON.parse(await readFile(new URL('../src/config/integracoes.json', import.meta.url), 'utf8'));
 for (const item of [...integracoes.ias, ...integracoes.servicos]) {
-  let svg = await readFile(join(PASTAS[item.pacote], item.arquivo), 'utf8');
-  if (item.cor) {
-    svg = svg.includes('fill="currentColor"')
-      ? svg.replace('fill="currentColor"', `fill="${item.cor}"`)
-      : svg.replace('<svg ', `<svg fill="${item.cor}" `);
+  const svg = await readFile(join(PASTAS[item.pacote], item.arquivo), 'utf8');
+  if (item.mono) {
+    await writeFile(destino(`logos/${item.id}.svg`), pintar(svg, TINTA));
+    await writeFile(destino(`logos/${item.id}-branco.svg`), pintar(svg, '#FFFFFF'));
+  } else {
+    const colorido = item.cor ? pintar(svg, item.cor) : svg;
+    await writeFile(destino(`logos/${item.id}.svg`), colorido);
+    await writeFile(destino(`logos/${item.id}-branco.svg`), colorido);
   }
-  await writeFile(destino(`logos/${item.id}.svg`), svg);
 }

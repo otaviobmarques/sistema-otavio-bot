@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import type { BotDaEquipe } from '@/config/equipe';
 
 const TINTA = '#0B1230';
@@ -75,7 +76,8 @@ type Props = { bot: BotDaEquipe; tamanho?: number; className?: string; titulo?: 
 
 export function AvatarBot({ bot, tamanho, className, titulo = false }: Props) {
   const [clara, escura] = bot.cores;
-  const grad = `avatar-${bot.id}`;
+  const unico = useId().replace(/:/g, '');
+  const grad = `avatar-${bot.id}-${unico}`;
   return (
     <svg
       viewBox="0 0 100 100"

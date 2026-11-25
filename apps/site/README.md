@@ -8,15 +8,17 @@ pnpm --filter @arkobot/site dev   # http://localhost:3000
 pnpm --filter @arkobot/site build # gera apps/site/out
 ```
 
-`scripts/preparar.mjs` roda antes do `dev` e do `build`: copia o símbolo de `docs/arkobot/mark.svg` (favicon e ícones), o vídeo de abertura de `public/abertura/` e os logos das integrações para `public/gerado/` (fora do git). A imagem de compartilhamento `public/og.png` fica no repositório; para refazê-la, rode `pnpm --filter @arkobot/site og` numa máquina com a fonte Inter instalada.
+`scripts/preparar.mjs` roda antes do `dev` e do `build`: gera favicon e ícones a partir de `docs/arkobot/mark.svg` e copia os logos das integrações para `public/gerado/` (fora do git), em duas versões: escura para o fundo branco e branca para os mockups escuros. A imagem de compartilhamento `public/og.png` fica no repositório; para refazê-la, rode `pnpm --filter @arkobot/site og` numa máquina com a fonte Inter instalada.
 
 ## O que editar antes de publicar
 
 | Arquivo | O quê |
 | --- | --- |
 | `src/config/contato.ts` | Link de assinatura (`urlAssinatura`), WhatsApp e/ou e-mail. Vazios, "Começar agora" e "Falar com um especialista" levam à seção de contato, que diz que os canais saem em breve. |
-| `src/config/planos.ts` | Planos, preços, créditos, computador adicional, créditos avulsos, a linha que explica os créditos e a garantia de 7 dias. `precosDefinidos = false` esconde os valores. |
-| `src/config/integracoes.json` | IAs e apps da parede de integrações (conferidos em `server/drivers/` e na Composio) e o arquivo de logo de cada um. |
+| `src/config/planos.ts` | Planos, preços, créditos, computador adicional, créditos avulsos, a tabela "Comparar todos os recursos", a linha que explica os créditos e a garantia de 7 dias. `precosDefinidos = false` esconde os valores. |
+| `src/config/integracoes.json` | IAs da faixa de logos e do seletor de modelo (conferidas em `server/drivers/`; `soConta` marca as que só entram pela conta do cliente) e os apps (Composio e WhatsApp), com o arquivo de logo de cada um. |
+| `src/config/trabalhos.ts` | As abas de "Dê a cada bot um trabalho": descrição, horário, apps e a mini-conversa de cada uma. |
+| `src/app/termos/` e `src/app/privacidade/` | Páginas legais, por enquanto com aviso de "em elaboração". Substitua pelo texto revisado pelo jurídico. |
 | `src/config/equipe.ts` | Os bots de exemplo (nome, função, cores e acessório do avatar) usados no site todo. |
 | `src/config/site.ts` | Título, descrição, endereço e menu. |
 
@@ -24,7 +26,7 @@ pnpm --filter @arkobot/site build # gera apps/site/out
 
 Os logos não ficam no repositório: o `preparar.mjs` os copia dos pacotes abaixo (dependências de desenvolvimento) e pinta os monocromáticos de branco.
 
-- IAs: [`@lobehub/icons-static-svg`](https://github.com/lobehub/lobe-icons) 1.102.0, licença MIT.
+- IAs (OpenAI, Claude, Gemini, Grok, Kimi, DeepSeek, NVIDIA, Mistral, Meta, Qwen, MiniMax, OpenRouter, Groq, Cerebras, Copilot, Cursor): [`@lobehub/icons-static-svg`](https://github.com/lobehub/lobe-icons) 1.102.0, licença MIT.
 - Apps (WhatsApp, Gmail, Google Agenda, Google Drive, Notion, HubSpot, GitHub, Linear): [`simple-icons`](https://simpleicons.org) 16.37.0, licença CC0-1.0.
 
 As marcas continuam dos seus donos; o site as usa só para dizer com o que o ArkoBot integra, com essa nota na seção e no rodapé. A licença do pacote cobre o desenho em SVG, não a marca: se algum fabricante pedir para tirar, apague a linha dele em `integracoes.json`.

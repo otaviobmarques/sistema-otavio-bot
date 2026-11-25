@@ -12,7 +12,7 @@ type RevelarProps = {
   as?: 'div' | 'li' | 'article';
 };
 
-export function Revelar({ children, className, atraso = 0, y = 28, as = 'div' }: RevelarProps) {
+export function Revelar({ children, className, atraso = 0, y = 24, as = 'div' }: RevelarProps) {
   const Componente = motion[as];
   return (
     <Componente
@@ -20,64 +20,75 @@ export function Revelar({ children, className, atraso = 0, y = 28, as = 'div' }:
       initial={{ opacity: 0, y }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-60px' }}
-      transition={{ duration: 0.7, delay: atraso, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.6, delay: atraso, ease: [0.22, 1, 0.36, 1] }}
     >
       {children}
     </Componente>
   );
 }
 
-export function Selo({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-ciano/30 bg-ciano/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-ciano">
-      <span className="h-1.5 w-1.5 animate-pulso rounded-full bg-ciano" aria-hidden />
-      {children}
-    </span>
-  );
-}
+type CabecalhoProps = { titulo: React.ReactNode; texto?: React.ReactNode; centro?: boolean; id?: string; rotulo?: string };
 
-type CabecalhoProps = { selo: string; titulo: React.ReactNode; texto?: React.ReactNode; centro?: boolean; id?: string };
-
-export function CabecalhoSecao({ selo, titulo, texto, centro = true, id }: CabecalhoProps) {
+export function CabecalhoSecao({ titulo, texto, centro = false, id, rotulo }: CabecalhoProps) {
   return (
-    <Revelar className={centro ? 'mx-auto max-w-3xl text-center' : 'max-w-2xl'}>
-      <Selo>{selo}</Selo>
-      <h2 id={id} className="mt-5 font-display text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl lg:text-5xl">
+    <Revelar className={centro ? 'mx-auto max-w-3xl text-center' : 'max-w-3xl'}>
+      {rotulo && <p className="mb-4 text-sm font-semibold uppercase tracking-[0.14em] text-ciano-texto">{rotulo}</p>}
+      <h2 id={id} className="text-3xl font-semibold leading-[1.1] tracking-tight text-tinta sm:text-[2.75rem]">
         {titulo}
       </h2>
-      {texto && <p className="mt-5 text-base leading-relaxed text-suave sm:text-lg">{texto}</p>}
+      {texto && <p className="mt-4 text-base leading-relaxed text-cinza sm:text-lg">{texto}</p>}
     </Revelar>
   );
 }
 
 type BotaoProps = {
   children: React.ReactNode;
-  variante?: 'primario' | 'secundario';
+  variante?: 'primario' | 'secundario' | 'claro';
   acao?: Acao;
   href?: string;
   className?: string;
+  seta?: boolean;
 };
 
-export function BotaoContato({ children, variante = 'primario', acao = 'falar', href, className = '' }: BotaoProps) {
+const ESTILOS = {
+  primario: 'bg-tinta text-white hover:bg-noite hover:-translate-y-0.5 hover:shadow-[0_10px_30px_-10px_rgba(11,18,48,0.6)]',
+  secundario: 'border border-linha bg-white text-tinta hover:-translate-y-0.5 hover:border-tinta/30',
+  claro: 'bg-white text-tinta hover:-translate-y-0.5',
+};
+
+export function BotaoContato({ children, variante = 'primario', acao = 'falar', href, className = '', seta }: BotaoProps) {
   const canal = destinoDe(acao);
   const destino = href ?? canal.href;
   const externo = !href && canal.externo;
-  const base =
-    'group inline-flex items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-semibold transition duration-300 sm:text-base';
-  const estilo =
-    variante === 'primario'
-      ? 'bg-ciano text-noite shadow-[0_0_0_0_rgba(0,232,248,0.5)] hover:-translate-y-0.5 hover:shadow-[0_10px_40px_-8px_rgba(0,232,248,0.7)]'
-      : 'border border-white/15 bg-white/5 text-white hover:-translate-y-0.5 hover:border-ciano/50 hover:bg-white/10';
+  const mostraSeta = seta ?? variante === 'primario';
   return (
     <a
       href={destino}
-      className={`${base} ${estilo} ${className}`}
+      className={`group inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-[15px] font-medium transition duration-300 ${ESTILOS[variante]} ${className}`}
       {...(externo ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
     >
       {children}
-      {variante === 'primario' && (
-        <ArrowRight aria-hidden className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-      )}
+      {mostraSeta && <ArrowRight aria-hidden className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />}
     </a>
+  );
+}
+
+export function Secao({
+  id,
+  rotulada,
+  children,
+  className = '',
+  borda = true,
+}: {
+  id?: string;
+  rotulada: string;
+  children: React.ReactNode;
+  className?: string;
+  borda?: boolean;
+}) {
+  return (
+    <section id={id} aria-labelledby={rotulada} className={`${borda ? 'border-t border-linha' : ''} py-20 sm:py-28 ${className}`}>
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">{children}</div>
+    </section>
   );
 }

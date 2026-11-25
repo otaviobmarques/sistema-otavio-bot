@@ -1,17 +1,16 @@
 export const site = {
   nome: 'ArkoBot',
   url: 'https://arkobot.com.br',
-  titulo: 'ArkoBot | Uma equipe de bots de IA trabalhando 24 horas pela sua empresa',
+  titulo: 'ArkoBot | Sua empresa no piloto automático, com uma equipe de bots de IA',
   descricao:
-    'Bots de IA que atendem, pesquisam, escrevem e preenchem sistemas 24 horas, cada um com a sua função e computador próprio. Integra com ChatGPT, Claude, Gemini, Grok e outras IAs, com aprovação pelo WhatsApp. A partir de R$ 159 por mês.',
+    'Bots de IA que atendem, vendem, cobram e pesquisam 24 horas, cada um com a sua função e computador próprio. ChatGPT, Claude, Gemini, Grok e outras IAs inclusas no plano, com aprovação pelo WhatsApp. A partir de R$ 159 por mês.',
   empresa: 'Domma Tecnologia',
 };
 
 export const navegacao = [
-  { href: '#equipe', rotulo: 'Equipe' },
-  { href: '#integracoes', rotulo: 'Integrações' },
-  { href: '#computadores', rotulo: 'Computadores' },
-  { href: '#controle', rotulo: 'Controle' },
+  { href: '#como-comecar', rotulo: 'Como começar' },
+  { href: '#recursos', rotulo: 'Recursos' },
+  { href: '#trabalhos', rotulo: 'Trabalhos' },
   { href: '#planos', rotulo: 'Planos' },
   { href: '#perguntas', rotulo: 'Perguntas' },
 ];
