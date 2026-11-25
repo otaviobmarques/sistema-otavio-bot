@@ -32,8 +32,8 @@ test("a command line's links are rewritten in place, as relaunch reuses it", () 
 
 test("both schemes are registered, by the installer and at every start", () => {
   assert.deepEqual(DEEP_LINK_SCHEMES, ["arkobot", "openmausbot"]);
-  assert.match(readFileSync(new URL("../electron-builder.yml", import.meta.url), "utf8"), /^ {4}schemes: \[arkobot, openmausbot\]$/m);
+  assert.match(readFileSync(new URL("../electron-builder.yml", import.meta.url), "utf8"), /^ {4}schemes: \[arkobot, openmausbot\]\r?$/m);
   const main = readFileSync(new URL("./main.mjs", import.meta.url), "utf8");
   assert.match(main, /for \(const scheme of DEEP_LINK_SCHEMES\) app\.setAsDefaultProtocolClient\(scheme\)/);
-  assert.match(main, /^import "\.\/startup-identity\.mjs";\n/, "the profile, AppUserModelId and env aliases come before any other import");
+  assert.match(main, /^import "\.\/startup-identity\.mjs";\r?\n/, "the profile, AppUserModelId and env aliases come before any other import");
 });
