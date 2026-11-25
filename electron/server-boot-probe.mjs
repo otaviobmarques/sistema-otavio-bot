@@ -4,7 +4,9 @@ export const BOOT_PROBE_INTERVAL_MS = 500;
 
 export const SERVER_BOOT_TIMEOUT_MS = 60_000;
 export const SERVER_LISTENING_GRACE_MS = 180_000;
-const LISTENING_LINE = "openmausbot server on ";
+/** The server's line once it listens: arkobot's, or openmausbot's from a server built before the rebrand. */
+const LISTENING_LINES = ["arkobot server on ", "openmausbot server on "];
+const LONGEST_LINE = Math.max(...LISTENING_LINES.map((line) => line.length));
 
 export function listeningSignal() {
   let tail = "";
@@ -13,8 +15,8 @@ export function listeningSignal() {
     hear(chunk) {
       if (heard) return;
       const text = tail + chunk;
-      tail = text.slice(-LISTENING_LINE.length);
-      heard = text.includes(LISTENING_LINE);
+      tail = text.slice(-LONGEST_LINE);
+      heard = LISTENING_LINES.some((line) => text.includes(line));
     },
     heard: () => heard,
   };

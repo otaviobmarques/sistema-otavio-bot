@@ -2,6 +2,7 @@
 // edge on 0.0.0.0:8080, the only listener the network reaches, always forwarding X-Forwarded-*, so no remote request gets
 // loopback trust. Secrets never ride a child's environment (/proc/<pid>/environ stays readable by the same user): the
 // server reads them from an inherited pipe. Root runs and trusts only the image's code, never the volume's.
+import "./env-aliases.ts";
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { chmodSync, chownSync, closeSync, existsSync, lstatSync, openSync, readFileSync, realpathSync, statSync, type Stats } from "node:fs";
 import { isIP } from "node:net";
@@ -17,6 +18,7 @@ import { clearRecordsFromOtherMachines } from "./data-dir-lease.ts";
 import { OOM_SCORE, protectSupervisor, spawnWithOomScore } from "./oom-score.ts";
 import { restartPolicy } from "./restart.ts";
 import { PRODUCT_NAME } from "../shared/product-name.ts";
+import { defaultDataDir } from "./data-dir.ts";
 
 const SERVICE_USER = "maus";
 const SECRETS_FD = 3;
@@ -158,7 +160,7 @@ export function tunnelCommand(bin: string, token: string): { command: string; ar
 
 /** The server's data directory on the volume. */
 export function cloudHomeDataDir(env: NodeJS.ProcessEnv, home: string): string {
-  return env.OMB_DATA_DIR || posix.join(home, ".openmausbot");
+  return env.OMB_DATA_DIR || defaultDataDir(home, { join: posix.join });
 }
 
 /** flock(1)'s exit status when another process holds the lock (its --conflict-exit-code). */

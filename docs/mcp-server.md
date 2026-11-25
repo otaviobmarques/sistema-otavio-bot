@@ -96,9 +96,10 @@ macOS example:
 }
 ```
 
-On Windows, use the installed `OpenMausBot.exe` as `command`, the adjacent
+On Windows, use the installed `ArkoBot.exe` as `command`, the adjacent
 `resources\\server\\mcp-server.js` as the argument, and the same `ELECTRON_RUN_AS_NODE=1` environment value.
-The usual per-user install is under `%LOCALAPPDATA%\\Programs\\OpenMausBot`.
+The usual per-user install is under `%LOCALAPPDATA%\\Programs\\openmausbot`. Builds before the ArkoBot rename
+named the executable `OpenMausBot.exe`: a configuration that names it must be changed to `ArkoBot.exe` after the update.
 
 On Ubuntu `.deb` installs, the executable is normally `/opt/OpenMausBot/openmausbot` and the script is
 `/opt/OpenMausBot/resources/server/mcp-server.js`. Use the same environment value.

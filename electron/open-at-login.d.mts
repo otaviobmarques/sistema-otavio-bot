@@ -4,8 +4,8 @@ type LoginItem = { follow(on: boolean): void; startedHidden(): boolean; availabl
 export declare function createOpenAtLogin(options: {
   app: {
     isPackaged: boolean;
-    getLoginItemSettings(options?: { args?: string[] }): { openAtLogin: boolean; wasOpenedAtLogin?: boolean; launchItems?: { name: string; args?: string[]; enabled?: boolean }[] };
-    setLoginItemSettings(settings: { openAtLogin: boolean; args?: string[]; name?: string }): void;
+    getLoginItemSettings(options?: { args?: string[]; path?: string }): { openAtLogin: boolean; wasOpenedAtLogin?: boolean; launchItems?: { name: string; args?: string[]; enabled?: boolean }[] };
+    setLoginItemSettings(settings: { openAtLogin: boolean; args?: string[]; name?: string; path?: string; enabled?: boolean }): void;
   };
   file: string;
   platform?: NodeJS.Platform;
@@ -20,3 +20,9 @@ export declare function installOpenAtLogin(options: {
   loginItem: LoginItem;
   changed: () => void;
 }): void;
+export declare const LEGACY_WINDOWS_LOGIN: { chosenName: string; defaultName: string; executable: string };
+export declare function migrateLegacyWindowsLoginItems(options: {
+  app: Parameters<typeof createOpenAtLogin>[0]["app"];
+  platform?: NodeJS.Platform;
+  execPath?: string;
+}): number;

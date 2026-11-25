@@ -6,6 +6,7 @@ import { checkSentinelInstall, type SentinelInstallCheck } from "../service-unit
 import { defaultSentinelOut, outRefusal } from "./paths.ts";
 import { runScan, type ScanSummary } from "./scan.ts";
 import { PRODUCT_NAME } from "../../shared/product-name.ts";
+import { defaultDataDir } from "../data-dir.ts";
 
 export interface SentinelArgs {
   dataDir: string;
@@ -39,7 +40,7 @@ copy tool output or message text.
 
 export function parseSentinelArgs(argv: string[], env: NodeJS.ProcessEnv = process.env): SentinelArgs | { error: string; json: boolean } {
   const json = argv.includes("--json");
-  let dataDir = env.OMB_DATA_DIR || join(homedir(), ".openmausbot");
+  let dataDir = env.OMB_DATA_DIR || defaultDataDir(homedir());
   let out: string | undefined;
   const args: Omit<SentinelArgs, "dataDir" | "out"> = { json };
   for (let i = 0; i < argv.length; i += 1) {

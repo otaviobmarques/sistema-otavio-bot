@@ -2391,10 +2391,10 @@ describe("X research's included relay token", () => {
 
 describe("DATA_DIR outside the suite's throwaway home", () => {
   function childDataDir(env: NodeJS.ProcessEnv): string {
-    const script = "const m = await import(process.env.OMB_CONFIG_URL); process.stdout.write(m.DATA_DIR);";
+    const script = "await import(process.env.OMB_ALIASES_URL); const m = await import(process.env.OMB_CONFIG_URL); process.stdout.write(m.DATA_DIR);";
     const { OMB_DATA_DIR: _dataDir, VITEST: _vitest, NODE_ENV: _nodeEnv, ...inherited } = process.env;
     return execFileSync(process.execPath, ["--experimental-strip-types", "--no-warnings", "--input-type=module", "-e", script], {
-      env: { ...inherited, OMB_CONFIG_URL: pathToFileURL(join(import.meta.dirname, "config.ts")).href, ...env }, encoding: "utf8",
+      env: { ...inherited, OMB_ALIASES_URL: pathToFileURL(join(import.meta.dirname, "env-aliases.ts")).href, OMB_CONFIG_URL: pathToFileURL(join(import.meta.dirname, "config.ts")).href, ...env }, encoding: "utf8",
     });
   }
 
@@ -2416,7 +2416,7 @@ describe("DATA_DIR outside the suite's throwaway home", () => {
   it("treats an empty OMB_DATA_DIR as unset", () => {
     const home = mkdtempSync(join(tmpdir(), "omb-config-home-"));
     try {
-      expect(childDataDir({ HOME: home, USERPROFILE: home, OMB_DATA_DIR: "" })).toBe(join(home, ".openmausbot"));
+      expect(childDataDir({ HOME: home, USERPROFILE: home, OMB_DATA_DIR: "" })).toBe(join(home, ".arkobot"));
     } finally {
       rmSync(home, { recursive: true, force: true });
     }
@@ -2425,7 +2425,10 @@ describe("DATA_DIR outside the suite's throwaway home", () => {
   it("keeps the home folder outside tests", () => {
     const home = mkdtempSync(join(tmpdir(), "omb-config-home-"));
     try {
-      expect(childDataDir({ HOME: home, USERPROFILE: home })).toBe(join(home, ".openmausbot"));
+      expect(childDataDir({ HOME: home, USERPROFILE: home })).toBe(join(home, ".arkobot"));
+      mkdirSync(join(home, ".openmausbot"));
+      expect(childDataDir({ HOME: home, USERPROFILE: home }), "an install's earlier folder stays in use").toBe(join(home, ".openmausbot"));
+      expect(childDataDir({ HOME: home, USERPROFILE: home, ARKOBOT_DATA_DIR: join(home, "x"), OMB_DATA_DIR: join(home, "y") })).toBe(join(home, "x"));
     } finally {
       rmSync(home, { recursive: true, force: true });
     }

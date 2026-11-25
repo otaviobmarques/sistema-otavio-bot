@@ -397,7 +397,7 @@ jobs:
         shell: bash
         run: |
           v=$(node -p "require('./package.json').version")
-          cp "release/OpenMausBot-$v-setup.exe" release/OpenMausBot-setup.exe
+          cp "release/ArkoBot-$v-setup.exe" release/ArkoBot-setup.exe
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: windows-release
@@ -526,14 +526,14 @@ jobs:
             "OpenMausBot-$VERSION-arm64.dmg.blockmap"
             "OpenMausBot-$VERSION-arm64.zip"
             "OpenMausBot-$VERSION-arm64.zip.blockmap"
-            "OpenMausBot-$VERSION-setup.exe"
-            "OpenMausBot-$VERSION-setup.exe.blockmap"
+            "ArkoBot-$VERSION-setup.exe"
+            "ArkoBot-$VERSION-setup.exe.blockmap"
             "OpenMausBot-$VERSION-x64.dmg"
             "OpenMausBot-$VERSION-x64.dmg.blockmap"
             "OpenMausBot-$VERSION-x64.zip"
             "OpenMausBot-$VERSION-x64.zip.blockmap"
             "OpenMausBot-$VERSION-x86_64.AppImage"
-            OpenMausBot-amd64.deb OpenMausBot-intel.dmg OpenMausBot-setup.exe
+            OpenMausBot-amd64.deb OpenMausBot-intel.dmg ArkoBot-setup.exe
             OpenMausBot.AppImage OpenMausBot.dmg SHA256SUMS-ubuntu-x64.txt
           )
           for file in "${required[@]}"; do
@@ -555,7 +555,7 @@ jobs:
               "OpenMausBot-${{ needs.prepare.outputs.version }}-x64.dmg",
               "OpenMausBot-${{ needs.prepare.outputs.version }}-arm64.dmg",
             ]],
-            ["latest.yml", ["OpenMausBot-${{ needs.prepare.outputs.version }}-setup.exe"]],
+            ["latest.yml", ["ArkoBot-${{ needs.prepare.outputs.version }}-setup.exe"]],
             ["latest-linux.yml", [
               "OpenMausBot-${{ needs.prepare.outputs.version }}-x86_64.AppImage",
               "OpenMausBot-${{ needs.prepare.outputs.version }}-amd64.deb",

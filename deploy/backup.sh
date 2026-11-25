@@ -41,7 +41,7 @@ if [ "$BACKUP_PAUSE" = 1 ] && [ -n "$container" ] && [ "$(docker inspect -f '{{.
 fi
 # Caches the engines and npm download again by themselves.
 tar --create --gzip --warning=no-file-ignored --file "$partial" --directory "$source_dir" \
-  --exclude=./.cache --exclude=./.npm --exclude=./.openmausbot/tools/npm/_cacache .
+  --exclude=./.cache --exclude=./.npm --exclude=./.openmausbot/tools/npm/_cacache --exclude=./.arkobot/tools/npm/_cacache .
 resume
 [ -f .env ] && cp .env "$BACKUP_DIR/env-$stamp"
 mv "$partial" "$archive"

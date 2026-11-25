@@ -296,6 +296,11 @@ test("the listening line is heard when stdout splits it across chunks", () => {
   const quiet = listeningSignal();
   quiet.hear("nothing to see");
   assert.equal(quiet.heard(), false);
+  const arko = listeningSignal();
+  arko.hear("boot… arkobot ser");
+  assert.equal(arko.heard(), false);
+  arko.hear("ver on http://127.0.0.1:8799\n");
+  assert.equal(arko.heard(), true, "the server's line since the rebrand");
 });
 
 test("an answer in flight when the child starts listening gets the grace", async () => {

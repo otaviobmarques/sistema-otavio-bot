@@ -9,6 +9,7 @@ import test from "node:test";
 import vm from "node:vm";
 import { reviveAfterFailedSwitch, switchLocalEnvironment } from "./environment-switch.mjs";
 import { createServerSupervisor } from "./server-supervisor.mjs";
+import { isDataFolderName } from "./data-dir.mjs";
 
 const require = createRequire(import.meta.url);
 const env = require("./environments.cjs");
@@ -251,6 +252,7 @@ function runForget(state) {
       realpathSync: (dir) => dir,
     },
     path,
+    isDataFolderName,
     AbortSignal,
     remoteMicrophoneRefused: new Set(),
     desktopDataDir: () => "/Users/me/.openmausbot",

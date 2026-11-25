@@ -26,10 +26,25 @@ describe("the product's name", () => {
   });
 
   it("is what installers show", () => {
-    expect(builder).toMatch(/^ {4}CFBundleDisplayName: ArkoBot$/m);
-    expect(builder).toMatch(/^ {2}shortcutName: ArkoBot$/m);
-    expect(builder).toMatch(/^ {2}uninstallDisplayName: ArkoBot$/m);
-    expect(builder).toMatch(/^ {6}Name: ArkoBot$/m);
+    expect(builder).toMatch(/^ {4}CFBundleDisplayName: ArkoBot\r?$/m);
+    expect(builder).toMatch(/^ {2}shortcutName: ArkoBot\r?$/m);
+    expect(builder).toMatch(/^ {2}uninstallDisplayName: ArkoBot\r?$/m);
+    expect(builder).toMatch(/^ {6}Name: ArkoBot\r?$/m);
+  });
+
+  it("is the Windows build's: its executable, its version info, the installer and the update feed", () => {
+    // FileDescription and ProductName come from productName, CompanyName from the author (app-builder-lib winPackager).
+    expect(JSON.parse(read("package.json")).scripts["package:win"]).toMatch(/electron-builder --win .*--config\.productName=ArkoBot(?:\s|$)/);
+    expect(builder).toMatch(/^win:\r?\n(?: {2}#.*\r?\n)* {2}executableName: ArkoBot\r?\n {2}artifactName: ArkoBot-\$\{version\}-\$\{arch\}\.\$\{ext\}\r?$/m);
+    expect(builder).toMatch(/^ {2}artifactName: ArkoBot-\$\{version\}-setup\.\$\{ext\}\r?$/m);
+    expect(builder).toMatch(/^extraMetadata:\r?\n {2}author:\r?\n {4}name: Domma Tecnologia\r?$/m);
+    const publish = read(".github/workflows/publish-release.yml");
+    expect(publish).toContain('installer="ArkoBot-$VERSION-setup.exe"');
+    expect(publish).toContain("cp \"release/$installer\" release/OtavioBot-setup.exe");
+  });
+
+  it("opens arkobot:// links and still those already made with openmausbot://", () => {
+    expect(builder).toMatch(/^ {4}schemes: \[arkobot, openmausbot\]\r?$/m);
   });
 
   it("ships the license and the NOTICE that credits OpenMausBot with every package", () => {
@@ -51,17 +66,16 @@ describe("the product's name", () => {
 });
 
 describe("identifiers that stay OpenMausBot's", () => {
-  it("keeps the app id, the packaged name (the data folder on Windows), artifact names and the URL scheme", () => {
+  it("keeps the app id (Windows finds the install to update by it), the macOS and Linux packaged name and artifacts", () => {
     expect(field("appId")).toBe("com.openmausbot.app");
+    expect(read("electron/startup-identity.mjs")).toContain('WINDOWS_APP_USER_MODEL_ID = "com.openmausbot.app"');
     expect(field("productName")).toBe("OpenMausBot");
     expect(field("artifactName")).toBe("OpenMausBot-${version}-${arch}.${ext}");
-    expect(builder).toMatch(/^ {2}executableName: openmausbot$/m);
-    expect(builder).toMatch(/^ {4}schemes: \[openmausbot\]$/m);
+    expect(builder).toMatch(/^ {2}executableName: openmausbot\r?$/m);
+    expect(builder).not.toMatch(/^ {2}guid:/m);
   });
 
-  it("keeps the data folder, the CLI and the package name", () => {
-    expect(read("server/config.ts")).toContain('join(dataHome(), ".openmausbot")');
-    expect(read("server/cli.ts")).toContain('join(homedir(), ".openmausbot")');
+  it("keeps the CLI's first name and the package name, which name the Windows install folder and the updater's cache", () => {
     expect(JSON.parse(read("package.json")).name).toBe("openmausbot");
     expect(read("scripts/build-npm-package.mjs")).toContain('bin: { openmausbot: "cli.js", arkobot: "cli.js" }');
     expect(read("Dockerfile")).toContain("> /usr/local/bin/openmausbot");

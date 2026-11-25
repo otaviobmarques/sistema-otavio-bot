@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { autostartEntry, createOpenAtLogin, installOpenAtLogin } from "./open-at-login.mjs";
+import { autostartEntry, createOpenAtLogin, installOpenAtLogin, migrateLegacyWindowsLoginItems } from "./open-at-login.mjs";
 
 /** Electron's login item API on macOS and Windows: one item per name, as Windows keeps one Run entry per name. */
 function fakeApp({ openAtLogin = false, isPackaged = true } = {}) {
@@ -53,57 +53,97 @@ test("macOS: choosing it while lending added one makes it the person's, so it op
 test("Windows: the person's item has a name of its own, apart from lending's hidden one", async t => {
   const dir = await temp(t);
   const app = fakeApp();
-  const login = createOpenAtLogin({ app, file: path.join(dir, "win.json"), platform: "win32", home: dir, argv: ["OpenMausBot.exe"] });
+  const login = createOpenAtLogin({ app, file: path.join(dir, "win.json"), platform: "win32", home: dir, argv: ["ArkoBot.exe"] });
   login.follow(true);
   login.choose(true);
   assert.equal(login.chosen(), true);
-  assert.deepEqual(app.items.get("OpenMausBot at login"), { args: [] }, "no hidden flag");
+  assert.deepEqual(app.items.get("ArkoBot at login"), { args: [] }, "no hidden flag");
   login.follow(false);
   assert.equal(login.chosen(), true, "lending stopping leaves it");
   login.choose(false);
   assert.equal(login.chosen(), false);
 });
 
-/** Electron 43's login item API on Windows: one Run entry per name (the AppUserModelId unless named), `openAtLogin` true
- * only for that default entry with exactly the asked `args`, and `launchItems` listing every entry for this executable. */
+const EXE = "C:\\Users\\me\\AppData\\Local\\Programs\\openmausbot\\ArkoBot.exe";
+const LEGACY_EXE = "C:\\Users\\me\\AppData\\Local\\Programs\\openmausbot\\OpenMausBot.exe";
+
+/** Electron 43's login item API on Windows: one Run entry per name (the AppUserModelId, set to the appId, unless
+ * named), `openAtLogin` true only for that default entry with exactly the asked `args`, and `launchItems` listing every
+ * entry that starts the asked executable (`path`, this one unless given). */
 function windowsApp(entries = []) {
-  const items = new Map(entries.map(({ name, args = [], enabled = true }) => [name, { args, enabled }]));
-  const DEFAULT = "electron.app.OpenMausBot";
+  const items = new Map(entries.map(({ name, args = [], enabled = true, path = EXE }) => [name, { args, enabled, ...(path === EXE ? {} : { path }) }]));
+  const DEFAULT = "com.openmausbot.app";
+  const file = (item) => item.path ?? EXE;
   return {
     isPackaged: true, items,
-    getLoginItemSettings({ args = [] } = {}) {
+    getLoginItemSettings({ args = [], path = EXE } = {}) {
       const own = items.get(DEFAULT);
       return {
-        openAtLogin: Boolean(own) && JSON.stringify(own.args) === JSON.stringify(args),
-        launchItems: [...items].map(([name, item]) => ({ name, path: "C:\\OpenMausBot\\OpenMausBot.exe", args: item.args, scope: "user", enabled: item.enabled })),
+        openAtLogin: Boolean(own) && file(own) === path && JSON.stringify(own.args) === JSON.stringify(args),
+        launchItems: [...items].filter(([, item]) => file(item) === path).map(([name, item]) => ({ name, path: file(item), args: item.args, scope: "user", enabled: item.enabled })),
       };
     },
-    setLoginItemSettings({ openAtLogin: on, args = [], name = DEFAULT }) { if (on) items.set(name, { args, enabled: true }); else items.delete(name); },
+    setLoginItemSettings({ openAtLogin: on, args = [], name = DEFAULT, path = EXE, enabled = true }) {
+      if (on) items.set(name, { args, enabled, ...(path === EXE ? {} : { path }) }); else items.delete(name);
+    },
   };
 }
 
+test("Windows: an update from OpenMausBot.exe points its login entries at ArkoBot.exe, each as on or off as it was", async t => {
+  const dir = await temp(t);
+  const app = windowsApp([
+    { name: "electron.app.OpenMausBot", args: ["--omb-hidden"], path: LEGACY_EXE },
+    { name: "OpenMausBot at login", path: LEGACY_EXE, enabled: false },
+    { name: "Something else", path: "C:\\Other\\other.exe" },
+  ]);
+  assert.equal(migrateLegacyWindowsLoginItems({ app, platform: "win32", execPath: EXE }), 2);
+  assert.deepEqual([...app.items].sort(), [
+    ["ArkoBot at login", { args: [], enabled: false }],
+    ["Something else", { args: [], enabled: true, path: "C:\\Other\\other.exe" }],
+    ["com.openmausbot.app", { args: ["--omb-hidden"], enabled: true }],
+  ]);
+  const login = createOpenAtLogin({ app, file: path.join(dir, "win.json"), platform: "win32", home: dir, argv: ["ArkoBot.exe"] });
+  assert.equal(login.chosen(), true, "lending's entry still starts the app");
+  login.follow(true);
+  assert.equal(app.items.size, 3, "lending finds its own entry instead of adding a second");
+  assert.equal(migrateLegacyWindowsLoginItems({ app, platform: "win32", execPath: EXE }), 0, "once only");
+});
+
+test("Windows: entries this executable already starts under the earlier names are renamed too", () => {
+  const app = windowsApp([{ name: "electron.app.openmausbot", args: ["--omb-hidden"] }, { name: "OpenMausBot at login" }]);
+  assert.equal(migrateLegacyWindowsLoginItems({ app, platform: "win32", execPath: EXE }), 2);
+  assert.deepEqual([...app.items.keys()].sort(), ["ArkoBot at login", "com.openmausbot.app"]);
+});
+
+test("login entries are left alone off Windows and in development", () => {
+  const app = windowsApp([{ name: "electron.app.OpenMausBot", path: LEGACY_EXE }]);
+  assert.equal(migrateLegacyWindowsLoginItems({ app, platform: "darwin", execPath: EXE }), 0);
+  assert.equal(migrateLegacyWindowsLoginItems({ app: { ...app, isPackaged: false }, platform: "win32", execPath: EXE }), 0);
+  assert.equal(app.items.size, 1);
+});
+
 test("Windows: Settings shows on while Windows already starts the app, even from lending's hidden entry", async t => {
   const dir = await temp(t);
-  const app = windowsApp([{ name: "electron.app.OpenMausBot", args: ["--omb-hidden"] }]);
-  const login = createOpenAtLogin({ app, file: path.join(dir, "win.json"), platform: "win32", home: dir, argv: ["OpenMausBot.exe"] });
+  const app = windowsApp([{ name: "com.openmausbot.app", args: ["--omb-hidden"] }]);
+  const login = createOpenAtLogin({ app, file: path.join(dir, "win.json"), platform: "win32", home: dir, argv: ["ArkoBot.exe"] });
   const handlers = new Map();
   installOpenAtLogin({ ipcMain: { handle: (channel, handler) => handlers.set(channel, handler) }, guard: (_channel, handler) => handler, loginItem: login, changed: () => {} });
   assert.deepEqual(await handlers.get("open-at-login:state")({}), { available: true, on: true });
-  app.items.get("electron.app.OpenMausBot").enabled = false;
+  app.items.get("com.openmausbot.app").enabled = false;
   assert.equal(login.chosen(), false, "an entry turned off in Task Manager starts nothing");
 });
 
 test("Windows: turning it off removes every entry that starts the app, and lending adds none until it is on again", async t => {
   const dir = await temp(t);
-  const app = windowsApp([{ name: "electron.app.OpenMausBot", args: ["--omb-hidden"] }, { name: "OpenMausBot at login" }]);
-  const login = createOpenAtLogin({ app, file: path.join(dir, "win.json"), platform: "win32", home: dir, argv: ["OpenMausBot.exe"] });
+  const app = windowsApp([{ name: "com.openmausbot.app", args: ["--omb-hidden"] }, { name: "ArkoBot at login" }]);
+  const login = createOpenAtLogin({ app, file: path.join(dir, "win.json"), platform: "win32", home: dir, argv: ["ArkoBot.exe"] });
   login.choose(false);
   assert.deepEqual([...app.items.keys()], []);
   login.follow(true);
   assert.equal(login.chosen(), false, "lending keeps to the person's choice");
   login.choose(true);
   login.follow(true);
-  assert.deepEqual([...app.items].sort(), [["OpenMausBot at login", { args: [], enabled: true }], ["electron.app.OpenMausBot", { args: ["--omb-hidden"], enabled: true }]]);
+  assert.deepEqual([...app.items].sort(), [["ArkoBot at login", { args: [], enabled: true }], ["com.openmausbot.app", { args: ["--omb-hidden"], enabled: true }]]);
 });
 
 test("Linux: the person's autostart entry has no hidden flag and no lending mark, and lending never removes it", async t => {

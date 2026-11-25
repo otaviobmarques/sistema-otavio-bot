@@ -71,7 +71,7 @@ describe() {
   [ -z "$revision" ] || text="$text (rev. $revision)"
   printf '%s' "$text"
 }
-server_version() { docker compose exec -T omb openmausbot --version 2>/dev/null | tail -n 1 | tr -d '\r' || true; }
+server_version() { { docker compose exec -T omb arkobot --version 2>/dev/null || docker compose exec -T omb openmausbot --version 2>/dev/null; } | tail -n 1 | tr -d '\r' || true; }
 wait_healthy() {
   local want="$1" deadline=$((SECONDS + TIMEOUT)) state
   while :; do
