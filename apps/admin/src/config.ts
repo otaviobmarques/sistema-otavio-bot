@@ -14,6 +14,8 @@ export interface AdminConfig {
   /** A header the edge in front of the Admin overwrites with the client IP (x-real-ip on Vercel). */
   clientIpHeader?: string;
   mailFrom: string;
+  /** Resend API key. Without it e-mails (login codes included) only go to the log. */
+  resendApiKey?: string;
   /** Development and tests only: send every Asaas call to this base URL (a fake server). */
   asaasBaseUrlOverride?: string;
   dunning: { suspendAfterDays: number; cancelAfterDays: number };
@@ -53,6 +55,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AdminConfig {
     cronSecret: env.CRON_SECRET?.trim() || undefined,
     clientIpHeader: env.ADMIN_CLIENT_IP_HEADER?.trim().toLowerCase() || (env.VERCEL ? "x-real-ip" : undefined),
     mailFrom: env.ADMIN_MAIL_FROM?.trim() || "ArkoBot Admin <admin@arkobot.com.br>",
+    resendApiKey: env.RESEND_API_KEY?.trim() || undefined,
     asaasBaseUrlOverride: env.ASAAS_API_BASE_URL?.trim() || undefined,
     dunning: {
       suspendAfterDays: positiveInt(env.DUNNING_SUSPEND_AFTER_DAYS, 7, "DUNNING_SUSPEND_AFTER_DAYS"),

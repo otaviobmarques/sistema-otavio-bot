@@ -71,6 +71,7 @@ Postgres rápido com Docker: `docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=ar
 | `CRON_SECRET` | sim em produção | Protege `GET /api/cron/tick` (`Authorization: Bearer …`). A Vercel envia esse cabeçalho sozinha. |
 | `ADMIN_CLIENT_IP_HEADER` | não | Cabeçalho com o IP real, escrito pela borda. Na Vercel já é `x-real-ip`. |
 | `ADMIN_MAIL_FROM` | não | Remetente dos e-mails. |
+| `RESEND_API_KEY` | sim em produção | Chave do [Resend](https://resend.com) (só envio, domínio `arkobot.com.br`). Sem ela os e-mails, inclusive os códigos de login, só vão para o log. |
 | `DUNNING_SUSPEND_AFTER_DAYS` / `DUNNING_CANCEL_AFTER_DAYS` | não | Régua de inadimplência: 7 e 30 dias por padrão. |
 | `ASAAS_API_BASE_URL` | não | Só desenvolvimento/testes: aponta o Asaas para um servidor falso. Recusado em produção. |
 
@@ -89,14 +90,14 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"  
    ```
    As migrações ligam RLS em todas as tabelas sem nenhuma política: a API REST do Supabase (papéis `anon`/`authenticated`) não lê nada; o Admin conecta como dono das tabelas.
 2. **Projeto na Vercel.** Importe o repositório com **Root Directory = `apps/admin`**. O `vercel.json` já define `pnpm run build:vercel`, que gera `.vercel/output` (Build Output API): o painel estático e **uma função Node** que atende `/api/*` e `/webhooks/*`, mais o cron `*/5 * * * *` em `/api/cron/tick`.
-3. **Variáveis** (Production): `DATABASE_URL`, `ADMIN_ENCRYPTION_KEY`, `ADMIN_SESSION_SECRET`, `ADMIN_PUBLIC_URL`, `CRON_SECRET`, `NODE_ENV=production`.
+3. **Variáveis** (Production): `DATABASE_URL`, `ADMIN_ENCRYPTION_KEY`, `ADMIN_SESSION_SECRET`, `ADMIN_PUBLIC_URL`, `CRON_SECRET`, `RESEND_API_KEY`, `NODE_ENV=production`.
 4. **Domínio**: `admin.arkobot.com.br` → projeto. Proteja também com *Vercel Authentication* ou lista de IPs se quiser uma segunda barreira.
 5. **Primeiro admin** (da sua máquina, com a `DATABASE_URL` de produção): `pnpm --filter admin create-admin seu@domma.com.br`. Depois entre e ligue o 2º fator em *Minha conta*.
 
 Observações:
 - Cron a cada 5 minutos exige plano Pro da Vercel; no Hobby o cron roda 1×/dia. Isso só atrasa retentativas e a régua, porque cada webhook já é processado na hora em que chega. Alternativa: chamar `/api/cron/tick` de outro agendador (ex.: cron do VPS) com o `CRON_SECRET`.
 - Fora da Vercel: `pnpm --filter admin build && pnpm --filter admin start` (porta `PORT`, padrão 8790) atrás de um proxy https, e `pnpm --filter admin jobs -- --loop` (ou um cron chamando o tick).
-- O envio de e-mail ainda é o `ConsoleMailer` (o código vai para o log da função). Antes de abrir para outros operadores, implemente a interface `Mailer` (`src/mail/mailer.ts`) com o provedor escolhido (Resend, SES, SMTP).
+- E-mail: com `RESEND_API_KEY` o envio é pelo Resend (`ResendMailer`); sem ela, o `ConsoleMailer` escreve o e-mail no log da função.
 
 ## Asaas
 
