@@ -45,6 +45,8 @@ type BotaoProps = {
   children: React.ReactNode;
   variante?: 'primario' | 'secundario' | 'claro';
   acao?: Acao;
+  /** Id do plano em `config/planos.ts`: o cadastro abre com ele escolhido. */
+  plano?: string;
   href?: string;
   className?: string;
   seta?: boolean;
@@ -56,8 +58,8 @@ const ESTILOS = {
   claro: 'bg-white text-tinta hover:-translate-y-0.5',
 };
 
-export function BotaoContato({ children, variante = 'primario', acao = 'falar', href, className = '', seta }: BotaoProps) {
-  const canal = destinoDe(acao);
+export function BotaoContato({ children, variante = 'primario', acao = 'falar', plano, href, className = '', seta }: BotaoProps) {
+  const canal = destinoDe(acao, plano);
   const destino = href ?? canal.href;
   const externo = !href && canal.externo;
   const mostraSeta = seta ?? variante === 'primario';
