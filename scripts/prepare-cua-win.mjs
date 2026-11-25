@@ -73,13 +73,8 @@ async function officialBinary() {
   await run(systemTar, ["-xf", archive, "-C", cache], { timeout: 60_000, windowsHide: true });
   if ((await binaryVersion(cachedBinary)) !== expectedVersion) {
     if (!existsSync(cachedBinary)) {
-      // The archive's checksum matched, so a missing executable means something removed it after extraction (antivirus).
       const { readdir } = await import("node:fs/promises");
       console.warn(`after extraction ${cache} holds: ${(await readdir(cache)).join(", ")}`);
-      const threats = await run("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command",
-        "Get-MpThreatDetection | Select-Object -Last 5 | Format-List | Out-String -Width 300"], { timeout: 60_000, windowsHide: true })
-        .then(({ stdout }) => stdout.trim(), (error) => String(error?.message ?? error));
-      console.warn(`Windows Defender detections: ${threats || "(none)"}`);
     }
     throw new Error(`downloaded CUA Driver does not report version ${expectedVersion}`);
   }
