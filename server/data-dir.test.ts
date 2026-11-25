@@ -64,9 +64,9 @@ describe("the data folder", () => {
 
   it("keeps the sentinel's own folder for either default data folder", () => {
     const base = "/home/me";
-    const own = defaultSentinelOut(join(base, ".openmausbot"), "linux", base, {});
-    expect(defaultSentinelOut(join(base, ".arkobot"), "linux", base, {})).toBe(own);
-    expect(defaultSentinelOut(join(base, "elsewhere"), "linux", base, {})).not.toBe(own);
+    const own = defaultSentinelOut(posix.join(base, ".openmausbot"), "linux", base, {});
+    expect(defaultSentinelOut(posix.join(base, ".arkobot"), "linux", base, {})).toBe(own);
+    expect(defaultSentinelOut(posix.join(base, "elsewhere"), "linux", base, {})).not.toBe(own);
   });
 });
 
