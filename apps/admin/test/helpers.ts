@@ -39,6 +39,7 @@ export async function testDb(): Promise<Db> {
 }
 
 export const TEST_URL = "https://admin.test";
+export const CUSTOMER_URL = "https://conta.test";
 
 export function testConfig(overrides: Partial<AdminConfig> = {}): AdminConfig {
   return {
@@ -48,6 +49,9 @@ export function testConfig(overrides: Partial<AdminConfig> = {}): AdminConfig {
     sessionSecret: "s".repeat(48),
     publicUrl: TEST_URL,
     cookieSecure: true,
+    customerPublicUrl: CUSTOMER_URL,
+    customerCookieSecure: true,
+    customerMailFrom: "ArkoBot <conta@arkobot.com.br>",
     cronSecret: "cron-secret-for-tests-0123456789",
     mailFrom: "teste@arkobot.com.br",
     dunning: { suspendAfterDays: 7, cancelAfterDays: 30 },
@@ -94,14 +98,14 @@ export async function sessionCookie(ctx: AppContext, role: AdminRole = "owner", 
   return `arko_admin_session=${token}`;
 }
 
-export function client(ctx: AppContext, cookie?: string, ip = "203.0.113.7") {
+export function client(ctx: AppContext, cookie?: string, ip = "203.0.113.7", base = "", origin = TEST_URL) {
   const app = createApp(ctx);
   const call = async (method: string, path: string, json?: unknown, headers: Record<string, string> = {}) => {
-    const response = await app.request(path, {
+    const response = await app.request(`${base}${path}`, {
       method,
       headers: {
         ...(json === undefined ? {} : { "content-type": "application/json" }),
-        ...(method === "GET" ? {} : { origin: TEST_URL }),
+        ...(method === "GET" ? {} : { origin }),
         ...(cookie ? { cookie } : {}),
         ...headers,
       },
@@ -123,6 +127,11 @@ export function client(ctx: AppContext, cookie?: string, ip = "203.0.113.7") {
     put: (path: string, json?: unknown) => call("PUT", path, json ?? {}),
     del: (path: string) => call("DELETE", path),
   };
+}
+
+/** A client for the customer area: requests go to the customer host, writes carry its origin. */
+export function customerClient(ctx: AppContext, cookie?: string, ip = "203.0.113.70") {
+  return client(ctx, cookie, ip, ctx.config.customerPublicUrl, ctx.config.customerPublicUrl);
 }
 
 /** Valid CPF/CNPJ for fixtures (check digits computed). */

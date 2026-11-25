@@ -61,7 +61,18 @@ export class FakeAsaas {
         if (!["PIX", "BOLETO", "CREDIT_CARD", "UNDEFINED"].includes(String(body?.billingType))) return fail(400, "invalid_billingType", "Forma de pagamento inválida");
         const subscription = { object: "subscription", id: this.#id("sub"), status: "ACTIVE", deleted: false, ...body };
         this.subscriptions.set(subscription.id, subscription);
+        const firstId = this.#id("pay");
+        this.payments.set(firstId, {
+          object: "payment", id: firstId, status: "PENDING", subscription: subscription.id, customer: body?.customer, billingType: body?.billingType,
+          value: body?.value, dueDate: body?.nextDueDate, invoiceUrl: `https://sandbox.asaas.com/i/${firstId}`,
+        });
         return send(200, subscription);
+      }
+      const subPaymentsMatch = path.match(/^\/subscriptions\/([^/?]+)\/payments(\?.*)?$/);
+      if (req.method === "GET" && subPaymentsMatch) {
+        if (!this.subscriptions.has(subPaymentsMatch[1]!)) return fail(404, "not_found", "Assinatura não encontrada");
+        const data = [...this.payments.values()].filter((payment) => payment.subscription === subPaymentsMatch[1]);
+        return send(200, { object: "list", hasMore: false, totalCount: data.length, limit: 20, offset: 0, data });
       }
       const subMatch = path.match(/^\/subscriptions\/([^/]+)$/);
       if (subMatch) {
@@ -74,6 +85,11 @@ export class FakeAsaas {
         }
         if (req.method === "POST") {
           Object.assign(sub, body);
+          if (body?.updatePendingPayments) {
+            for (const payment of this.payments.values()) {
+              if (payment.subscription === sub.id && payment.status === "PENDING") payment.value = body.value;
+            }
+          }
           return send(200, sub);
         }
       }

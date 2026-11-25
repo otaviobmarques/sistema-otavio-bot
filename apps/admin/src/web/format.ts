@@ -142,8 +142,16 @@ const ACTIONS: Record<string, string> = {
   "usage.threshold_50": "Consumo chegou a 50% da cota",
   "usage.threshold_80": "Consumo chegou a 80% da cota",
   "usage.threshold_100": "Consumo chegou a 100% da cota",
+  "account.signed_up": "Cliente criou a conta",
+  "account.login": "Cliente entrou na área do cliente",
+  "account.data_exported": "Cliente exportou os dados",
+  "account.deletion_requested": "Cliente pediu exclusão da conta",
+  "account.deletion_completed": "Exclusão da conta atendida",
+  "account.deletion_rejected": "Exclusão da conta recusada",
+  "terms.accepted": "Termos aceitos",
+  "subscription.canceled_by_customer": "Cliente cancelou a assinatura",
 };
 
 export const actionLabel = (action: string) => ACTIONS[action] ?? action;
 
-export const ACTOR: Record<string, string> = { admin: "Admin", system: "Sistema", webhook: "Webhook", cli: "Linha de comando" };
+export const ACTOR: Record<string, string> = { admin: "Admin", system: "Sistema", webhook: "Webhook", cli: "Linha de comando", customer: "Cliente" };

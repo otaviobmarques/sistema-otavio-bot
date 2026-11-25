@@ -41,7 +41,7 @@ export async function ingestAsaasWebhook(ctx: AppContext, billingAccountId: stri
       return { status: 200, duplicate: true, billingEventId: existing.rows[0]!.id, jobId: null } as const;
     }
     const id = inserted.rows[0].id;
-    const jobId = await enqueue(q, PROCESS_EVENT_JOB, { billingEventId: id }, { dedupeKey: `billing_event:${id}` });
+    const jobId = await enqueue(q, PROCESS_EVENT_JOB, { billingEventId: id }, { dedupeKey: `billing_event:${id}`, runAt: ctx.now() });
     return { status: 200, duplicate: false, billingEventId: id, jobId } as const;
   });
 }

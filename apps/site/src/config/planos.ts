@@ -77,7 +77,7 @@ export const computadorAdicional = {
 export const creditosAvulsos = {
   nome: 'Pacotes de créditos avulsos',
   resumo: 'Para os meses de mais movimento, sem trocar de plano.',
-  preco: 'Sob consulta',
+  preco: 'A partir de R$ 50',
 };
 
 export const explicacaoCreditos =
@@ -114,7 +114,7 @@ export const comparativo: GrupoComparativo[] = [
       { recurso: 'Créditos de IA por mês', valores: ['4.000', '20.000', '40.000'] },
       { recurso: 'IAs disponíveis', valores: ['Intermediárias', 'Todas', 'Todas'] },
       { recurso: 'Conectar a sua própria conta de IA ou chave de API', valores: [true, true, true] },
-      { recurso: 'Pacotes de créditos avulsos', valores: ['Sob consulta', 'Sob consulta', 'Sob consulta'] },
+      { recurso: 'Pacotes de créditos avulsos', valores: ['A partir de R$ 50', 'A partir de R$ 50', 'A partir de R$ 50'] },
     ],
   },
   {

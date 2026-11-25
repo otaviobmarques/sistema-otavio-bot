@@ -27,6 +27,13 @@ const toReais = (cents: number) => Math.round(cents) / 100;
 const toCents = (value: unknown) => Math.round(Number(value ?? 0) * 100);
 const str = (value: unknown): string | null => (typeof value === "string" && value !== "" ? value : null);
 
+function chargeFrom(data: Record<string, unknown>): ProviderCharge {
+  return {
+    id: String(data.id), status: String(data.status ?? "PENDING"), valueCents: toCents(data.value), dueDate: str(data.dueDate),
+    invoiceUrl: str(data.invoiceUrl), billingType: str(data.billingType),
+  };
+}
+
 export class AsaasClient implements BillingProvider {
   readonly #apiKey: string;
   readonly #base: string;
@@ -119,10 +126,12 @@ export class AsaasClient implements BillingProvider {
       description: input.description.slice(0, 500),
       externalReference: input.externalReference,
     });
-    return {
-      id: String(data.id), status: String(data.status ?? "PENDING"), valueCents: toCents(data.value), dueDate: str(data.dueDate),
-      invoiceUrl: str(data.invoiceUrl), billingType: str(data.billingType),
-    };
+    return chargeFrom(data);
+  }
+
+  async subscriptionPayments(subscriptionId: string): Promise<ProviderCharge[]> {
+    const data = await this.#request<{ data?: Record<string, unknown>[] }>("GET", `/subscriptions/${encodeURIComponent(subscriptionId)}/payments?limit=20`);
+    return (data?.data ?? []).map(chargeFrom);
   }
 
   async pixQrCode(chargeId: string): Promise<PixQrCode> {

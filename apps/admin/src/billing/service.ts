@@ -125,6 +125,28 @@ export async function startSubscription(ctx: AppContext, actor: Actor, input: St
   }
 }
 
+/**
+ * Records the provider's still-open charges of a subscription, so the first invoice link is known
+ * before its webhook arrives. Only open charges are inserted, and always as `pending`: confirming a
+ * payment (and granting its credits) stays with the webhook.
+ */
+export async function syncSubscriptionPayments(ctx: AppContext, subscriptionId: string, factory: ProviderFactory = defaultProviderFactory): Promise<void> {
+  const sub = (await ctx.db.query<SubscriptionRow>("SELECT * FROM subscriptions WHERE id = $1", [subscriptionId])).rows[0];
+  if (!sub?.provider_subscription_id || !sub.billing_account_id) return;
+  const account = await billingAccount(ctx.db, sub.billing_account_id);
+  if (!account) return;
+  const charges = await factory(ctx, account).subscriptionPayments(sub.provider_subscription_id).catch(providerMessage);
+  for (const charge of charges) {
+    if (charge.status !== "PENDING" && charge.status !== "OVERDUE") continue;
+    await ctx.db.query(
+      `INSERT INTO payments (organization_id, subscription_id, billing_account_id, kind, provider_payment_id, status, billing_type, value_cents, due_date, invoice_url, external_reference)
+       VALUES ($1, $2, $3, 'subscription', $4, 'pending', $5, $6, $7, $8, $9)
+       ON CONFLICT (billing_account_id, provider_payment_id) DO UPDATE SET invoice_url = COALESCE(payments.invoice_url, excluded.invoice_url),
+         value_cents = CASE WHEN payments.status = 'pending' THEN excluded.value_cents ELSE payments.value_cents END`,
+      [sub.organization_id, sub.id, account.id, charge.id, charge.billingType, charge.valueCents, charge.dueDate, charge.invoiceUrl, `sub:${sub.id}`]);
+  }
+}
+
 /** Cancels at the provider first (so it stops charging), then locally. */
 export async function cancelSubscription(ctx: AppContext, actor: Actor, subscriptionId: string, reason: string, factory: ProviderFactory = defaultProviderFactory): Promise<void> {
   const sub = (await ctx.db.query<SubscriptionRow>("SELECT * FROM subscriptions WHERE id = $1", [subscriptionId])).rows[0];
@@ -259,7 +281,7 @@ export async function runDunning(ctx: AppContext): Promise<DunningSummary> {
   for (const { id } of toCancel.rows) {
     const next = await ctx.db.tx(async (q) => {
       const result = await applySubscriptionSignal(q, system, id, "dunning_cancel", now, `${ctx.config.dunning.cancelAfterDays} dias em atraso`);
-      if (result) await enqueue(q, CANCEL_PROVIDER_SUBSCRIPTION_JOB, { subscriptionId: id }, { dedupeKey: `cancel_provider_subscription:${id}` });
+      if (result) await enqueue(q, CANCEL_PROVIDER_SUBSCRIPTION_JOB, { subscriptionId: id }, { dedupeKey: `cancel_provider_subscription:${id}`, runAt: now });
       return result;
     });
     if (next) summary.canceled++;

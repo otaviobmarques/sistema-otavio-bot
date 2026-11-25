@@ -25,7 +25,7 @@ export async function api<T = unknown>(path: string, options: { method?: string;
     data = null;
   }
   if (!response.ok) {
-    if (response.status === 401 && !path.startsWith("/api/auth/")) window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
+    if (response.status === 401 && !/^\/api\/(conta\/)?auth\//.test(path)) window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
     throw new ApiError((data as { error?: string } | null)?.error ?? `Erro ${response.status}`, response.status);
   }
   return data as T;

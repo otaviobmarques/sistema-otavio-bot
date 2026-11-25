@@ -1,8 +1,10 @@
 /**
  * Para onde levam os botões do site. PREENCHA ANTES DE PUBLICAR.
  *
- * - `urlAssinatura`: página de cadastro ou pagamento dos planos ("Começar agora" e "Assinar").
- *   Vazia, esses botões usam o mesmo canal de "Falar com um especialista".
+ * - `urlAssinatura`: cadastro na Área do cliente ("Começar agora" e "Assinar"). Os botões de cada plano
+ *   acrescentam `?plano=<id>` para o plano já vir escolhido. Vazia, esses botões usam o mesmo canal de
+ *   "Falar com um especialista".
+ * - `urlEntrar`: login de quem já é cliente (botão "Entrar" do topo).
  * - `whatsapp`: só dígitos, com código do país e DDD (ex.: "5511912345678"). Tem prioridade sobre o e-mail.
  * - `whatsappVisivel`: o mesmo número, formatado para aparecer no site.
  * - `email`: endereço completo (ex.: "contato@seudominio.com.br"). Vazio, não aparece no site.
@@ -11,7 +13,8 @@
  * Com tudo vazio, os botões levam à seção de contato do próprio site, que avisa que os canais saem em breve.
  */
 export const contato = {
-  urlAssinatura: '',
+  urlAssinatura: 'https://conta.arkobot.com.br/cadastro',
+  urlEntrar: 'https://conta.arkobot.com.br/entrar',
   whatsapp: '5519987822290',
   whatsappVisivel: '+55 (19) 98782-2290',
   email: 'contato@arkobot.com.br',
@@ -29,8 +32,9 @@ export function canalDeContato(): Destino {
   return { href: '#contato', externo: false };
 }
 
-export function destinoDe(acao: Acao): Destino {
-  if (acao === 'assinar' && contato.urlAssinatura.trim()) return { href: contato.urlAssinatura.trim(), externo: true };
+export function destinoDe(acao: Acao, plano?: string): Destino {
+  const url = contato.urlAssinatura.trim();
+  if (acao === 'assinar' && url) return { href: plano ? `${url}?plano=${encodeURIComponent(plano)}` : url, externo: false };
   return canalDeContato();
 }
 

@@ -11,6 +11,7 @@ import {
   precoPorDia,
   precosDefinidos,
 } from '@/config/planos';
+import { canalDeContato, temCanalConfigurado } from '@/config/contato';
 import { BotaoContato, CabecalhoSecao, Revelar, Secao } from './ui';
 
 function Celula({ valor }: { valor: string | boolean }) {
@@ -74,9 +75,19 @@ export function Planos() {
                   </li>
                 ))}
               </ul>
-              <BotaoContato acao="assinar" variante={plano.destaque ? 'primario' : 'secundario'} className="mt-8 w-full">
+              <BotaoContato acao="assinar" plano={plano.id} variante={plano.destaque ? 'primario' : 'secundario'} className="mt-8 w-full">
                 Assinar o {plano.nome}
               </BotaoContato>
+              {temCanalConfigurado() && (
+                <a
+                  href={canalDeContato().href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 text-center text-sm text-cinza underline-offset-4 hover:text-tinta hover:underline"
+                >
+                  Prefere conversar antes? Fale pelo WhatsApp
+                </a>
+              )}
             </div>
           </Revelar>
         ))}

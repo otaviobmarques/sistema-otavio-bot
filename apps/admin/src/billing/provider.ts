@@ -63,6 +63,8 @@ export interface BillingProvider {
   updateSubscriptionValue(subscriptionId: string, valueCents: number, description: string): Promise<void>;
   cancelSubscription(subscriptionId: string): Promise<void>;
   createCharge(input: ChargeInput): Promise<ProviderCharge>;
+  /** The charges a subscription has generated so far (Asaas creates the first one with the subscription). */
+  subscriptionPayments(subscriptionId: string): Promise<ProviderCharge[]>;
   pixQrCode(chargeId: string): Promise<PixQrCode>;
   checkCredentials(): Promise<CredentialCheck>;
 }
