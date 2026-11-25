@@ -337,7 +337,9 @@ describe("a helper named before ArkoBot had its name", () => {
     const lookalike = store.createBot({ name: "OpenMausBot", color: "red" });
     expect(renameLegacyDefaultBots(store, DATA_DIR)).toEqual([place.id]);
     expect(names(store)).toEqual({ [place.id]: "ArkoBot", [lookalike.id]: "OpenMausBot" });
-    rmSync(DATA_DIR, { recursive: true, force: true });
+  });
+
+  it("renames each person's helper still called MausBot or OpenMausBot, and keeps a name the person chose", () => {
     const team = new Store(selection);
     const ana = team.createBot({ name: "OpenMausBot", color: "chrome" });
     team.patchBot(ana.id, { defaultBot: { person: "ana@example.com" } });
