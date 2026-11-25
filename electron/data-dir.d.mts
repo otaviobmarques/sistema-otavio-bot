@@ -1,0 +1,10 @@
+type FolderOptions = { exists?: (path: string) => boolean; join?: (...parts: string[]) => string };
+export declare const DATA_FOLDER: string;
+export declare const LEGACY_DATA_FOLDER: string;
+export declare const COMPANION_FOLDER: string;
+export declare const LEGACY_COMPANION_FOLDER: string;
+export declare const LEGACY_USER_DATA_FOLDER: string;
+export declare function homeFolder(base: string, current: string, legacy: string, options?: FolderOptions): string;
+export declare function defaultDataDir(home: string, options?: FolderOptions): string;
+export declare function isDataFolderName(name: string): boolean;
+export declare function pinnedUserData(options: { appData: string; current: string } & FolderOptions): string;

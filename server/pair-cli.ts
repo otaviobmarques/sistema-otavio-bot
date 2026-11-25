@@ -1,4 +1,5 @@
 // Alias for `arkobot pair`: docs and images reference dist-server/pair-cli.js.
+import "./env-aliases.ts";
 import { main } from "./cli.ts";
 import { endQuietlyOnClosedPipe, exitAfterFlush } from "./exit.ts";
 

@@ -1,8 +1,9 @@
-// The sidecar's own state directory, never the harness's ~/.openmausbot.
+// The sidecar's own state directory, never the harness's data folder.
 import { randomUUID } from "node:crypto";
 import {
   chmodSync,
   closeSync,
+  existsSync,
   fsyncSync,
   mkdirSync,
   openSync,
@@ -13,8 +14,15 @@ import {
 import { homedir } from "node:os";
 import { join } from "node:path";
 
+/** The folder under the home: the earlier `.openmausbot-companion` while it exists, so a paired fleet stays paired
+ * (electron/companion-settings.mjs reads the same one). */
+export function companionHomeFolder(home: string, exists: (path: string) => boolean = existsSync): string {
+  const legacy = join(home, ".openmausbot-companion");
+  return exists(legacy) ? legacy : join(home, ".arkobot-companion");
+}
+
 /** OMB_COMPANION_DIR isolates a test rig from a real paired fleet. */
-export const DATA_DIR = process.env.OMB_COMPANION_DIR ?? join(homedir(), ".openmausbot-companion");
+export const DATA_DIR = process.env.OMB_COMPANION_DIR ?? companionHomeFolder(homedir());
 
 /** The paired fleet's hashes are an offline target, and the 0755/0644 defaults
  * would publish which phones someone owns to every account on the machine. */

@@ -1,6 +1,8 @@
-// ~/.openmausbot/config.json, with env vars overriding its credentials.
+// config.json in the data folder (~/.arkobot, or ~/.openmausbot where that one already is), with env vars overriding its credentials.
+// ARKOBOT_* reach the OMB_* names read below, whichever module imports this first.
+import "./env-aliases.ts";
 import { readFileSync, mkdirSync, existsSync, renameSync } from "node:fs";
-import { dataHome } from "./data-dir.ts";
+import { dataHome, defaultDataDir } from "./data-dir.ts";
 import { join } from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import { z } from "zod";
@@ -710,7 +712,7 @@ export function changedInstanceIds(before: Record<string, unknown>, after: Recor
     .filter((id) => !isDeepStrictEqual(before[id], after[id]));
 }
 
-export const DATA_DIR = process.env.OMB_DATA_DIR || join(dataHome(), ".openmausbot");
+export const DATA_DIR = process.env.OMB_DATA_DIR || defaultDataDir(dataHome());
 const LEGACY_DATA_DIR = join(dataHome(), ".opengrokbot");
 export const EVENTS_DIR = join(DATA_DIR, "events");
 export const NATIVE_DIR = join(DATA_DIR, "native");

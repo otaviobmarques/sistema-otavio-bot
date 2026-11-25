@@ -2416,7 +2416,7 @@ describe("DATA_DIR outside the suite's throwaway home", () => {
   it("treats an empty OMB_DATA_DIR as unset", () => {
     const home = mkdtempSync(join(tmpdir(), "omb-config-home-"));
     try {
-      expect(childDataDir({ HOME: home, USERPROFILE: home, OMB_DATA_DIR: "" })).toBe(join(home, ".openmausbot"));
+      expect(childDataDir({ HOME: home, USERPROFILE: home, OMB_DATA_DIR: "" })).toBe(join(home, ".arkobot"));
     } finally {
       rmSync(home, { recursive: true, force: true });
     }
@@ -2425,7 +2425,10 @@ describe("DATA_DIR outside the suite's throwaway home", () => {
   it("keeps the home folder outside tests", () => {
     const home = mkdtempSync(join(tmpdir(), "omb-config-home-"));
     try {
-      expect(childDataDir({ HOME: home, USERPROFILE: home })).toBe(join(home, ".openmausbot"));
+      expect(childDataDir({ HOME: home, USERPROFILE: home })).toBe(join(home, ".arkobot"));
+      mkdirSync(join(home, ".openmausbot"));
+      expect(childDataDir({ HOME: home, USERPROFILE: home }), "an install's earlier folder stays in use").toBe(join(home, ".openmausbot"));
+      expect(childDataDir({ HOME: home, USERPROFILE: home, ARKOBOT_DATA_DIR: join(home, "x"), OMB_DATA_DIR: join(home, "y") })).toBe(join(home, "x"));
     } finally {
       rmSync(home, { recursive: true, force: true });
     }

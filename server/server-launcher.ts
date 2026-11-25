@@ -1,4 +1,5 @@
 // Container entry: restarts the server in place on RESTART_EXIT_CODE, since a container restart cuts off a Caddy sharing its network.
+import "./env-aliases.ts";
 import { spawn, type ChildProcess } from "node:child_process";
 import { existsSync, realpathSync } from "node:fs";
 import { homedir } from "node:os";
@@ -7,13 +8,14 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { boxMemory, heapSizeArgs, type BoxMemory } from "./box-memory.ts";
 import { restartPolicy } from "./restart.ts";
 import { PRODUCT_NAME } from "../shared/product-name.ts";
+import { defaultDataDir } from "./data-dir.ts";
 
 /** The server's heap sized to the container's memory limit, run through the bootstrap that keeps Node's compile cache on
  * the data volume, so a restarted container reuses the compiled bundle. */
 export function serverCommand(here: string, env: NodeJS.ProcessEnv, options: { exists?: (path: string) => boolean; box?: BoxMemory } = {}) {
   const bootstrap = join(here, "desktop-entry.mjs");
   const cached = (options.exists ?? existsSync)(bootstrap);
-  const dataDir = env.OMB_DATA_DIR || join(homedir(), ".openmausbot");
+  const dataDir = env.OMB_DATA_DIR || defaultDataDir(homedir());
   return {
     args: [...heapSizeArgs((options.box ?? boxMemory()).cgroupLimit, env.NODE_OPTIONS), cached ? bootstrap : join(here, "index.js")],
     env: cached ? { ...env, OMB_SERVER_COMPILE_CACHE: join(dataDir, "cache", "node-compile") } : env,

@@ -1,3 +1,4 @@
+import "./env-aliases.ts";
 import { main } from "./cli.ts";
 import { endQuietlyOnClosedPipe, exitAfterFlush } from "./exit.ts";
 // The sentinel, run from here, reads the server's own lines back in every language it writes them in.
