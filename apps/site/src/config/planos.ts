@@ -1,23 +1,19 @@
 /**
- * Planos e preços do site. É o único lugar para mexer em valores.
+ * Planos e preços do site. É o único lugar para mexer em valores e itens.
  *
- * Enquanto `precosDefinidos` for `false`, o site NÃO mostra nenhum valor: cada
- * plano aparece com "Em breve" e o botão "Fale com a gente". Os números abaixo
- * são EXEMPLOS para testar o layout; troque pelos preços reais e só então mude
- * `precosDefinidos` para `true`.
+ * Com `precosDefinidos = false`, o site esconde os valores e mostra "Em breve" e "Fale com a gente".
  */
-export const precosDefinidos = false;
+export const precosDefinidos = true;
 
 export type Plano = {
   id: string;
   nome: string;
   resumo: string;
-  /** Valor mensal em reais. Só aparece com `precosDefinidos = true`. */
+  /** Valor mensal em reais. */
   precoMensal: number;
-  /** Créditos de IA inclusos por mês, em reais de consumo. */
+  /** Créditos de IA inclusos por mês (1 crédito = R$ 0,01 de uso de IA). */
   creditosIA: number;
   bots: string;
-  computadoresInclusos: number;
   itens: string[];
   destaque?: boolean;
 };
@@ -26,62 +22,74 @@ export const planos: Plano[] = [
   {
     id: 'essencial',
     nome: 'Essencial',
-    resumo: 'Para começar com uma equipe pequena de bots em uma empresa.',
-    precoMensal: 297,
-    creditosIA: 100,
+    resumo: 'Para tirar o trabalho repetitivo das suas costas com uma equipe enxuta.',
+    precoMensal: 159,
+    creditosIA: 4000,
     bots: 'Até 3 bots',
-    computadoresInclusos: 0,
     itens: [
-      'Créditos de IA inclusos no mês',
+      'ArkoBot 24 horas na nuvem',
+      'IAs intermediárias',
+      'Aprovações pelo WhatsApp',
       '1 empresa no Prédio',
-      'Aprovações pelo app e pelo WhatsApp',
-      'Rotinas agendadas',
       'App para PC e celular',
     ],
   },
   {
-    id: 'equipe',
-    nome: 'Equipe',
-    resumo: 'Para quem quer bots trabalhando o dia todo, com computador próprio.',
-    precoMensal: 797,
-    creditosIA: 300,
+    id: 'profissional',
+    nome: 'Profissional',
+    resumo: 'Para a empresa que quer uma equipe completa trabalhando o dia todo.',
+    precoMensal: 599,
+    creditosIA: 20000,
     bots: 'Até 10 bots',
-    computadoresInclusos: 1,
     itens: [
-      'Mais créditos de IA inclusos no mês',
-      'Várias empresas, cada uma com sua verba',
-      'Regras de aprovação por empresa',
-      '1 computador na nuvem para os bots',
-      'Ensinar uma tarefa gravando a tela',
+      'Todas as IAs: Claude, GPT, Gemini, Grok e outras',
+      '1 computador individual incluído',
+      'Até 3 empresas (andares)',
+      'Regras e orçamento por empresa',
+      'Aprovações pelo WhatsApp',
     ],
     destaque: true,
   },
   {
     id: 'empresa',
     nome: 'Empresa',
-    resumo: 'Para operações maiores, com vários computadores e acompanhamento.',
-    precoMensal: 1997,
-    creditosIA: 1000,
-    bots: 'Bots sob medida',
-    computadoresInclusos: 3,
+    resumo: 'Para operações maiores, com vários bots usando computador próprio.',
+    precoMensal: 999,
+    creditosIA: 40000,
+    bots: 'Bots ilimitados (uso justo)',
     itens: [
-      'Créditos de IA sob medida',
-      'Empresas e equipes ilimitadas',
-      '3 computadores na nuvem para os bots',
-      'Servidor 24 horas dedicado',
-      'Implantação acompanhada',
+      'Todas as IAs',
+      '2 computadores individuais incluídos',
+      'Empresas ilimitadas',
+      'Regras e orçamento por empresa',
+      'Suporte prioritário',
     ],
   },
 ];
 
 export const computadorAdicional = {
-  nome: 'Computador adicional',
-  resumo:
-    'Um desktop na nuvem só para um bot: ele navega, usa programas e trabalha nele, e você acompanha a tela ao vivo.',
-  /** Valor mensal em reais por computador. Só aparece com `precosDefinidos = true`. */
-  precoMensal: 197,
+  nome: 'Computador individual adicional',
+  resumo: 'Dê a qualquer bot o seu próprio computador (VPS) individual. Disponível em todos os planos.',
+  /** Valor mensal em reais, por bot. */
+  precoMensal: 159,
 };
+
+export const creditosAvulsos = {
+  nome: 'Pacotes de créditos avulsos',
+  resumo: 'Para os meses de mais movimento, sem trocar de plano.',
+  preco: 'Sob consulta',
+};
+
+export const explicacaoCreditos =
+  '1 crédito = R$ 0,01 de uso de IA. Os créditos do plano renovam todo mês. Preços em reais, por mês, sem fidelidade.';
+
+export const garantia =
+  'Contratou pelo site e não gostou? Cancele em até 7 dias e receba o seu dinheiro de volta, como garante o Código de Defesa do Consumidor.';
 
 export function formatarReais(valor: number): string {
   return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+}
+
+export function formatarCreditos(valor: number): string {
+  return valor.toLocaleString('pt-BR');
 }

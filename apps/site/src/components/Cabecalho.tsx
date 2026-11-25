@@ -46,7 +46,7 @@ export function Cabecalho() {
             </a>
           ))}
         </nav>
-        <BotaoContato className="!hidden !px-5 !py-2.5 !text-sm lg:!inline-flex">Falar com a gente</BotaoContato>
+        <BotaoContato acao="assinar" className="!hidden !px-5 !py-2.5 !text-sm lg:!inline-flex">Começar agora</BotaoContato>
         <button
           type="button"
           className="ml-auto grid h-10 w-10 place-items-center rounded-full border border-white/10 text-white lg:hidden"
@@ -79,7 +79,7 @@ export function Cabecalho() {
                   {item.rotulo}
                 </a>
               ))}
-              <BotaoContato className="mt-2">Falar com a gente</BotaoContato>
+              <BotaoContato acao="assinar" className="mt-2">Começar agora</BotaoContato>
             </div>
           </motion.nav>
         )}

@@ -19,11 +19,13 @@
     "remotion": "4.0.542"
   },
   "devDependencies": {
+    "@lobehub/icons-static-svg": "1.102.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^26.2.0",
     "@types/react": "^19.1.9",
     "@types/react-dom": "^19.1.7",
     "sharp": "^0.35.5",
+    "simple-icons": "16.37.0",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.9.3"
   }

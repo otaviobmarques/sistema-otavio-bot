@@ -2,7 +2,7 @@
 
 import { motion } from 'motion/react';
 import { ArrowRight } from 'lucide-react';
-import { canalPrincipal } from '@/config/contato';
+import { destinoDe, type Acao } from '@/config/contato';
 
 type RevelarProps = {
   children: React.ReactNode;
@@ -50,10 +50,16 @@ export function CabecalhoSecao({ selo, titulo, texto, centro = true, id }: Cabec
   );
 }
 
-type BotaoProps = { children: React.ReactNode; variante?: 'primario' | 'secundario'; href?: string; className?: string };
+type BotaoProps = {
+  children: React.ReactNode;
+  variante?: 'primario' | 'secundario';
+  acao?: Acao;
+  href?: string;
+  className?: string;
+};
 
-export function BotaoContato({ children, variante = 'primario', href, className = '' }: BotaoProps) {
-  const canal = canalPrincipal();
+export function BotaoContato({ children, variante = 'primario', acao = 'falar', href, className = '' }: BotaoProps) {
+  const canal = destinoDe(acao);
   const destino = href ?? canal.href;
   const externo = !href && canal.externo;
   const base =

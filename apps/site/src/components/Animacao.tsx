@@ -3,18 +3,19 @@
 import { useEffect, useRef, useState } from 'react';
 import { Player, type PlayerRef } from '@remotion/player';
 import { useReducedMotion } from 'motion/react';
-import { EQUIPE, EquipeTrabalhando } from '@/remotion/EquipeTrabalhando';
-import { CONEXOES, IAsConectando } from '@/remotion/IAsConectando';
+import { CONVERSA_CELULAR, CONVERSA_DESKTOP, ConversaCelular, ConversaDesktop } from '@/remotion/Conversa';
 
-const COMPOSICOES = {
-  equipe: { componente: EquipeTrabalhando, ...EQUIPE, quadroParado: 200 },
-  ias: { componente: IAsConectando, ...CONEXOES, quadroParado: 40 },
+export const COMPOSICOES = {
+  desktop: { componente: ConversaDesktop, ...CONVERSA_DESKTOP },
+  celular: { componente: ConversaCelular, ...CONVERSA_CELULAR },
 };
 
-type Props = { tipo: keyof typeof COMPOSICOES; rotulo: string; className?: string };
+const QUADRO_PARADO = 470;
 
-export default function Animacao({ tipo, rotulo, className }: Props) {
-  const c = COMPOSICOES[tipo];
+type Props = { variante: keyof typeof COMPOSICOES; rotulo: string; className?: string };
+
+export default function Animacao({ variante, rotulo, className }: Props) {
+  const c = COMPOSICOES[variante];
   const reduzir = useReducedMotion();
   const caixa = useRef<HTMLDivElement>(null);
   const player = useRef<PlayerRef>(null);
@@ -23,9 +24,7 @@ export default function Animacao({ tipo, rotulo, className }: Props) {
   useEffect(() => {
     const el = caixa.current;
     if (!el) return;
-    const observador = new IntersectionObserver(([entrada]) => setVisivel(entrada.isIntersecting), {
-      rootMargin: '120px',
-    });
+    const observador = new IntersectionObserver(([entrada]) => setVisivel(entrada.isIntersecting), { rootMargin: '120px' });
     observador.observe(el);
     return () => observador.disconnect();
   }, []);
@@ -35,19 +34,13 @@ export default function Animacao({ tipo, rotulo, className }: Props) {
     if (!p) return;
     if (reduzir) {
       p.pause();
-      p.seekTo(c.quadroParado);
+      p.seekTo(QUADRO_PARADO);
     } else if (visivel) p.play();
     else p.pause();
-  }, [visivel, reduzir, c.quadroParado]);
+  }, [visivel, reduzir]);
 
   return (
-    <div
-      ref={caixa}
-      role="img"
-      aria-label={rotulo}
-      className={className}
-      style={{ aspectRatio: `${c.largura} / ${c.altura}` }}
-    >
+    <div ref={caixa} role="img" aria-label={rotulo} className={className} style={{ aspectRatio: `${c.largura} / ${c.altura}` }}>
       <Player
         ref={player}
         component={c.componente}
@@ -55,12 +48,14 @@ export default function Animacao({ tipo, rotulo, className }: Props) {
         fps={c.fps}
         compositionWidth={c.largura}
         compositionHeight={c.altura}
-        initialFrame={reduzir ? c.quadroParado : 0}
         loop
+        autoPlay={reduzir === false}
+        initialFrame={reduzir ? QUADRO_PARADO : 0}
         controls={false}
         clickToPlay={false}
         doubleClickToFullscreen={false}
         spaceKeyToPlayOrPause={false}
+        initiallyMuted
         acknowledgeRemotionLicense
         style={{ width: '100%', height: '100%' }}
       />

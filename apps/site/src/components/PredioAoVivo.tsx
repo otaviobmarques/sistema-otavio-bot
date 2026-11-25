@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useInView, useReducedMotion } from 'motion/react';
 import { Building2, Gavel, Inbox } from 'lucide-react';
-import { Marca } from './Logo';
+import { botPorId } from '@/config/equipe';
+import { AvatarBot } from './AvatarBot';
 import { CabecalhoSecao, Revelar } from './ui';
 
 type Status = 'trabalhando' | 'esperando' | 'ocioso';
@@ -24,9 +25,9 @@ const ANDARES = [
     empresa: 'Loja Online',
     verba: 0.58,
     bots: [
-      { nome: 'Ana', ciclo: [T, T, T, E, T, T, T, T] },
-      { nome: 'Beto', ciclo: [T, T, O, O, T, T, T, T] },
-      { nome: 'Caio', ciclo: [O, T, T, T, T, E, T, T] },
+      { id: 'ana', ciclo: [T, T, T, E, T, T, T, T] },
+      { id: 'duda', ciclo: [T, T, O, O, T, T, T, T] },
+      { id: 'caio', ciclo: [O, T, T, T, T, E, T, T] },
     ],
   },
   {
@@ -34,8 +35,8 @@ const ANDARES = [
     empresa: 'Agência',
     verba: 0.82,
     bots: [
-      { nome: 'Duda', ciclo: [T, E, E, T, T, T, O, T] },
-      { nome: 'Eva', ciclo: [T, T, T, T, O, O, T, T] },
+      { id: 'rafa', ciclo: [T, E, E, T, T, T, O, T] },
+      { id: 'teo', ciclo: [T, T, T, T, O, O, T, T] },
     ],
   },
   {
@@ -43,22 +44,22 @@ const ANDARES = [
     empresa: 'Consultoria',
     verba: 0.34,
     bots: [
-      { nome: 'Fábio', ciclo: [T, T, T, T, T, T, E, T] },
-      { nome: 'Gabi', ciclo: [O, O, T, T, T, T, T, O] },
-      { nome: 'Hugo', ciclo: [T, T, T, O, T, T, T, T] },
+      { id: 'nina', ciclo: [T, T, T, T, T, T, E, T] },
+      { id: 'beto', ciclo: [O, O, T, T, T, T, T, O] },
+      { id: 'leo', ciclo: [T, T, T, O, T, T, T, T] },
     ],
   },
 ];
 
 const EVENTOS = [
   'Ana respondeu 6 clientes da Loja Online',
-  'Duda pediu sua aprovação para publicar um post',
-  'Gabi começou o relatório semanal da Consultoria',
+  'Rafa pediu sua aprovação para publicar um post',
+  'Beto começou o relatório semanal da Consultoria',
   'Ana quer enviar um orçamento em seu nome',
-  'Eva entrou no computador dela',
+  'Teo entrou no computador dele',
   'Caio pediu sua aprovação para responder um cliente',
-  'Fábio quer a sua decisão sobre um reembolso',
-  'Hugo terminou de preencher o portal do fornecedor',
+  'Nina quer a sua decisão sobre um fornecedor',
+  'Léo passou uma tarefa para a Nina',
 ];
 
 const PARADAS = ['0%', '20%', '40%', '60%', '80%'];
@@ -173,15 +174,16 @@ export function PredioAoVivo() {
                       <ul className="mt-3 flex flex-wrap gap-2 sm:gap-3">
                         {andar.bots.map((bot) => {
                           const status = bot.ciclo[passo];
+                          const perfil = botPorId(bot.id);
                           return (
                             <li
-                              key={bot.nome}
+                              key={bot.id}
                               className={`flex items-center gap-2 rounded-xl border px-2.5 py-2 transition-colors duration-500 ${
                                 status === 'esperando' ? 'border-amber-400/50 bg-amber-400/10' : 'border-white/10 bg-noite/60'
                               }`}
                             >
-                              <span className="relative grid h-8 w-8 place-items-center rounded-lg bg-noite">
-                                <Marca className="h-6 w-6" />
+                              <span className="relative grid h-8 w-8 place-items-center">
+                                <AvatarBot bot={perfil} className="h-8 w-8" />
                                 <motion.span
                                   key={status}
                                   initial={{ scale: 0.4 }}
@@ -190,7 +192,7 @@ export function PredioAoVivo() {
                                 />
                               </span>
                               <span className="text-sm">
-                                <span className="block font-medium leading-tight text-white">{bot.nome}</span>
+                                <span className="block font-medium leading-tight text-white">{perfil.nome}</span>
                                 <span className="block text-[11px] leading-tight text-suave">{status}</span>
                               </span>
                             </li>

@@ -1,16 +1,14 @@
 import { Cabecalho } from '@/components/Cabecalho';
-import { ComoFunciona } from '@/components/ComoFunciona';
 import { Computadores } from '@/components/Computadores';
-import { FaixaIAs } from '@/components/FaixaIAs';
+import { Controle } from '@/components/Controle';
+import { Dores, Equipe } from '@/components/Dores';
 import { Final, Rodape } from '@/components/Final';
-import { Galeria } from '@/components/Galeria';
 import { Heroi } from '@/components/Heroi';
+import { FaixaLogos, Integracoes } from '@/components/Integracoes';
 import { Movimento } from '@/components/Movimento';
 import { Perguntas } from '@/components/Perguntas';
 import { Planos } from '@/components/Planos';
 import { PredioAoVivo } from '@/components/PredioAoVivo';
-import { Recursos } from '@/components/Recursos';
-import { SecaoIAs } from '@/components/SecaoIAs';
 
 export default function Inicio() {
   return (
@@ -18,13 +16,13 @@ export default function Inicio() {
       <Cabecalho />
       <main id="conteudo">
         <Heroi />
-        <FaixaIAs />
-        <ComoFunciona />
+        <FaixaLogos />
+        <Dores />
+        <Equipe />
+        <Integracoes />
         <Computadores />
-        <SecaoIAs />
+        <Controle />
         <PredioAoVivo />
-        <Recursos />
-        <Galeria />
         <Planos />
         <Perguntas />
         <Final />

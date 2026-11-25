@@ -1,5 +1,6 @@
 import { Mail, MessageCircle } from 'lucide-react';
 import { contato, temCanalConfigurado } from '@/config/contato';
+import { garantia } from '@/config/planos';
 import { site } from '@/config/site';
 import { Logo } from './Logo';
 import { BotaoContato, Revelar } from './ui';
@@ -49,15 +50,16 @@ export function Final() {
         <div className="borda-brilho grid items-center gap-10 rounded-[2rem] bg-noite-2/80 p-6 sm:p-10 lg:grid-cols-2 lg:p-14">
           <Revelar>
             <h2 id="contato-titulo" className="font-display text-3xl font-bold leading-tight text-white sm:text-5xl">
-              Coloque a sua equipe de bots <span className="texto-gradiente">para trabalhar</span>
+              Sua equipe de bots pode começar <span className="texto-gradiente">ainda hoje</span>
             </h2>
             <p className="mt-5 text-lg leading-relaxed text-suave">
-              Conte o que a sua empresa faz e o que toma o tempo da sua equipe. A gente ajuda a montar os primeiros bots.
+              Cada dia sem ajuda é mais um cliente esperando resposta e mais uma hora da sua equipe em tarefa repetitiva. Escolha um plano ou conte para um especialista o que toma o tempo da sua empresa: a gente ajuda a montar os primeiros bots.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <BotaoContato>Começar</BotaoContato>
-              <BotaoContato variante="secundario">Falar com a gente</BotaoContato>
+              <BotaoContato acao="assinar">Começar agora</BotaoContato>
+              <BotaoContato variante="secundario">Falar com um especialista</BotaoContato>
             </div>
+            <p className="mt-5 text-sm text-suave">Sem fidelidade. {garantia}</p>
             <Canais />
           </Revelar>
           <Revelar atraso={0.15}>
@@ -92,7 +94,7 @@ export function Rodape() {
           </p>
         </div>
         <p className="text-xs text-suave/80">
-          © {ano} {site.empresa}. Claude, ChatGPT, Gemini e os demais nomes de IA citados são marcas dos seus donos.
+          © {ano} {site.empresa}. OpenAI, ChatGPT, Claude, Gemini, Grok, Kimi, DeepSeek, NVIDIA, WhatsApp e os demais nomes e logos citados são marcas dos seus donos, usadas só para indicar integração.
         </p>
       </div>
     </footer>

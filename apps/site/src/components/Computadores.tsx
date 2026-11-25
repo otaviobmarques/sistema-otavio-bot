@@ -3,7 +3,9 @@
 import { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'motion/react';
 import { Eye, Globe, Hand, KeyRound, MonitorSmartphone, Server } from 'lucide-react';
-import { Marca } from './Logo';
+import { botPorId } from '@/config/equipe';
+import { computadorAdicional, formatarReais } from '@/config/planos';
+import { AvatarBot } from './AvatarBot';
 import { CabecalhoSecao, Revelar } from './ui';
 
 const ITENS = [
@@ -47,7 +49,7 @@ function JanelaDesktop() {
         <span className="h-3 w-3 rounded-full bg-[#febc2e]" />
         <span className="h-3 w-3 rounded-full bg-[#28c840]" />
         <span className="ml-3 flex items-center gap-2 text-sm font-medium text-white">
-          <Marca className="h-5 w-5" /> Computador da Ana
+          <AvatarBot bot={botPorId('rafa')} className="h-6 w-6" /> Computador do Rafa
         </span>
         <span className="ml-auto flex items-center gap-1.5 rounded-full bg-red-500/15 px-2.5 py-1 text-xs font-semibold text-red-300">
           <span className="h-1.5 w-1.5 animate-pulso rounded-full bg-red-400" /> ao vivo
@@ -133,7 +135,7 @@ export function Computadores() {
                 Cada bot com o <span className="texto-gradiente">seu próprio computador</span>
               </>
             }
-            texto="Um bot que só conversa ajuda pouco. No ArkoBot, o bot pode ter uma máquina individual para trabalhar de verdade: navegar, usar programas e entregar o serviço pronto, enquanto você acompanha."
+            texto="Um bot que só conversa ajuda pouco. No ArkoBot, cada bot pode ter a sua própria máquina para trabalhar de verdade: entrar em portais, usar programas, baixar notas e entregar o serviço pronto, enquanto você acompanha pela tela."
           />
           <Revelar atraso={0.15}>
             <ul className="mt-10 grid gap-5 sm:grid-cols-2">
@@ -155,6 +157,10 @@ export function Computadores() {
           <div aria-hidden className="absolute -inset-6 -z-10 rounded-[2rem] bg-gradient-to-tr from-ciano/20 via-azul/10 to-violeta/20 blur-2xl" />
           <JanelaDesktop />
           <p className="mt-4 text-center text-xs text-suave/80">Ilustração de um bot trabalhando no computador dele.</p>
+          <p className="mt-6 rounded-2xl border border-ciano/30 bg-ciano/10 px-5 py-4 text-center text-sm text-white">
+            <strong className="font-display text-base">+ {formatarReais(computadorAdicional.precoMensal)}/mês</strong>: dê a qualquer
+            bot o seu próprio computador (VPS) individual. Os planos Profissional e Empresa já incluem computadores.
+          </p>
         </motion.div>
       </div>
     </section>
