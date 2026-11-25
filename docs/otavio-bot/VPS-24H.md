@@ -13,6 +13,8 @@ O que vai acontecer, em resumo:
    do HTTPS).
 3. Os desktops dos bots continuam sendo contêineres no mesmo VPS, como hoje.
 4. Um backup é feito todo dia de madrugada.
+5. Cada versão nova publicada entra sozinha no VPS (passo 8), com backup antes
+   e volta automática se der problema.
 
 Os contêineres dos outros projetos (autovisao, ecv-cash, OpenClaw) **não são
 mexidos**. O passo 2 mostra como conferir se eles estão usando as portas 80 e
@@ -514,6 +516,61 @@ Para ficar numa versão fixa (ou voltar para a anterior se a nova der
 problema), coloque o número no `.env`, por exemplo `OTAVIO_BOT_VERSION=0.2.0`,
 e rode de novo o `docker compose pull && docker compose up -d`.
 
+### Atualização automática
+
+Para não precisar rodar o comando acima a cada versão, instale uma vez o
+atualizador. Antes, traga os arquivos novos da pasta `deploy` (o
+`atualizar.sh` e o instalador chegam por aqui):
+
+```sh
+cd /opt/otavio-bot && git pull
+```
+
+```sh
+cd /opt/otavio-bot/deploy && ./instalar-atualizador.sh
+```
+
+A cada 30 minutos o VPS confere se saiu uma imagem nova (`latest`, ou `main`
+se for o que está no `.env`). Se não saiu, não faz nada. Se saiu:
+
+1. faz um backup (`backup.sh`); se o backup falhar, **não atualiza**;
+2. guarda a imagem que está rodando com a etiqueta `anterior`;
+3. sobe a nova e espera até 5 minutos o servidor ficar `healthy`;
+4. se não ficar, **volta sozinho para a anterior** e anota a versão que
+   falhou, para não tentar de novo a cada meia hora (a próxima publicada é
+   tentada normalmente).
+
+Na troca o servidor é reiniciado: uma conversa que um bot estiver
+respondendo naquele instante é interrompida e fica marcada como interrompida
+na conversa. Como só acontece quando sai versão nova, é raro.
+
+Testar agora (sem esperar a meia hora):
+
+```sh
+systemctl start otavio-bot-atualizar.service
+```
+
+Ver o que ele fez (versão antiga → nova, backup, erros):
+
+```sh
+journalctl -u otavio-bot-atualizar.service -n 30 --no-pager
+```
+
+**Pausar ou ficar numa versão:** coloque o número no `.env`
+(`OTAVIO_BOT_VERSION=0.2.0`). Com uma versão fixa o atualizador não mexe em
+nada e diz isso no registro. Para voltar a atualizar sozinho, volte para
+`OTAVIO_BOT_VERSION=latest`. Com o servidor parado (`docker compose down`)
+ele também não faz nada.
+
+**Desligar:**
+
+```sh
+systemctl disable --now otavio-bot-atualizar.timer
+```
+
+O `git pull` da pasta continua manual: o atualizador troca só a imagem, não os
+arquivos do `deploy`.
+
 ---
 
 ## 9. Como desfazer
@@ -528,6 +585,12 @@ Desligar o backup diário:
 
 ```sh
 systemctl disable --now otavio-bot-backup.timer
+```
+
+Desligar a atualização automática:
+
+```sh
+systemctl disable --now otavio-bot-atualizar.timer
 ```
 
 Tirar o acesso do servidor ao Docker do VPS: apague a linha que termina em
@@ -559,7 +622,14 @@ A `bots` no DNS, se não for mais usar.
   (caminho B), [`deploy/ligar-desktops.sh`](../../deploy/ligar-desktops.sh),
   [`deploy/backup.sh`](../../deploy/backup.sh),
   [`deploy/restaurar-backup.sh`](../../deploy/restaurar-backup.sh),
-  [`deploy/instalar-backup-diario.sh`](../../deploy/instalar-backup-diario.sh).
+  [`deploy/instalar-backup-diario.sh`](../../deploy/instalar-backup-diario.sh),
+  [`deploy/atualizar.sh`](../../deploy/atualizar.sh),
+  [`deploy/instalar-atualizador.sh`](../../deploy/instalar-atualizador.sh).
+- O atualizador compara o ID da imagem que o `omb` está rodando com o da
+  etiqueta depois do `pull`; guarda o que precisa entre execuções em
+  `/var/lib/otavio-bot` (trava `flock` e a versão recusada). O servidor sai
+  em até ~7 s no SIGTERM; `stop_grace_period: 30s` no compose dá folga antes
+  do SIGKILL.
 - A imagem (`Dockerfile`, alvo `server`) traz o cliente Docker (com buildx) e
   o cliente SSH, porque o backend "VPS próprio" só fala
   `docker -H ssh://<apelido>` e abre o túnel da tela por SSH. Montar o

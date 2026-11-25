@@ -23,6 +23,10 @@ services:
     # every "Publicar versão", `main` on every push to main.
     image: ghcr.io/otaviobmarques/sistema-otavio-bot:${OTAVIO_BOT_VERSION:-latest}
     restart: always
+    # On SIGTERM the server marks the turns it cuts as interrupted, closes the
+    # browsers and flushes its logs in up to ~7 s; Docker's default is SIGKILL
+    # after 10 s, too close on a slow disk.
+    stop_grace_period: 30s
     # The bots' browsers (docs/browser-packaging.md, "Process hygiene"): an
     # init collects the browser processes whose parents exit, and Chrome
     # gets the shared memory OMB's desktop containers give it.
