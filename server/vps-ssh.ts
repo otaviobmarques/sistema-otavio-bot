@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { delimiter, join, resolve } from "node:path";
+import { PRODUCT_NAME } from "../shared/product-name.ts";
 
 export const VPS_SSH_DIR = "ssh";
 
@@ -48,7 +49,7 @@ function writeIfChanged(path: string, content: string, mode: number): void {
 /** ssh keeps the first value it sees, so the person's file goes first; -F skips the system file, so it goes last. */
 export function vpsSshConfigText(sshDir: string, userConfig = join(homedir(), ".ssh", "config"), systemConfig = "/etc/ssh/ssh_config"): string {
   return [
-    "# Written by OpenMausBot for its VPS computer connections. Do not edit;",
+    `# Written by ${PRODUCT_NAME} for its VPS computer connections. Do not edit;`,
     "# it is regenerated. Your own ~/.ssh/config is included first and wins.",
     ...(existsSync(userConfig) ? [`Include ${JSON.stringify(userConfig)}`] : []),
     "Host *",
@@ -81,7 +82,7 @@ export function prepareVpsSsh(dataDir: string, pathValue: string, platform: Node
   if (!realSsh) return { configPath, path: pathValue };
   const shim = [
     "#!/bin/sh",
-    "# Written by OpenMausBot. docker's SSH transport finds this ssh first, so",
+    `# Written by ${PRODUCT_NAME}. docker's SSH transport finds this ssh first, so`,
     "# docker commands share one connection unless the alias turns that off.",
     `exec ${shellQuote(realSsh)} -F ${shellQuote(configPath)} "$@"`,
     "",

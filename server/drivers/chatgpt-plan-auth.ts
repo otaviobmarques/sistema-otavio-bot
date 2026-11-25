@@ -6,6 +6,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { createLocalJWKSet, jwtVerify, type JSONWebKeySet } from "jose";
 import { writeFileAtomic } from "../atomic.ts";
 import type { ModelCatalog, ProviderAuthenticationStart, ProviderAuthenticationStatus, ProviderSnapshot } from "../contracts.ts";
+import { PRODUCT_NAME } from "../../shared/product-name.ts";
 
 const ISSUER = "https://auth.openai.com";
 const RESOURCE = "https://api.openai.com/v1";
@@ -437,7 +438,7 @@ export class ChatGptPlanAuthController {
       delete record.tokens;
       this.save(record);
       this.clearRefused();
-      if (!revoked) throw Object.assign(new Error("Signed out locally, but remote revocation was not confirmed. Disconnect OpenMausBot in ChatGPT Settings → Usage to end access there."), { code: "chatgpt_revocation_unconfirmed" });
+      if (!revoked) throw Object.assign(new Error(`Signed out locally, but remote revocation was not confirmed. Disconnect ${PRODUCT_NAME} in ChatGPT Settings → Usage to end access there.`), { code: "chatgpt_revocation_unconfirmed" });
     });
   }
 }

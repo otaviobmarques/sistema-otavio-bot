@@ -2,6 +2,7 @@ import { createECDH, createHash, type webcrypto } from "node:crypto";
 
 import { desktopCredentialSlot, isCredentialTargetId } from "../shared/credential-request.ts";
 import type { CipherSuite } from "@hpke/core";
+import { PRODUCT_NAME } from "../shared/product-name.ts";
 
 export const PHONE_SECRET_PROTOCOL_VERSION = 1 as const;
 export const PHONE_SECRET_INFO = "OpenMausBot phone credential v1";
@@ -136,11 +137,11 @@ export function assertPhoneSecretRequestMatches(
 ): void {
   // Phone entry hands a key to the desktop's settings; the 1Password token goes to Logins, which a phone cannot reach.
   if (expected.target === "onePasswordToken") {
-    throw new PhoneSecretError("Paste the 1Password token in OpenMausBot on your computer, or in My Cloud: a phone cannot save it yet.", 409);
+    throw new PhoneSecretError(`Paste the 1Password token in ${PRODUCT_NAME} on your computer, or in My Cloud: a phone cannot save it yet.`, 409);
   }
   // An AI provider key lives in the server's settings, which only the computer's own app writes.
   if (isCredentialTargetId(expected.target) && !desktopCredentialSlot(expected.target)) {
-    throw new PhoneSecretError("Paste this key in OpenMausBot on your computer, or in My Cloud: a phone cannot save it yet.", 409);
+    throw new PhoneSecretError(`Paste this key in ${PRODUCT_NAME} on your computer, or in My Cloud: a phone cannot save it yet.`, 409);
   }
   if (
     context.deviceId !== authenticatedDeviceId ||
@@ -375,13 +376,13 @@ export class PhoneSecretBridge {
   private async openWithinLimit(context: PhoneSecretContext): Promise<string> {
     if (!this.identity) {
       throw new PhoneSecretError(
-        "Secure phone entry is not ready on this computer. Reopen OpenMausBot and try again.",
+        `Secure phone entry is not ready on this computer. Reopen ${PRODUCT_NAME} and try again.`,
         503,
       );
     }
     const identity = await this.identity.catch(() => {
       throw new PhoneSecretError(
-        "Secure phone entry is not ready on this computer. Reopen OpenMausBot and try again.",
+        `Secure phone entry is not ready on this computer. Reopen ${PRODUCT_NAME} and try again.`,
         503,
       );
     });

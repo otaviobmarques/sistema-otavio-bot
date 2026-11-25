@@ -13,9 +13,10 @@
 import { execFile } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { isAbsolute } from "node:path";
+import { PRODUCT_NAME } from "../../../shared/product-name.ts";
 
 /** Installs the Linux libraries Chrome needs (as root, once). */
-export const LIBRARIES_COMMAND = "sudo openmausbot browser install --with-deps";
+export const LIBRARIES_COMMAND = "sudo arkobot browser install --with-deps";
 /** There is no command for the sandbox: an administrator allows one root-owned Chrome by hand. */
 export const SANDBOX_STEPS_URL = "https://github.com/milind-soni/OpenMausBot/blob/main/docs/deploy-vps.md#ubuntu-2404-browser-sandbox";
 
@@ -40,7 +41,7 @@ export function appArmorProfile(executable: string): string {
   if (!isAbsolute(executable) || /[\s*?[\]{}"'\\^]/.test(executable) || !executable.startsWith("/opt/")) {
     throw new Error(`The browser's AppArmor exemption is only for a root-owned path under /opt, not ${executable}.`);
   }
-  return `# Written for OpenMausBot: lets its Chrome use its sandbox.
+  return `# Written for ${PRODUCT_NAME}: lets its Chrome use its sandbox.
 abi <abi/4.0>,
 include <tunables/global>
 

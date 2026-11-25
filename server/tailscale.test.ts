@@ -77,7 +77,7 @@ describe("serve --tailscale", () => {
       const refused = fakeServe(1, "Access denied: serve config denied");
       expect(await tailscaleServe(status, 8799, { dataDir: dir, settleMs: 500, spawnImpl: refused.spawnImpl })).toEqual({ failure: "needs-operator" });
       expect(existsSync(tailscaleMarker(dir))).toBe(false);
-      expect(explainTailscaleFailure("other-server")).toContain("different MausBot server");
+      expect(explainTailscaleFailure("other-server")).toContain("different ArkoBot server");
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

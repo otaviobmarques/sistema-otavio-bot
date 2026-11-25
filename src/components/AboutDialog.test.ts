@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { appVersion } from "@/lib/app-links";
 import { setLocale } from "@/lib/i18n";
-import { AboutDialog, aboutVersionLines } from "./AboutDialog";
+import { AboutDialog, aboutVersionLines, ThirdPartyNotices } from "./AboutDialog";
 
 function about(page: object): string {
   vi.stubGlobal("window", page);
@@ -52,5 +52,15 @@ describe("About", () => {
       "Version 0.1.127 · macOS",
       "Verbunden mit Office Mac · Version 0.1.116",
     ]);
+  });
+
+  it("names only this product, and keeps whose work it is built on under Third-party licenses, from the NOTICE that ships", () => {
+    const html = about({ location: { host: "bots.example.test" } });
+    expect(html).toContain(">ArkoBot</h2>");
+    expect(html).toContain("Third-party licenses");
+    expect(html).not.toMatch(/MausBot|built on/i);
+    const notices = renderToStaticMarkup(createElement(ThirdPartyNotices));
+    expect(notices).toContain("ArkoBot is a modified version of OpenMausBot, used under the Apache License");
+    expect(notices).toContain("Copyright 2026 Milind Soni and OpenMausBot contributors");
   });
 });

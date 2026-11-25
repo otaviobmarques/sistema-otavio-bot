@@ -17,6 +17,7 @@ import { join } from "node:path";
 import type { CacheWarmPingResult } from "../contracts.ts";
 import { killCliTree, spawnCli } from "../procs.ts";
 import { USAGE_LIMIT } from "./retry.ts";
+import { PRODUCT_NAME } from "../../shared/product-name.ts";
 
 export const KEEP_WARM_PROMPT = "Reply with the single word: warm";
 export const KEEP_WARM_TIMEOUT_MS = 120_000;
@@ -74,7 +75,7 @@ export function keepWarmSettings(settings: Record<string, unknown> | null, denyC
   };
 }
 
-export const KEEP_WARM_DENY_HOOK = `process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: "OpenMausBot keep-warm ping: no tools" } }));\n`;
+export const KEEP_WARM_DENY_HOOK = `process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: "${PRODUCT_NAME} keep-warm ping: no tools" } }));\n`;
 
 const count = (value: unknown): number => typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : 0;
 

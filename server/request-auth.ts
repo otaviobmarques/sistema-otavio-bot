@@ -7,6 +7,7 @@ import { isIP } from "node:net";
 import { BOT_PROFILE_PATCH_FIELDS } from "./bot-profile.ts";
 import type { Scope, SessionRecord, SessionRegistry } from "./sessions.ts";
 import { denyReason as companionDenial, isCompanionNotice } from "../companion/src/routes.ts";
+import { PRODUCT_NAME } from "../shared/product-name.ts";
 
 /** `owner`: the machine's owner. `service`: a shared server where every bot's shell is a loopback caller too,
  * so loopback without a session may reach only SERVICE_ALLOW. */
@@ -86,7 +87,7 @@ function loopbackTrust(input: Parameters<typeof resolveLoopbackTrust>[0]): { tru
   const raw = (input.env ?? process.env).OMB_LOOPBACK_TRUST;
   const requested = raw?.trim().toLowerCase();
   if (input.cloudHome) {
-    return { trust: "service", reason: "MausBot Cloud home", ...(raw !== undefined && requested !== "service" ? { warning: "OMB_LOOPBACK_TRUST is ignored on a MausBot Cloud home: a local request is always a service" } : {}) };
+    return { trust: "service", reason: `${PRODUCT_NAME} Cloud home`, ...(raw !== undefined && requested !== "service" ? { warning: `OMB_LOOPBACK_TRUST is ignored on an ${PRODUCT_NAME} Cloud home: a local request is always a service` } : {}) };
   }
   if (input.desktopManaged) {
     return { trust: "owner", reason: "desktop app", ...(raw !== undefined ? { warning: "OMB_LOOPBACK_TRUST is ignored in the desktop app" } : {}) };
@@ -152,7 +153,7 @@ function localBrowserTrust(env: NodeJS.ProcessEnv, fromSource: boolean, trust: L
   return { trusted: true, warning: `${LOCAL_BROWSER_TRUST}=1: browsers on this machine act as the owner (development only)` };
 }
 
-export const BROWSER_SIGN_IN = "unauthorized: this browser is not signed in. Open the sign-in link that openmausbot serve or openmausbot pair prints on this computer, or pair it with a code from Settings → Remote access";
+export const BROWSER_SIGN_IN = "unauthorized: this browser is not signed in. Open the sign-in link that arkobot serve or arkobot pair prints on this computer, or pair it with a code from Settings → Remote access";
 
 export function isAllowedOrigin(origin: string | undefined | null): boolean {
   if (!origin) return true; // non-browser clients (CLIs, curl, tests) send none
@@ -525,7 +526,7 @@ export interface ResolveOptions {
   features?: { sharedComputers?: boolean };
   /** Absent is `owner`; ignored while loopbackMutationToken is in force. */
   loopbackTrust?: LoopbackTrust;
-  /** Under `service`: a per-launch secret from `openmausbot serve` over stdin (never env, which other children read); it opens only pairing codes. */
+  /** Under `service`: a per-launch secret from `arkobot serve` over stdin (never env, which other children read); it opens only pairing codes. */
   cliOwnerToken?: string;
   /** resolveLoopbackTrust's `localBrowsers`: a development server lets this machine's browsers use loopback trust. */
   trustLocalBrowser?: boolean;

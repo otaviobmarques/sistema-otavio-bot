@@ -17,6 +17,7 @@ import type { RoutineManager } from "../routines.ts";
 import { conversationLanguage, serverLine } from "../server-lines.ts";
 import type { BotRecord, Store } from "../store.ts";
 import type { TurnOwner } from "../turn-resources.ts";
+import { PRODUCT_NAME } from "../../shared/product-name.ts";
 
 const START_BUDGET_MS = 150_000;
 const BUSY_WAIT_MS = 15 * 60_000;
@@ -118,7 +119,7 @@ export function createMeetingsHost(deps: MeetingsHostDeps, routeDeps: () => Meet
     computerOwner(botId) {
       const bot = store.bot(botId);
       if (!bot) return { error: "The bot is gone." };
-      if (!boat.boatConfigured(cfg)) return { error: "Meeting notes run on a cloud computer, and none is set up here. Add a Boat key in Settings → Computers, or use MausBot Cloud." };
+      if (!boat.boatConfigured(cfg)) return { error: `Meeting notes run on a cloud computer, and none is set up here. Add a Boat key in Settings → Computers, or use ${PRODUCT_NAME} Cloud.` };
       return deps.computerOwner(bot);
     },
     createRoutine(botId, threadId) {

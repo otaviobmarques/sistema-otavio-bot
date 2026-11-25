@@ -7,11 +7,12 @@ import { cliCommand } from "../cli-invocation.ts";
 import { EXIT, flag, HeadlessError, usageError } from "./args.ts";
 import { namedServer } from "./client.ts";
 import type { VerbContext, VerbOutcome } from "./context.ts";
+import { PRODUCT_NAME } from "../../shared/product-name.ts";
 
 type Rec = Record<string, any>;
 
 /** The command that makes a pairing code on a server, whichever way that server was installed. */
-const PAIR_ON_SERVER = "npx openmausbot pair (Docker: docker compose exec omb openmausbot pair)";
+const PAIR_ON_SERVER = "npx openmausbot pair (Docker: docker compose exec omb arkobot pair)";
 
 const isLoopback = (origin: string) => /^https?:\/\/(?:127\.0\.0\.1|localhost|\[::1\])(?::\d+)?$/i.test(origin);
 
@@ -40,12 +41,12 @@ export function writeTokenFile(path: string, token: string, force: boolean): voi
 
 const PROBLEM: Record<string, string> = {
   empty: "give the server's address or its pairing link",
-  codeOnly: "that is a pairing code: give the server's address too, like openmausbot connect http://192.168.1.20:8799 --code CODE",
+  codeOnly: "that is a pairing code: give the server's address too, like arkobot connect http://192.168.1.20:8799 --code CODE",
   emailCode: "that is a sign-in code from an email; pairing needs a 12-character code like 7KQ2-M9XD-H4TP",
   oldCode: "that is a code from an older ArkoBot; pairing needs a 12-character code like 7KQ2-M9XD-H4TP",
   scriptKey: "that is a script key; pass it with --token-file instead of pairing",
   notACode: "that is not a pairing code; pairing needs a 12-character code like 7KQ2-M9XD-H4TP",
-  phoneLink: "that link is for the MausBot phone app; give the server's address or the link the server printed",
+  phoneLink: `that link is for the ${PRODUCT_NAME} phone app; give the server's address or the link the server printed`,
   notAnAddress: "that is not a server address; give the link the server printed, or its address like http://192.168.1.20:8799",
 };
 
@@ -76,9 +77,9 @@ export async function connectVerb(ctx: VerbContext): Promise<VerbOutcome> {
   let code = secret;
   if (!code && !isLoopback(origin)) throw usageError("a workspace elsewhere needs a pairing code", pairHint);
   if (described?.status !== 200 || typeof described.body.environmentId !== "string") {
-    throw new HeadlessError(`no MausBot server answers at ${origin}`, EXIT.unreachable, "check the address, and that the server is running with a way in (see openmausbot serve --help on the server)");
+    throw new HeadlessError(`no ${PRODUCT_NAME} server answers at ${origin}`, EXIT.unreachable, "check the address, and that the server is running with a way in (see arkobot serve --help on the server)");
   }
-  const label = flag(ctx.flags, "label")?.trim() || "openmausbot CLI";
+  const label = flag(ctx.flags, "label")?.trim() || "arkobot CLI";
   if (!code) {
     const minted = await call(origin, "/api/auth/pairing", { method: "POST", body: JSON.stringify({ label, ...(ctx.flags.client ? { scopes: ["client"] } : {}) }) });
     if (minted.status !== 200 || typeof minted.body.code !== "string") {

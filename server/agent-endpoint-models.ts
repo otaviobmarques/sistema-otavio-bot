@@ -2,6 +2,7 @@ import type { InstanceConfig } from "./contracts.ts";
 import { CLAUDE_MODEL_ID, STATIC_CLAUDE_MODELS } from "./drivers/claude-model-extras.ts";
 import { STATIC_CODEX_MODELS } from "./drivers/codex-catalog.ts";
 import { isLoopback, providerModelsUrl } from "./provider-key-check.ts";
+import { PRODUCT_NAME } from "../shared/product-name.ts";
 
 const OFFICIAL_URL = { codex: "https://api.openai.com/v1", claude: "https://api.anthropic.com" } as const;
 const MAX_CATALOG_BYTES = 2 * 1024 * 1024;
@@ -60,7 +61,7 @@ export async function discoverAgentEndpointModels(entry: InstanceConfig, fetchIm
   // Same rule as checkProviderKey: the key goes out only over HTTPS, or over plain HTTP to this computer.
   const target = new URL(modelsUrl);
   if (target.protocol !== "https:" && !(target.protocol === "http:" && isLoopback(target.hostname))) {
-    throw failure(`OpenMausBot reads a model list only over HTTPS or from this computer, so your key is not sent in the clear.${TYPE_MODEL}`);
+    throw failure(`${PRODUCT_NAME} reads a model list only over HTTPS or from this computer, so your key is not sent in the clear.${TYPE_MODEL}`);
   }
   let response: Response;
   try {
@@ -71,9 +72,9 @@ export async function discoverAgentEndpointModels(entry: InstanceConfig, fetchIm
   } catch (error) {
     const timeout = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
     const localHint = isLoopback(new URL(modelsUrl).hostname)
-      ? " localhost refers to OpenMausBot's server or container. If both apps run on this computer, try 127.0.0.1; otherwise use an address reachable from that server."
-      : " Check that the gateway address is reachable from OpenMausBot's server.";
-    throw failure((timeout ? "The request timed out." : "OpenMausBot's server could not reach the gateway.") + localHint);
+      ? ` localhost refers to ${PRODUCT_NAME}'s server or container. If both apps run on this computer, try 127.0.0.1; otherwise use an address reachable from that server.`
+      : ` Check that the gateway address is reachable from ${PRODUCT_NAME}'s server.`;
+    throw failure((timeout ? "The request timed out." : `${PRODUCT_NAME}'s server could not reach the gateway.`) + localHint);
   }
   if (!response.ok) await response.body?.cancel().catch(() => {});
   if (response.status === 401 || response.status === 403) {

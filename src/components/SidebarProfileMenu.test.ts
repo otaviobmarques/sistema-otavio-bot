@@ -23,7 +23,7 @@ import {
   updateLabel,
   updatePhase,
 } from "./SidebarProfileMenu";
-import { ANDROID_APK_URL, DOCS_URL, FEEDBACK_URL, HELP_CENTER_URL, IOS_APP_STORE_URL, platformLabel } from "@/lib/app-links";
+import { DOCS_URL, FEEDBACK_URL, HELP_CENTER_URL, platformLabel } from "@/lib/app-links";
 import { profileForSession } from "@/lib/session";
 import {
   cloudPhoneDestination,
@@ -221,9 +221,9 @@ describe("the phone entries", () => {
     return { list: phoneMenuItems({ destinations, connected, onConnect, onGetApp }), onConnect, onGetApp };
   };
   const shown = (...args: Parameters<typeof items>) => items(...args).list.map((item) => [item.label, item.subtitle ?? null, ...(item.note ? [item.note] : [])]);
-  const APP = ["Get the phone app", null];
+  const APP = ["Use on your phone", null];
 
-  it("on this computer: Connect your phone, to this computer, then Get the phone app", () => {
+  it("on this computer: Connect your phone, to this computer, then Use on your phone", () => {
     expect(shown("computer", null)).toEqual([["Connect your phone", "to this computer"], APP]);
   });
 
@@ -327,11 +327,9 @@ describe("choosing where the phone connects", () => {
   });
 });
 
-describe("Get the phone app", () => {
-  it("offers iPhone and Android with the links the website and Cloud page use", () => {
-    expect(PHONE_APPS.map((app) => [app.id, app.url])).toEqual([["ios", IOS_APP_STORE_URL], ["android", ANDROID_APK_URL]]);
-    expect(IOS_APP_STORE_URL).toBe("https://apps.apple.com/in/app/mausbot/id6803387923");
-    expect(ANDROID_APK_URL).toBe("https://github.com/milind-soni/OpenMausBot/releases/download/android-v1.5.0/OpenMausBot.apk");
+describe("Use on your phone", () => {
+  it("offers iPhone and Android the web app, added to the home screen from the browser, with nothing to download", () => {
+    expect(PHONE_APPS.map((app) => [app.id, app.stepsKey])).toEqual([["ios", "phoneApp.iosSteps"], ["android", "phoneApp.androidSteps"]]);
   });
 
   const render = (connect?: PhoneAppConnect[]) => {
@@ -344,13 +342,14 @@ describe("Get the phone app", () => {
   };
   const to = (key: string, subtitle: string): PhoneAppConnect => ({ key, subtitle, onSelect: () => {} });
 
-  it("draws a code to scan for each, and points on to Connect your phone where this window can pair", () => {
+  it("says how each phone keeps it on the home screen, and points on to Connect your phone where this window can pair", () => {
     const html = render([to("here", "to this computer")]);
     expect(html).toContain('data-phone-app="ios"');
     expect(html).toContain('data-phone-app="android"');
-    expect(html.match(/<svg/g)?.length).toBe(2);
-    expect(html).toContain("Open in the App Store");
-    expect(html).toContain("Download the APK");
+    expect(html).toContain("Share → Add to Home Screen");
+    expect(html).toContain("Install app");
+    expect(html).toContain("ArkoBot on your phone");
+    expect(html).not.toMatch(/<svg|App Store|APK|apps\.apple\.com|openmausbot/i);
     expect(html).toContain("Connect your phone");
     expect(html).toContain("to this computer");
     expect(render()).not.toContain("Connect your phone");
@@ -589,7 +588,7 @@ describe("Simple mode's account menu", () => {
     expect(team.map((item) => item.label)).toEqual(["Acme Labs"]);
   });
 
-  it("shows one Get the phone app row, dotted while this computer's phone is connected", () => {
+  it("shows one Use on your phone row, dotted while this computer's phone is connected", () => {
     expect(simplePhoneItems({ connected: true, onGetApp: noop }).map((item) => [item.key, Boolean(item.trailing)])).toEqual([["phone-app", true]]);
     expect(simplePhoneItems({ connected: false, onGetApp: noop })[0]!.trailing).toBeUndefined();
   });

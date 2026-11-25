@@ -13,6 +13,7 @@ import { offeredAddChoices } from "@/lib/cloud-offers";
 import { CLOUD_LIST_NAME_LIMIT, CLOUD_SWATCH_ORDER, SWATCH_COLOR, swatchFill } from "@/lib/cloud-extra";
 import { useCopyFeedback } from "@/lib/copy-text";
 import { t } from "@/lib/i18n";
+import { CLI_NAME } from "../../shared/product-name";
 import type { LocaleKey } from "@/locales";
 import { computerName, createLocal, placeInitials, suggestedLocalName } from "@/lib/places";
 import { AddCloudFlow } from "./cloud-buy/AddCloudFlow";
@@ -20,7 +21,7 @@ import { NewOrganization } from "./cloud-buy/NewOrganization";
 import { BackLink, FIELD, Heading, PRIMARY_WIDE } from "./cloud-buy/parts";
 import { SwatchRadios } from "./SwatchRadios";
 
-const PAIR_COMMAND = "npx openmausbot pair";
+const PAIR_COMMAND = `${CLI_NAME} pair`;
 
 /** A command to run on the server, with its own Copy button. */
 function CommandLine({ command }: { command: string }) {

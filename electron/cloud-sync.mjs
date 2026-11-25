@@ -1,5 +1,5 @@
 // Files, the desktop service: the folders the person shared go to My Cloud, and what Cloud bots make comes to
-// Documents/MausBot. This computer decides what is shared (settings.shared); a folder My Cloud names is never synced
+// Documents/ArkoBot (outputs-folder.mjs). This computer decides what is shared (settings.shared); a folder My Cloud names is never synced
 // unless this computer registered it. It drives every pass over the Cloud sign-in the window holds.
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
@@ -14,6 +14,7 @@ import { watchFolder } from "./cloud-sync-scan.mjs";
 import { RECHECK_MS, copiedLent, folderKey as pathKey, lentReport, planLentCopies, reconcileLent, sameFolderOn } from "./lent-folders.mjs";
 import { applyStaged } from "./lent-staged.mjs";
 import { lentGit } from "./lent-git.mjs";
+import { rebasePath, settleOutputsFolder } from "./outputs-folder.mjs";
 
 const FULL_PASS_MS = 5 * 60_000;
 const LONG_POLL_MS = 60_000;
@@ -63,7 +64,19 @@ export function createCloudFilesService({
 }) {
   let settings = readSettings(settingsFile);
   const state = openSyncState(stateFile);
-  const outputsDir = path.join(documentsDir, "MausBot");
+  const outputs = settleOutputsFolder(documentsDir);
+  const outputsDir = outputs.dir;
+  if (outputs.problem) console.error(`[files] could not rename ${outputs.legacy} to ${outputsDir}, so it is kept and used: ${outputs.problem}`);
+  if (outputsDir !== outputs.legacy) {
+    for (const { folder, local } of state.places()) {
+      const moved = rebasePath(local, outputs.legacy, outputsDir);
+      if (moved) state.setPlace(folder, moved);
+    }
+    for (const { key, value } of state.metas("botdir:")) {
+      const moved = rebasePath(value, outputs.legacy, outputsDir);
+      if (moved) state.setMeta(key, moved);
+    }
+  }
   let closed = false, interval = null, poller = null, cursor = 0, chain = Promise.resolve(), pending = null;
   let status = { phase: "unavailable", lastSyncedAt: null, disk: null, shared: [], outputs: { enabled: true, dir: outputsDir, folders: 0, problem: null } };
   const results = new Map();
@@ -99,7 +112,7 @@ export function createCloudFilesService({
     try { home = fs.realpathSync(homeDir); } catch {}
     if (real === p.parse(real).root || within(home, real, platform)) return refused("too-broad");
     try { if (fs.statSync(real).dev !== fs.statSync(path.dirname(real)).dev) return refused("too-broad"); } catch {}
-    const appDirs = [localDataDir, outputsDir].filter(Boolean);
+    const appDirs = [localDataDir, outputsDir, outputs.legacy].filter(Boolean);
     if (appDirs.some((dir) => within(real, dir, platform) || within(dir, real, platform))) return refused("app-data");
     const parts = pathKey(p.relative(home, real), platform).split("/");
     if (parts.some((part) => PRIVATE.some((name) => pathKey(name, platform) === part))) return refused("private");
@@ -122,7 +135,7 @@ export function createCloudFilesService({
     return { name, pcPath: real, files, bytes, partial, refusal: null };
   }
 
-  /** Bot output folders that hold work from since the person turned this on, each in Documents/MausBot/<bot>/<conversation>. */
+  /** Bot output folders that hold work from since the person turned this on, each in Documents/ArkoBot/<bot>/<conversation>. */
   async function outputPlaces(cloud, folders) {
     const places = new Map();
     const taken = (dir) => {

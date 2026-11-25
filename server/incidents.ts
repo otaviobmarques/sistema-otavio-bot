@@ -4,6 +4,7 @@ import { AUTHORITY, fromNoteWith, HARNESS_WHO } from "./provenance-label.ts";
 import { botOwner } from "../shared/bot-owner.ts";
 import { hasTeamAuthority } from "./peer-roster.ts";
 import { serverLine, type ServerLineKey } from "./server-lines.ts";
+import { PRODUCT_NAME } from "../shared/product-name.ts";
 
 export type IncidentKind = "failed" | "stalled" | "could-not-start" | "routine-failed";
 
@@ -170,8 +171,8 @@ export function incidentText(incident: Incident, count: IncidentCount, retry?: I
   if (incident.lastRequest) lines.push(`The request there was: "${fold(incident.lastRequest, 300)}"`);
   if (incident.lastReply) lines.push(`${incident.bot.name} last said: "${fold(incident.lastReply, 300)}"`);
   if (count.count > 1) lines.push(`This is the ${ordinal(count.count)} incident on that thread within the hour.`);
-  if (retry && "retried" in retry) lines.push("OpenMausBot already retried this run once by itself; the failure above is how that retry ended.");
-  else if (retry) lines.push(`OpenMausBot did not retry it: ${retry.notRetried}.`);
+  if (retry && "retried" in retry) lines.push(`${PRODUCT_NAME} already retried this run once by itself; the failure above is how that retry ended.`);
+  else if (retry) lines.push(`${PRODUCT_NAME} did not retry it: ${retry.notRetried}.`);
   lines.push(count.mayRetry
     ? [
       "Decide, in this order:",

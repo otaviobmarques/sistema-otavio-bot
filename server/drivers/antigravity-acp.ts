@@ -21,6 +21,7 @@ import {
   setAntigravityTempEnvironment,
   sweepAntigravityTemp,
 } from "./antigravity-temp.ts";
+import { PRODUCT_NAME } from "../../shared/product-name.ts";
 
 // Printed on stderr by Google's server, not stdout.
 export const ANTIGRAVITY_AUTH_PREFIX = "Open the following link to authenticate the ACP server: ";
@@ -158,7 +159,7 @@ export async function prepareAntigravityProfile(input: {
 
   const executable = process.platform === "win32" ? process.execPath.replaceAll("\\", "/") : process.execPath;
   if (/\r|\n|\0|%s/u.test(executable) || executable.includes(delimiter)) {
-    throw new Error("The OpenMausBot runtime path cannot safely suppress Antigravity browser launches.");
+    throw new Error(`The ${PRODUCT_NAME} runtime path cannot safely suppress Antigravity browser launches.`);
   }
   const browserCommand = [executable, "-e", browserHelperSource, "--", "%s"]
     .map(quoteBrowserArgument)
@@ -387,7 +388,7 @@ export class AntigravityAcpClient {
         (this.nativeStartupHint ? `${this.nativeStartupHint} ` : "") +
         `Startup output: ${this.startupOutputBytes} bytes; diagnostic output: ${this.startupDiagnosticBytes} bytes. ` +
         (this.tempDirectory ? `Unpacked into temp: ${Math.round(Math.max(0, now - before) / 1_000_000)} MB. ` : "") +
-        "Retry setup. If it still fails, share this error and your OpenMausBot version; do not paste Google sign-in links or tokens.",
+        `Retry setup. If it still fails, share this error and your ${PRODUCT_NAME} version; do not paste Google sign-in links or tokens.`,
       );
     };
     const initialized = await this.request("initialize", {

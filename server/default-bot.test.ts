@@ -7,7 +7,7 @@ import { MOVE_BOT_FIELDS, moveKindsRoute, type MoveKindsDeps } from "./cloud-sen
 import { chiefLevel, readTeamRolesWith } from "./chief-level.ts";
 import { DATA_DIR } from "./config.ts";
 import type { ModelSelection } from "./contracts.ts";
-import { defaultBotPatchRefusal, ensureDefaultBot } from "./default-bot.ts";
+import { defaultBotPatchRefusal, ensureDefaultBot, renameLegacyDefaultBots } from "./default-bot.ts";
 import * as mdb from "./message-db.ts";
 import { Store, type BotRecord } from "./store.ts";
 import { availableTools, catalogProfileFromEnv } from "./drivers/agents-catalog.ts";
@@ -323,5 +323,63 @@ describe("ArkoBot, every person's helper", () => {
       expect(home.bots.map((bot) => bot.id)).toEqual([mausOnCloud.id]);
       expect(placeMausBots(home)[0]).toMatchObject({ name: "Jarvis", sidebarHidden: true });
     });
+  });
+});
+
+describe("a helper named before ArkoBot had its name", () => {
+  beforeEach(() => rmSync(DATA_DIR, { recursive: true, force: true }));
+  const names = (store: Store) => Object.fromEntries(store.bots.map((bot) => [bot.id, bot.name]));
+
+  it("is called ArkoBot once, if still called MausBot or OpenMausBot; a name the person chose stays", () => {
+    const store = new Store(selection);
+    const place = store.createBot({ name: "MausBot", color: "chrome" });
+    store.patchBot(place.id, { defaultBot: {} });
+    const lookalike = store.createBot({ name: "OpenMausBot", color: "red" });
+    expect(renameLegacyDefaultBots(store, DATA_DIR)).toEqual([place.id]);
+    expect(names(store)).toEqual({ [place.id]: "ArkoBot", [lookalike.id]: "OpenMausBot" });
+  });
+
+  it("renames each person's helper still called MausBot or OpenMausBot, and keeps a name the person chose", () => {
+    const team = new Store(selection);
+    const ana = team.createBot({ name: "OpenMausBot", color: "chrome" });
+    team.patchBot(ana.id, { defaultBot: { person: "ana@example.com" } });
+    const bo = team.createBot({ name: "MausBot", color: "chrome" });
+    team.patchBot(bo.id, { defaultBot: { person: "bo@example.com" } });
+    const chosen = team.createBot({ name: "Maus", color: "chrome" });
+    team.patchBot(chosen.id, { defaultBot: { person: "cy@example.com" } });
+    expect(renameLegacyDefaultBots(team, DATA_DIR).sort()).toEqual([ana.id, bo.id].sort());
+    expect(names(team)).toEqual({ [ana.id]: "ArkoBot", [bo.id]: "ArkoBot", [chosen.id]: "Maus" });
+  });
+
+  it("takes a free name next to a bot of the person's already called ArkoBot", () => {
+    const store = new Store(selection);
+    store.createBot({ name: "ArkoBot", color: "red" });
+    const helper = store.createBot({ name: "MausBot", color: "chrome" });
+    store.patchBot(helper.id, { defaultBot: {} });
+    renameLegacyDefaultBots(store, DATA_DIR);
+    expect(store.bot(helper.id)!.name).toBe("ArkoBot 2");
+  });
+
+  it("covers a new install's first bot from before it was marked, and never runs twice", () => {
+    const store = new Store(selection);
+    const seeded = store.createBot({ name: "MausBot", color: "silver" });
+    store.setChiefOfStaff(seeded.id);
+    expect(renameLegacyDefaultBots(store, DATA_DIR)).toEqual([seeded.id]);
+    expect(store.bot(seeded.id)!.name).toBe("ArkoBot");
+    store.patchBot(seeded.id, { name: "MausBot" });
+    expect(renameLegacyDefaultBots(store, DATA_DIR), "the person named it so after the rename").toEqual([]);
+    expect(store.bot(seeded.id)!.name).toBe("MausBot");
+    expect(JSON.parse(readFileSync(join(DATA_DIR, "default-bot-renamed.json"), "utf8"))).toMatchObject({ v: 1, to: "ArkoBot", renamed: [seeded.id] });
+  });
+
+  it("records a data folder with nothing to rename too, so a helper renamed MausBot later is left alone", () => {
+    const store = new Store(selection);
+    store.seedIfEmpty();
+    boot(store);
+    expect(renameLegacyDefaultBots(store, DATA_DIR)).toEqual([]);
+    const helper = placeMausBots(store)[0]!;
+    store.patchBot(helper.id, { name: "MausBot" });
+    expect(renameLegacyDefaultBots(store, DATA_DIR)).toEqual([]);
+    expect(store.bot(helper.id)!.name).toBe("MausBot");
   });
 });

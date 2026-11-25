@@ -10,6 +10,7 @@ import path from "node:path";
 import readline from "node:readline";
 import { chromeDataDirs, DEVTOOLS_FILE, parseDevtoolsActivePort } from "./device-chrome.mjs";
 import { DESKTOP_PORTS } from "./desktop-ports.mjs";
+import productName from "./product-name.cjs";
 import { commandPath } from "./shell-path.mjs";
 
 export const LENT_MCP_ACTIONS = new Set(["mcp_tools", "mcp_call"]);
@@ -142,7 +143,7 @@ function stdioClient(server, { environment, home }) {
     let message; try { message = JSON.parse(line); } catch { return; }
     if (!record(message)) return;
     // A server's own request (roots, sampling) is one this client does not offer.
-    if (typeof message.method === "string" && Object.hasOwn(message, "id")) return void write({ jsonrpc: "2.0", id: message.id, error: { code: -32601, message: "Not offered by OpenMausBot" } });
+    if (typeof message.method === "string" && Object.hasOwn(message, "id")) return void write({ jsonrpc: "2.0", id: message.id, error: { code: -32601, message: `Not offered by ${productName.PRODUCT_NAME}` } });
     const waiting = pending.get(message.id);
     if (!waiting) return;
     pending.delete(message.id); bytes = 0;

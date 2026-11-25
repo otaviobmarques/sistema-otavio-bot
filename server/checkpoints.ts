@@ -15,6 +15,7 @@ import { homedir } from "node:os";
 import { isAbsolute, join, parse, resolve } from "node:path";
 
 import { DATA_DIR } from "./config.ts";
+import { PRODUCT_NAME } from "../shared/product-name.ts";
 
 export const CHECKPOINTS_DIR = join(DATA_DIR, "checkpoints");
 
@@ -22,7 +23,7 @@ export const CHECKPOINTS_DIR = join(DATA_DIR, "checkpoints");
 const COMMIT_HASH = /^[0-9a-f]{40}$/;
 
 // What a checkpoint never carries, so a digest never lists it; categories follow Roo-Code's checkpoint excludes.
-const EXCLUDES = `# OpenMausBot checkpoint excludes — never snapshotted
+const EXCLUDES = `# ${PRODUCT_NAME} checkpoint excludes — never snapshotted
 .git/
 .svn/
 .hg/

@@ -2,6 +2,7 @@
 // that shape, and a plain note on how to call again when the call is still refused over its arguments. Composio checks
 // each call against the tool's schema and refuses the whole call over one argument ("Invalid request for
 // COMPOSIO_SEARCH_TOOLS: Validation error: Required at "queries""), and a bot can read that as "there is no such tool".
+import { PRODUCT_NAME } from "../shared/product-name.ts";
 
 type Json = Record<string, unknown>;
 
@@ -175,12 +176,12 @@ export function argumentRefusalNote(tool: string, schema: unknown, apps: readonl
   const again = example ? `Call it again with the arguments its schema names, for example ${example} with your own values. `
     : schema === undefined && !tool.startsWith("COMPOSIO_") ? "Read its arguments with COMPOSIO_GET_TOOL_SCHEMAS, then call it again with them. "
       : "Call it again with the arguments its schema names. ";
-  return `OpenMausBot note: ${tool} did not run because its arguments did not fit its schema. ${again}` +
+  return `${PRODUCT_NAME} note: ${tool} did not run because its arguments did not fit its schema. ${again}` +
     "This was a mistake in the arguments only: it says nothing about which apps or tools exist, so do not tell the person a tool is missing" +
     (apps.length ? `. Connected apps you can use: ${apps.join(", ")}.` : ".");
 }
 
 /** What a bot is told when its arguments were fitted, so its next call uses the shape the tool asks for. */
 export function fittedArgumentsNote(tool: string, changed: readonly string[]): string {
-  return `OpenMausBot note: ${tool}'s arguments were read with ${changed.join(", ")}. Send them in that shape next time.`;
+  return `${PRODUCT_NAME} note: ${tool}'s arguments were read with ${changed.join(", ")}. Send them in that shape next time.`;
 }

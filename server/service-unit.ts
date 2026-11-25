@@ -1,5 +1,6 @@
 import { homedir, userInfo } from "node:os";
 import { posix } from "node:path";
+import { PRODUCT_NAME } from "../shared/product-name.ts";
 
 // Unit files describe a Linux or macOS machine: POSIX paths whatever host renders them (Windows CI included).
 const { basename, dirname, join } = posix;
@@ -13,7 +14,7 @@ export interface ServiceSpec {
   home: string;
   bindsLowPorts: boolean;
   label?: string;
-  /** How the person runs the CLI by hand, when it isn't `openmausbot` (a copy installed for the service). */
+  /** How the person runs the CLI by hand, when it isn't `arkobot` (a copy installed for the service). */
   cliPrefix?: string;
 }
 
@@ -35,9 +36,9 @@ export function serviceCommand(spec: Pick<ServiceSpec, "node" | "script" | "serv
 
 export function systemdUnit(spec: ServiceSpec): string {
   const lines = [
-    "# Written by `openmausbot service install`. Re-run it to change the options.",
+    "# Written by `arkobot service install`. Re-run it to change the options.",
     "[Unit]",
-    `Description=OpenMausBot${spec.label ? ` (${spec.label})` : ""}`,
+    `Description=${PRODUCT_NAME}${spec.label ? ` (${spec.label})` : ""}`,
     "After=network-online.target",
     "Wants=network-online.target",
     "",
@@ -110,7 +111,7 @@ export function launchdPlist(spec: ServiceSpec): string {
 export function unstableInstallWarning(script: string): string | null {
   const normalized = script.replace(/\\/g, "/");
   if (/\/_npx\//.test(normalized) || /\/\.npm\/_npx\//.test(normalized)) {
-    return `this command runs from an npx cache (${dirname(script)}), which npm may delete at any time. Install it permanently first (npm install -g openmausbot) and run \`openmausbot service install\` from that install.`;
+    return `this command runs from an npx cache (${dirname(script)}), which npm may delete at any time. Install it permanently first (npm install -g openmausbot) and run \`arkobot service install\` from that install.`;
   }
   return null;
 }
@@ -220,9 +221,9 @@ function systemdQuoted(value: string, command = false): string {
 export function sentinelSystemdService(spec: SentinelServiceSpec): string {
   for (const [label, value] of [["home", spec.home], ["node", spec.node], ["script", spec.script], ["data dir", spec.dataDir], ["output", spec.out]] as const) assertUnitValue(label, value);
   return [
-    "# Written by `openmausbot service install --sentinel`. Started by its timer.",
+    "# Written by `arkobot service install --sentinel`. Started by its timer.",
     "[Unit]",
-    "Description=OpenMausBot Sentinel health scan",
+    `Description=${PRODUCT_NAME} Sentinel health scan`,
     "",
     "[Service]",
     "Type=oneshot",
@@ -237,9 +238,9 @@ export function sentinelSystemdService(spec: SentinelServiceSpec): string {
 
 export function sentinelSystemdTimer(): string {
   return [
-    "# Written by `openmausbot service install --sentinel`.",
+    "# Written by `arkobot service install --sentinel`.",
     "[Unit]",
-    "Description=Run the OpenMausBot Sentinel health scan every two minutes",
+    `Description=Run the ${PRODUCT_NAME} Sentinel health scan every two minutes`,
     "",
     "[Timer]",
     `OnBootSec=${SENTINEL_INTERVAL_SECONDS}s`,

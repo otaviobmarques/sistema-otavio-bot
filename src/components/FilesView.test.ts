@@ -11,7 +11,7 @@ import { FilesView } from "./FilesView";
 const GB = 1024 ** 3;
 const folder = (status: SharedFolder["status"], extra: Partial<SharedFolder> = {}): SharedFolder =>
   ({ id: `f-${status}`, name: `Folder ${status}`, pcPath: `/Users/ada/${status}`, status, files: 1200, done: 400, waitingBytes: 0, pendingDeletes: 3, problem: null, ...extra });
-const base: CloudFilesState = { phase: "idle", lastSyncedAt: 1, disk: null, shared: [], outputs: { enabled: false, dir: "/Users/ada/Documents/MausBot", folders: 0, problem: null } };
+const base: CloudFilesState = { phase: "idle", lastSyncedAt: 1, disk: null, shared: [], outputs: { enabled: false, dir: "/Users/ada/Documents/ArkoBot", folders: 0, problem: null } };
 const check = (name: string, extra: Partial<FolderCheck> = {}): FolderCheck =>
   ({ token: `t-${name}`, name, pcPath: `/Users/ada/${name}`, files: 120, bytes: 3 * 1024 ** 2, partial: false, refusal: null, ...extra });
 
@@ -224,7 +224,7 @@ describe("Your bots' work", () => {
     bridge.setOutputs.mockResolvedValue({ ...base, outputs: { ...base.outputs, enabled: true } });
     await mount();
     expect(page()).toContain("Save what Cloud bots make to this computer");
-    expect(page()).toContain("In Documents › MausBot, one folder for each bot.");
+    expect(page()).toContain("In Documents › ArkoBot, one folder for each bot.");
     expect(button("Open folder")).toBeUndefined();
     const toggle = document.querySelector<HTMLButtonElement>('[role="switch"]')!;
     expect(toggle.getAttribute("aria-checked")).toBe("false");

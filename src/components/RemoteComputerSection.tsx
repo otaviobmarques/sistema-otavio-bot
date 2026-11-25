@@ -4,6 +4,7 @@ import { t } from "@/lib/i18n";
 import { Laptop, Loader2, Unplug } from "lucide-react";
 import { Select } from "./Select";
 import { Card } from "./SettingsPrimitives";
+import { CLI_NAME } from "../../shared/product-name";
 
 const inputClass =
   "w-full rounded-lg border border-hairline/40 bg-inset px-3 py-2 text-[14px] text-ink placeholder:text-ink-secondary focus:outline-none";
@@ -156,11 +157,11 @@ export function RemoteComputerSection({ hideWhenUnavailable = false, legacyOnly 
               {/* A chat-only link cannot pass the ownership check behind "Make … my home", so full access comes first. */}
               <div data-pair-access="full" className="flex flex-col gap-1">
                 <p className="text-[12px] font-medium text-ink">{t("remote.client.server.fullTitle")}</p>
-                <code className="select-all rounded-lg bg-inset px-3 py-2 text-[12px] text-ink">npx openmausbot pair</code>
+                <code className="select-all rounded-lg bg-inset px-3 py-2 text-[12px] text-ink">{`${CLI_NAME} pair`}</code>
               </div>
               <div data-pair-access="client" className="flex flex-col gap-1">
                 <p className="text-[12px] font-medium text-ink">{t("remote.client.server.clientTitle")}</p>
-                <code className="select-all rounded-lg bg-inset px-3 py-2 text-[12px] text-ink">npx openmausbot pair --client</code>
+                <code className="select-all rounded-lg bg-inset px-3 py-2 text-[12px] text-ink">{`${CLI_NAME} pair --client`}</code>
                 <p className="text-[12px] leading-relaxed text-ink-secondary">{t("remote.client.server.clientNote")}</p>
               </div>
               <label className="flex flex-col gap-1.5 text-[12px] text-ink-secondary">

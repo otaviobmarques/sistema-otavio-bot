@@ -331,4 +331,12 @@ describe("container images", () => {
       expect(service.shm_size, file).toBe("512m");
     }
   });
+
+  it("answers to arkobot and to its first name in the server image, prints arkobot, and carries LICENSE and NOTICE", () => {
+    const steps = chain("server");
+    const command = steps.find(step => step.op === "RUN" && step.args.includes("> /usr/local/bin/openmausbot"))!;
+    expect(command.args).toContain("ln -s openmausbot /usr/local/bin/arkobot");
+    expect(steps.filter(step => step.op === "ENV").map(step => step.args).join(" ")).toContain('OMB_CLI_PREFIX="docker compose exec omb arkobot"');
+    expect(steps).toContainEqual({ op: "COPY", args: "LICENSE NOTICE /app/" });
+  });
 });

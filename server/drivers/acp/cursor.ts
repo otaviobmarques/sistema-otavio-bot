@@ -9,6 +9,7 @@ import { CURSOR_STANDALONE } from "./cursor-release.ts";
 import type { DeviceSignIn, DeviceSignInState } from "../device-auth.ts";
 import { discoverAcpModels } from "./custom-model-catalog.ts";
 import type { AcpQuestionRequest } from "./question-requests.ts";
+import { PRODUCT_NAME } from "../../../shared/product-name.ts";
 import {
   capAnswerEcho, formatQuestionAnswers, MAX_QUESTIONS, parseChoices, parseProtocolAskQuestions, pickedOptionLabels, questionAnswersById,
   repeatsQuestionText,
@@ -342,7 +343,7 @@ export const CURSOR_SIGN_IN: DeviceSignIn = {
   homeDir: ".cursor",
   loginArgs: ["login"],
   env: { NO_OPEN_BROWSER: "1" },
-  install: "Install Cursor's CLI (https://cursor.com/docs/cli/installation) for the user running OpenMausBot, then try again.",
+  install: `Install Cursor's CLI (https://cursor.com/docs/cli/installation) for the user running ${PRODUCT_NAME}, then try again.`,
   failure: cursorLoginFailure,
   status: { args: ["status", "--format", "json"], read: readCursorStatus },
 };

@@ -12,6 +12,7 @@ import { writeFileAtomic } from "./atomic.ts";
 import { hostedWorkspaceConfigured } from "./enterprise.ts";
 import { parseMemberClaim, teamRoleScopes, type CloudTeam } from "./cloud-team.ts";
 import { formatPairingCode, type SessionRegistry } from "./sessions.ts";
+import { PRODUCT_NAME } from "../shared/product-name.ts";
 
 /** Any of these switches the server into Cloud home mode; then all are required. */
 export const CLOUD_HOME_KEYS = ["OMB_CLOUD_ROLE", "OMB_CLOUD_MACHINE_ID", "OMB_CLOUD_ADMIN_URL", "OMB_CLOUD_BOOTSTRAP_SECRET"] as const;
@@ -114,7 +115,7 @@ export { cloudHomeOffersPlace } from "../shared/cloud-home.ts";
 
 /** In the person's words; a turn's error shows 160 characters, so each fits. */
 export function cloudHomePlaceRefusal(place: Surface): string | undefined {
-  if (place === "local") return "This computer isn't a place in the Cloud. Set Works on to Auto, Cloud desktop or Browser; your own computer is reached while OpenMausBot is open on it.";
+  if (place === "local") return `This computer isn't a place in the Cloud. Set Works on to Auto, Cloud desktop or Browser; your own computer is reached while ${PRODUCT_NAME} is open on it.`;
   if (place === "vm") return "Cloud bots can't use a private desktop. Set Works on to Auto, Cloud desktop or Browser.";
   return undefined;
 }
@@ -208,7 +209,7 @@ export function createCloudPairing(options: {
       if (member) sessions.revokeMember(member.email, member.role);
       const opened = sessions.openPairing({
         scopes: member ? teamRoleScopes(member.role) : ["admin", "client"],
-        label: typeof label === "string" && label.trim() ? label.trim() : "MausBot Cloud",
+        label: typeof label === "string" && label.trim() ? label.trim() : `${PRODUCT_NAME} Cloud`,
         ttlMs: ttl * 1000,
         browser,
         ...(browser ? { owner: owner as string } : {}),

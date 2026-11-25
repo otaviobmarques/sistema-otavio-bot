@@ -2,6 +2,7 @@
 import { CLOUD_HOME_PLACE } from "./system-prompt.ts";
 import type { LiveProvider } from "../shared/wire.ts";
 import type { Message } from "./store.ts";
+import { PRODUCT_NAME } from "../shared/product-name.ts";
 
 export const LIVE_MODEL = "gpt-live-1";
 const OPENAI_BASE = "https://api.openai.com";
@@ -138,7 +139,7 @@ export function liveInstructions(bot: LiveBot, { cloudHome = false }: { cloudHom
   const name = oneLine(bot.name) || "the agent";
   const title = oneLine(bot.title ?? "");
   const description = oneLine(bot.description ?? "").slice(0, 400);
-  const where = cloudHome ? `runs on ${CLOUD_HOME_PLACE}` : "runs in OpenMausBot on the user's own computer";
+  const where = cloudHome ? `runs on ${CLOUD_HOME_PLACE}` : `runs in ${PRODUCT_NAME} on the user's own computer`;
   const changes = cloudHome ? "My Cloud" : "the computer";
   return [
     `You are ${name}${title ? `, ${title}` : ""}, an AI agent that ${where}.${description ? ` ${description}` : ""}`,

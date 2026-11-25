@@ -7,6 +7,7 @@ import { SECRET_ON_PAGE, SecretHolds, type SecretHold } from "./browser-secret-h
 import type { BrowserSteps, StepCall, StepContext } from "./browser-steps.ts";
 import { HARNESS_CALL_BUDGET_MS } from "./harness-budget.ts";
 import { launchSettingsKey } from "./browser-launch-key.ts";
+import { PRODUCT_NAME } from "../shared/product-name.ts";
 
 export interface BrowserSpawnSpec {
   command: string;
@@ -912,7 +913,7 @@ export class BrowserRuntime {
     gate.closing = true;
     this.changed(gate);
     try {
-      if (!await closeBrowser()) throw new Error("The browser could not be closed. Ask the person to press Restart in the Browser panel of OpenMausBot on their computer, or to restart OpenMausBot.");
+      if (!await closeBrowser()) throw new Error(`The browser could not be closed. Ask the person to press Restart in the Browser panel of ${PRODUCT_NAME} on their computer, or to restart ${PRODUCT_NAME}.`);
       this.steps?.forget(session);
       this.launch?.stopped(session);
       await this.clients.get(session)?.client.stop();

@@ -388,9 +388,9 @@ export function createDevsReports(deps: DevsReportsDeps) {
 
   /** Why no bot wrote the summary, read once the conversation is quiet. */
   function why(entry: Waiting): string {
-    if (entry.restored) return "OpenMausBot restarted before a bot wrote one";
+    if (entry.restored) return `${PRODUCT_NAME} restarted before a bot wrote one`;
     if (!entry.answered) return "no bot answered the message";
-    if (entry.offered === false) return "the bot's engine cannot use OpenMausBot's tools";
+    if (entry.offered === false) return `the bot's engine cannot use ${PRODUCT_NAME}'s tools`;
     const path = store.activePath(entry.threadId);
     const after = path.slice(path.findIndex((line) => line.id === entry.messageId) + 1);
     if (after.some((line) => line.kind === "activity" && line.tool && failedTurnCause(line.tool.name) !== null)) return "the bot's turn failed";

@@ -3,6 +3,7 @@ import { stopCause } from "./drivers/engine-errors.ts";
 import { redactSecretsInText } from "./redact.ts";
 import { retryNote } from "./routine-recovery.ts";
 import type { Routine, RoutineContextAttachment, RoutineRun, RoutineRunOn, RoutineRunTrigger } from "./routines.ts";
+import { PRODUCT_NAME } from "../shared/product-name.ts";
 
 export interface RoutineContinuityCarry {
   finishedAt: number;
@@ -74,7 +75,7 @@ export function composeExecutionPrompt(
   const parts = [`${routineHeader(routine.name, routine.trigger)}${routine.trigger === "webhook" ? "" : `Trigger id: ${routine.id}\n`}${prompt}`, retried ? retryNote(retried) : ""];
   const foreign = foreignPaths([prompt, ...(attachments ?? []).map((attachment) => attachment.path)], runHostPlatform(routine.runOn));
   if (foreign.length) {
-    parts.push(`[OpenMausBot: this run is on a ${hostName(runHostPlatform(routine.runOn))} computer, where ${foreign.join(", ")} cannot exist. If the work needs ${foreign.length > 1 ? "them" : "it"}, say plainly what is missing instead of reporting success.]`);
+    parts.push(`[${PRODUCT_NAME}: this run is on a ${hostName(runHostPlatform(routine.runOn))} computer, where ${foreign.join(", ")} cannot exist. If the work needs ${foreign.length > 1 ? "them" : "it"}, say plainly what is missing instead of reporting success.]`);
   }
   if (carry) {
     parts.push(

@@ -7,6 +7,7 @@ import { fillLogin, type FillLoginDeps, type FillLoginOutcome } from "../login-f
 import { redactSecretsInText } from "../redact.ts";
 import type { BotRecord } from "../store.ts";
 import { surfaceLabel } from "../surface.ts";
+import { PRODUCT_NAME } from "../../shared/product-name.ts";
 
 type Spec = { command: string; env: Record<string, string> };
 type Turn = { botId: string; threadId: string; generation: string };
@@ -34,7 +35,7 @@ export interface FillLoginTurnDeps {
   stepContext(bot: BotRecord, turn: Turn): StepContext;
 }
 
-const ONLY_IN_BROWSER = "fill_login types a password only into a page of your own browser, where OpenMausBot checks the page's site first";
+const ONLY_IN_BROWSER = `fill_login types a password only into a page of your own browser, where ${PRODUCT_NAME} checks the page's site first`;
 
 export function createFillLoginTurn(deps: FillLoginTurnDeps) {
   // Security: on a screen the server cannot prove which site a focused box belongs to, so a secret is never typed there.
@@ -57,7 +58,7 @@ export function createFillLoginTurn(deps: FillLoginTurnDeps) {
       return { ok: false, text: `${ONLY_IN_BROWSER}${notHere}, and this run cannot move to your browser. ${signIn} For runs like this to sign in by themselves, the person can choose Browser under where this bot works.` };
     }
     const chrome = deps.myChrome(current) ? ", which is the person's own Chrome (My Chrome), signed in as them" : "";
-    return { ok: false, text: `${ONLY_IN_BROWSER}${notHere}. OpenMausBot is moving this conversation to your own browser${chrome}. End this turn now without using the screen tools: the request continues there with your browser tools. Open the site's sign-in page in that browser, then call fill_login.` };
+    return { ok: false, text: `${ONLY_IN_BROWSER}${notHere}. ${PRODUCT_NAME} is moving this conversation to your own browser${chrome}. End this turn now without using the screen tools: the request continues there with your browser tools. Open the site's sign-in page in that browser, then call fill_login.` };
   }
 
   async function fillLoginForTurn(bot: BotRecord, capability: Turn, rawUsername: unknown, rawSubmit: unknown): Promise<Answer> {

@@ -6,7 +6,7 @@ const f = vi.hoisted(() => ({ effects: [] as EffectCallback[], pair: vi.fn() }))
 vi.mock("react", async original => ({ ...await original<typeof import("react")>(), useEffect: (effect: EffectCallback) => { f.effects.push(effect); } }));
 vi.mock("../lib/session", async original => ({ ...await original<typeof import("../lib/session")>(), pairWithCode: f.pair, readSessionState: vi.fn().mockResolvedValue({ kind: "unauthenticated", error: "" }) }));
 vi.mock("../components/DesktopWorkspaceSwitcher", () => ({ DesktopWorkspaceSwitcher: () => null }));
-import { codeProblem, codeReady, openInAppLink, PairPage, pairIntro, pairsAutomatically, pairTitle, unencryptedPublic } from "./PairPage";
+import { codeProblem, codeReady, PairPage, pairIntro, pairsAutomatically, pairTitle, unencryptedPublic } from "./PairPage";
 import en from "../locales/en.json";
 
 const code = "ABCD-EFGH-JK23";
@@ -78,11 +78,6 @@ it("names a wrong kind of code instead of letting it be sent as a wrong one", ()
   expect(codeReady("1234 5678")).toBe(false);
 });
 
-it("opens the phone app at this server with the code filled in", () => {
-  expect(openInAppLink("https://maus.example.com", "7kq2m9xdh4tp")).toBe("openmausbot://pair?address=https%3A%2F%2Fmaus.example.com&code=7KQ2-M9XD-H4TP");
-  expect(openInAppLink("http://192.168.1.20:8799", "")).toBe("openmausbot://pair?address=http%3A%2F%2F192.168.1.20%3A8799");
-});
-
 it("warns only on plain http across the open internet", () => {
   expect(unencryptedPublic({ protocol: "http:", hostname: "203.0.113.9" })).toBe(true);
   expect(unencryptedPublic({ protocol: "http:", hostname: "192.168.1.20" })).toBe(false);
@@ -96,7 +91,19 @@ it("asks for the code first, with email sign-in as a link below, and says how to
   const html = render(code);
   expect(html).toContain(en["pair.notEncrypted"].replace("'", "&#x27;"));
   expect(html).toContain(en["pair.fromLink"]);
-  expect(html).toContain("openmausbot://pair?address=http%3A%2F%2F203.0.113.9%3A8799&amp;code=ABCD-EFGH-JK23");
-  expect(html).toContain("npx openmausbot pair");
+  expect(html).toContain(">arkobot pair</code>");
+  expect(html).not.toContain("openmausbot");
   expect(html.indexOf("<form")).toBeLessThan(html.indexOf(en["pair.code"]));
+});
+
+it("on a phone, keeps this page as the app: how to add it to the home screen, and no store or other app", async () => {
+  vi.stubGlobal("window", {});
+  vi.stubGlobal("location", { replace: () => {}, protocol: "https:", hostname: "bots.example.com", origin: "https://bots.example.com" });
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ environmentId: "e", label: "vps", platform: "linux", version: "1", capabilities: {} }) }));
+  const html = render(code);
+  expect(html).toContain("data-pair-install");
+  expect(html).toContain(en["pair.install.iphone"]);
+  expect(html).toContain(en["pair.install.android"].replace("'", "&#x27;"));
+  expect(html).toContain(en["pair.install.intro"].replace("{app}", "ArkoBot"));
+  expect(html).not.toMatch(/openmausbot:|apps\.apple\.com|\.apk/);
 });

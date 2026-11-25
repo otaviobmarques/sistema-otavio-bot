@@ -221,7 +221,8 @@ describe("the Otávio Bot VPS deployment", () => {
     expect(guide).toContain("200.141.20.53");
     for (const script of SCRIPTS) expect(guide, script).toContain(script.replace("deploy/", ""));
     expect(guide).toContain("docker-compose.atras-de-proxy.yml");
-    expect(guide).toContain("openmausbot pair");
+    expect(guide).toContain("docker compose exec omb arkobot pair");
+    expect(guide).toContain("Adicionar à Tela de Início");
     expect(guide).toContain("codex login --device-auth");
     expect(guide).toContain("claude auth login");
     expect(guide).toContain("otaviobot-vps");

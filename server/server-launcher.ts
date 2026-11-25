@@ -6,6 +6,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { boxMemory, heapSizeArgs, type BoxMemory } from "./box-memory.ts";
 import { restartPolicy } from "./restart.ts";
+import { PRODUCT_NAME } from "../shared/product-name.ts";
 
 /** The server's heap sized to the container's memory limit, run through the bootstrap that keeps Node's compile cache on
  * the data volume, so a restarted container reuses the compiled bundle. */
@@ -32,7 +33,7 @@ export function superviseServer(start: () => ChildProcess, options: { signals?: 
       child.once("error", () => finish(1));
       child.once("exit", (code, signal) => {
         if (policy.again(code, stopping)) {
-          console.log("OpenMausBot is starting again to finish installing a copy from the desktop app…");
+          console.log(`${PRODUCT_NAME} is starting again to finish installing a copy from the desktop app…`);
           run();
           return;
         }

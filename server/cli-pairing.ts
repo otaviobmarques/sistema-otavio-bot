@@ -1,8 +1,9 @@
-// What `openmausbot serve` and `openmausbot pair` print for a pairing code. A browser on this computer is no longer the
+// What `arkobot serve` and `arkobot pair` print for a pairing code. A browser on this computer is no longer the
 // owner just by being here, so it signs in once with the link printed for it.
 import qrcode from "qrcode-terminal";
 
 import { cliCommand } from "./cli-invocation.ts";
+import { PRODUCT_NAME } from "../shared/product-name.ts";
 
 /** A clock time a code works until: "11:22", or "tomorrow 11:22" / a date when it runs past today. */
 export function untilText(expiresAt: number, now = Date.now()): string {
@@ -17,7 +18,8 @@ export function untilText(expiresAt: number, now = Date.now()): string {
 /**
  * What `serve` and `pair` print for one pairing code. `link`: the address other devices reach this server at, with the
  * code (null when it has no way in); `localLink`: a browser on this machine (or the Docker host, `localPlace`);
- * `inviteUrl`: the phone-app link only Android's scanner needs; `prefix`: how the CLI was started, so commands paste.
+ * `prefix`: how the CLI was started, so commands paste. A phone opens the link in its browser and installs the web app
+ * from there (docs/phone-web-app.md).
  */
 export function pairingBlock(input: {
   code: string;
@@ -26,8 +28,6 @@ export function pairingBlock(input: {
   link: string | null;
   localLink?: string | null;
   localPlace?: "machine" | "docker";
-  inviteUrl?: string | null;
-  phone?: "ios" | "android";
   prefix: string;
   now?: number;
 }): string {
@@ -39,13 +39,12 @@ export function pairingBlock(input: {
     lines.push(`  Other devices               pick a way in first: ${input.prefix} serve --help`);
     return lines.join("\n");
   }
-  const scanInvite = input.phone === "android" && Boolean(input.inviteUrl);
   lines.push(`Link           ${input.link}`);
   lines.push("");
   lines.push("  Desktop app   ＋ → Connect to a server, paste the link");
-  lines.push(scanInvite ? "  Phone         scan this with the MausBot app" : "  Phone         scan with your camera or the MausBot app");
+  lines.push(`  Phone         scan with the camera, connect, then add ${PRODUCT_NAME} to the home screen`);
   lines.push("");
-  lines.push(qrToString(scanInvite ? input.inviteUrl! : input.link));
+  lines.push(qrToString(input.link));
   if (!input.chatOnly) lines.push(`For a phone (chat and approvals only)   ${input.prefix} pair --phone`);
   return lines.join("\n");
 }

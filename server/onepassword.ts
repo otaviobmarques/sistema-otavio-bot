@@ -6,6 +6,7 @@ import type { LoginBots, LoginPlace, LoginSummary, OnePasswordStatus, OnePasswor
 import { loginMatchesHost, loginSite, loginUsableBy, normalizeLoginHost } from "../shared/logins.ts";
 import type { FillCandidate } from "./login-fill.ts";
 import { parseTotpKey } from "./totp.ts";
+import { PRODUCT_NAME } from "../shared/product-name.ts";
 
 export interface OnePasswordItemFields {
   username: string;
@@ -44,7 +45,7 @@ export function loginFields(fields: readonly SdkField[]): OnePasswordItemFields 
 /** The SDK did not load: a fault in this installation, never in the person's token, which was not even checked. */
 export class OnePasswordUnavailableError extends Error {
   constructor() {
-    super("1Password could not start on this server, so your token was not checked: this installation is missing its 1Password part. Update OpenMausBot, then connect again.");
+    super(`1Password could not start on this server, so your token was not checked: this installation is missing its 1Password part. Update ${PRODUCT_NAME}, then connect again.`);
     this.name = "OnePasswordUnavailableError";
   }
 }

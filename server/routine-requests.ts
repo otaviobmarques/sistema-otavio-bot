@@ -36,7 +36,7 @@ import type {
   RoutineRequestScheduleChanges,
   RoutineRequestSnapshot,
   RoutineRequestUndo,
-} from "../shared/routine-request.ts";
+} from "../shared/routine-request.ts"; import { PRODUCT_NAME } from "../shared/product-name.ts";
 
 const WEEKDAY_NUMBER = {
   sunday: 0,
@@ -702,7 +702,7 @@ function cardCopy(
       `Continuity: ${definition.continuity ? "Carries the previous run's report into the next run" : "Each run starts fresh"}`,
       `While busy: ${definition.overlap === "queue" ? "Queue one scheduled run; skip further occurrences until it starts" : "Skip overlapping scheduled occurrences"}`,
       ...(definition.runOnStartup || (operation.action === "update" && operation.changes.runOnStartup !== undefined)
-        ? [`On startup: ${definition.runOnStartup ? "Also runs once each time OpenMausBot starts" : "Runs only on its schedule"}`]
+        ? [`On startup: ${definition.runOnStartup ? `Also runs once each time ${PRODUCT_NAME} starts` : "Runs only on its schedule"}`]
         : []),
       ...(operation.action === "create" || operation.action === "update"
         ? [consequenceLine(definition.schedule, Boolean(definition.continuity))]
@@ -860,7 +860,7 @@ function revalidateOperation(operation: RoutineRequestOperation, manager: Routin
     : operation.action === "update" && operation.changes.runOnStartup === true;
   const startSchedule = schedule ?? current?.schedule;
   if (startsWithApp && startSchedule && runsOnce(startSchedule)) {
-    throw new RoutineRequestError("Only a repeating routine can also run when OpenMausBot starts. A one-time routine just runs at its time.");
+    throw new RoutineRequestError(`Only a repeating routine can also run when ${PRODUCT_NAME} starts. A one-time routine just runs at its time.`);
   }
   if (schedule?.type === "once" && schedule.at <= now) {
     throw new RoutineRequestError("That one-time schedule is now in the past. Ask the bot to propose a new time.", 409, { terminal: true });

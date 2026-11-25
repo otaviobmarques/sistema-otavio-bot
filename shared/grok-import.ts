@@ -13,6 +13,7 @@ import { BOT_PROFILE_LIMITS } from "./bot-profile.ts";
 import { redactSecretsInText } from "./redact.ts";
 import { normalizeCronSchedule } from "./routine-schedule.ts";
 import { parseSkillMd, scanSkillText, SKILL_FILE_MAX_BYTES, yamlFrontmatterValue } from "./skill-md.ts";
+import { PRODUCT_NAME } from "./product-name.ts";
 
 export const GROK_EXPORT_FORMAT = "grok-bot-export";
 const OLD_EXPORT_FORMAT = "openmaus.grok/1";
@@ -508,7 +509,7 @@ export function grokMovePlan(bot: GrokBot, options: { timeZone?: string; takenSe
       category: "Imported",
       author: { name: "Grok Bot" },
       license: "See source",
-      outcomes: [clip(`${name} runs in OpenMausBot with your own engine and apps.`, 240)],
+      outcomes: [clip(`${name} runs in ${PRODUCT_NAME} with your own engine and apps.`, 240)],
       setupMinutes: 5,
       requirements: { apps: [], capabilities: [] },
       team: { name: clip(name, 60) },

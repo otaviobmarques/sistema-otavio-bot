@@ -4,6 +4,7 @@
  * into the page, and the bot uses the session the page keeps.
  */
 import type { Surface } from "./wire.ts";
+import { PRODUCT_NAME } from "./product-name.ts";
 
 /** Where the login has to happen: the place the asking turn worked in.
  * The built-in browser keeps its own sign-ins, apart from any computer's
@@ -70,6 +71,6 @@ export function signInOutcome(state: { done?: unknown; cancelled?: unknown }): "
  * credential card uses. */
 export function signInResumePrompt(site: string, outcome: "done" | "cancelled"): string {
   return outcome === "done"
-    ? `OpenMausBot sign-in update: the person finished signing in to ${site}. Check you are signed in, then continue the task that paused for it. Never ask them for a password or a one-time code in chat.`
-    : `OpenMausBot sign-in update: the person declined to sign in to ${site}. Continue without it if you can, or briefly explain what you could not do. Never ask them for a password or a one-time code in chat.`;
+    ? `${PRODUCT_NAME} sign-in update: the person finished signing in to ${site}. Check you are signed in, then continue the task that paused for it. Never ask them for a password or a one-time code in chat.`
+    : `${PRODUCT_NAME} sign-in update: the person declined to sign in to ${site}. Continue without it if you can, or briefly explain what you could not do. Never ask them for a password or a one-time code in chat.`;
 }

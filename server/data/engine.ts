@@ -25,6 +25,7 @@ import {
   type RunOptions,
   type RunResult,
 } from "./types.ts";
+import { PRODUCT_NAME } from "../../shared/product-name.ts";
 
 type Binding = typeof DuckDB;
 type Cell = string | number | boolean | null;
@@ -725,7 +726,7 @@ class Engine implements DataEngine {
       const detail = (error instanceof Error ? error.message : String(error)).split("\n")[0].trim();
       const where = directory ? `from ${directory}` : "from the server's node_modules";
       const action = directory
-        ? "Reinstall OpenMausBot, or point OMB_DUCKDB_DIR at a folder holding node_modules/@duckdb."
+        ? `Reinstall ${PRODUCT_NAME}, or point OMB_DUCKDB_DIR at a folder holding node_modules/@duckdb.`
         : "Run pnpm install, or set OMB_DUCKDB_DIR to a folder holding node_modules/@duckdb.";
       this.loaded = { reason: `DuckDB did not load ${where}: ${detail}. ${action}` };
     }

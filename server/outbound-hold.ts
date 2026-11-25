@@ -9,6 +9,7 @@ import type { OutboundRequestService } from "./outbound-requests.ts";
 import { outboundCard } from "./outbound-requests.ts";
 import type { BotRecord, GroupRecord, Store } from "./store.ts";
 import { turnWaitedOnPerson } from "./waiting-on-person.ts";
+import { PRODUCT_NAME } from "../shared/product-name.ts";
 
 /** How long a "Send on your behalf?" card waits on the person before it times out. */
 export const OUTBOUND_HOLD_MS = 9 * 60_000;
@@ -104,8 +105,8 @@ export function createOutboundHold(deps: OutboundHoldDeps): OutboundHold {
           }
           return refuseOutbound(
             answer === "timeout"
-              ? "OpenMausBot did not send this: nobody answered the approval in time. Ask the user before trying again."
-              : "OpenMausBot did not send this: the user declined. Do not retry it; ask the user what they would like instead.",
+              ? `${PRODUCT_NAME} did not send this: nobody answered the approval in time. Ask the user before trying again.`
+              : `${PRODUCT_NAME} did not send this: the user declined. Do not retry it; ask the user what they would like instead.`,
           );
         }
         return { ok: true, approved: true };
