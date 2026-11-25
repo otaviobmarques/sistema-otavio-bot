@@ -1,0 +1,141 @@
+const brlFormat = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+const intFormat = new Intl.NumberFormat("pt-BR");
+const dateFormat = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+const dateTimeFormat = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
+export const brl = (cents: number | string | null | undefined) => brlFormat.format(Number(cents ?? 0) / 100);
+export const int = (value: number | string | null | undefined) => intFormat.format(Number(value ?? 0));
+
+/** A calendar date ("2026-11-25") or a timestamp, shown as dd/mm/aaaa. */
+export function date(value: string | null | undefined): string {
+  if (!value) return "—";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [y, m, d] = value.split("-");
+    return `${d}/${m}/${y}`;
+  }
+  return dateFormat.format(new Date(value));
+}
+
+export const dateTime = (value: string | null | undefined) => (value ? dateTimeFormat.format(new Date(value)) : "—");
+
+export function daysSince(value: string | null | undefined): number | null {
+  if (!value) return null;
+  return Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 86_400_000));
+}
+
+export function documentFormat(digits: string | null | undefined): string {
+  if (!digits) return "—";
+  if (digits.length === 11) return digits.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, "$1.$2.$3-$4");
+  if (digits.length === 14) return digits.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
+  return digits;
+}
+
+export type Tone = "green" | "amber" | "red" | "slate" | "cyan" | "violet";
+
+export const ORG_STATUS: Record<string, [string, Tone]> = {
+  active: ["Ativo", "green"],
+  suspended: ["Suspenso", "amber"],
+  canceled: ["Cancelado", "slate"],
+};
+
+export const SUB_STATUS: Record<string, [string, Tone]> = {
+  pending: ["Aguardando 1º pagamento", "cyan"],
+  active: ["Em dia", "green"],
+  past_due: ["Em atraso", "red"],
+  suspended: ["Suspensa", "amber"],
+  canceled: ["Cancelada", "slate"],
+};
+
+export const PAYMENT_STATUS: Record<string, [string, Tone]> = {
+  pending: ["Pendente", "cyan"],
+  confirmed: ["Confirmado", "green"],
+  received: ["Recebido", "green"],
+  overdue: ["Vencido", "red"],
+  refunded: ["Estornado", "violet"],
+  chargeback: ["Chargeback", "red"],
+  canceled: ["Cancelado", "slate"],
+};
+
+export const INSTANCE_STATE: Record<string, [string, Tone]> = {
+  setting_up: ["Preparando", "cyan"],
+  ready: ["Pronta", "green"],
+  stopped: ["Parada", "slate"],
+  payment_problem: ["Problema de pagamento", "red"],
+  failed: ["Falhou", "red"],
+};
+
+export const EVENT_STATUS: Record<string, [string, Tone]> = {
+  received: ["Na fila", "cyan"],
+  processed: ["Processado", "green"],
+  ignored: ["Ignorado", "slate"],
+  failed: ["Falhou", "red"],
+};
+
+export const BILLING_TYPE: Record<string, string> = {
+  PIX: "Pix",
+  BOLETO: "Boleto",
+  CREDIT_CARD: "Cartão de crédito",
+  UNDEFINED: "Cliente escolhe",
+};
+
+export const LEDGER_KIND: Record<string, string> = {
+  plan_grant: "Cota do plano",
+  plan_expire: "Cota expirada",
+  purchase: "Compra avulsa",
+  admin_adjust: "Ajuste manual",
+  refund_reversal: "Estorno",
+  chargeback_reversal: "Chargeback",
+  usage: "Consumo de IA",
+};
+
+export const AI_PROVIDER: Record<string, string> = {
+  anthropic: "Anthropic (Claude)",
+  openai: "OpenAI",
+  openrouter: "OpenRouter",
+  google: "Google (Gemini)",
+  groq: "Groq",
+  other: "Outro (compatível com OpenAI)",
+};
+
+const ACTIONS: Record<string, string> = {
+  "admin.login": "Entrou no painel",
+  "admin.created": "Administrador criado",
+  "admin.reactivated": "Administrador reativado",
+  "admin.totp_enabled": "Ativou o 2º fator",
+  "admin.totp_disabled": "Desativou o 2º fator",
+  "organization.created": "Cliente cadastrado",
+  "organization.suspended": "Cliente suspenso",
+  "organization.reactivated": "Cliente reativado",
+  "organization.canceled": "Cliente cancelado",
+  "credits.adjusted": "Créditos ajustados",
+  "subscription.created": "Assinatura criada",
+  "subscription.active": "Assinatura em dia",
+  "subscription.past_due": "Assinatura em atraso",
+  "subscription.suspended": "Assinatura suspensa",
+  "subscription.canceled": "Assinatura cancelada",
+  "subscription.addon_changed": "Adicionais alterados",
+  "payment.credit_charge_created": "Cobrança de créditos gerada",
+  "payment.refunded": "Pagamento estornado",
+  "payment.after_cancel": "Pagamento após cancelamento",
+  "plan.created": "Plano criado",
+  "plan.updated": "Plano alterado",
+  "plan.deleted": "Plano excluído",
+  "addon.updated": "Adicional alterado",
+  "billing_account.created": "Conta de cobrança cadastrada",
+  "billing_account.updated": "Conta de cobrança alterada",
+  "billing_account.api_key_replaced": "Chave do Asaas trocada",
+  "billing_account.webhook_token_rotated": "Token do webhook trocado",
+  "billing_account.activated_for_new": "Conta ativa para novos trocada",
+  "billing_event.retried": "Evento reprocessado",
+  "ai_key.created": "Chave de IA cadastrada",
+  "ai_key.updated": "Chave de IA alterada",
+  "ai_key.rotated": "Chave de IA trocada",
+  "ai_key.deleted": "Chave de IA excluída",
+  "vps_account.created": "Conta Hostinger cadastrada",
+  "vps_account.updated": "Conta Hostinger alterada",
+  "vps_account.rotated": "Token Hostinger trocado",
+};
+
+export const actionLabel = (action: string) => ACTIONS[action] ?? action;
+
+export const ACTOR: Record<string, string> = { admin: "Admin", system: "Sistema", webhook: "Webhook", cli: "Linha de comando" };

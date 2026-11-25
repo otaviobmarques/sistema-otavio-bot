@@ -504,6 +504,26 @@ jobs:
         env:
           RELAY_FUZZ_MS: ${{ github.event_name == 'schedule' && '600000' || '20000' }}
 
+  admin:
+    needs: static
+    if: contains(needs.static.outputs.jobs, '"admin"')
+    # The ArkoBot Admin's tests run on PGlite (Postgres in WebAssembly), so the job needs no database service.
+    name: admin typecheck + build + tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ff378ebe6b225b0680b81c1ad4498ae0d1d3a5e3 # v6.0.10
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter @arkobot/admin...
+      - run: pnpm --filter @arkobot/admin build
+      - run: pnpm --filter @arkobot/admin test
+
   deploy-composio-broker:
     # Only deploys on push to upstream main. PRs run the control-plane tests
     # but do not deploy: the wiring is exercised end-to-end only by a merged

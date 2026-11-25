@@ -142,6 +142,11 @@ describe("CI path scope", () => {
       expect(selectCiScope([file])).toEqual({ areas: ["relay"], checks: ["relay"] });
     });
 
+  it.each([["apps/admin/src/server/app.ts"], ["apps/admin/migrations/0001_init.sql"], ["apps/admin/README.md"]])(
+    "runs only the admin job for the ArkoBot Admin's %j", (file) => {
+      expect(selectCiScope([file])).toEqual({ areas: ["admin"], checks: ["admin"] });
+    });
+
   it("runs the server's checks and the relay's for the shared E2E vectors, which the relay keeps a pinned copy of", () => {
     expect(selectCiScope(["companion/src/e2e/vectors/v1.json"])).toEqual({ areas: ["e2e-vectors"], checks: [...checks("server"), "relay"].sort() });
     expect(selectCiScope(["companion/src/e2e/noise.ts"])).toEqual({ areas: ["server"], checks: checks("server") });
