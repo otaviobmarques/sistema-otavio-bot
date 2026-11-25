@@ -53,14 +53,14 @@ jobs:
             "OpenMausBot-$version-arm64.dmg.blockmap"
             "OpenMausBot-$version-arm64.zip"
             "OpenMausBot-$version-arm64.zip.blockmap"
-            "OpenMausBot-$version-setup.exe"
-            "OpenMausBot-$version-setup.exe.blockmap"
+            "ArkoBot-$version-setup.exe"
+            "ArkoBot-$version-setup.exe.blockmap"
             "OpenMausBot-$version-x64.dmg"
             "OpenMausBot-$version-x64.dmg.blockmap"
             "OpenMausBot-$version-x64.zip"
             "OpenMausBot-$version-x64.zip.blockmap"
             "OpenMausBot-$version-x86_64.AppImage"
-            OpenMausBot-amd64.deb OpenMausBot-intel.dmg OpenMausBot-setup.exe
+            OpenMausBot-amd64.deb OpenMausBot-intel.dmg ArkoBot-setup.exe
             OpenMausBot.AppImage OpenMausBot.dmg SHA256SUMS-ubuntu-x64.txt
           )
           for file in "${required[@]}"; do
@@ -85,7 +85,7 @@ jobs:
               `OpenMausBot-${version}-x64.dmg`,
               `OpenMausBot-${version}-arm64.dmg`,
             ]],
-            ["latest.yml", [`OpenMausBot-${version}-setup.exe`]],
+            ["latest.yml", [`ArkoBot-${version}-setup.exe`]],
             ["latest-linux.yml", [
               `OpenMausBot-${version}-x86_64.AppImage`,
               `OpenMausBot-${version}-amd64.deb`,

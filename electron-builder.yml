@@ -1,10 +1,22 @@
+# appId never changes: Windows finds the installed app to update by the GUID derived from it, and the
+# Start menu shortcut carries it as the AppUserModelId (electron/startup-identity.mjs).
 appId: com.openmausbot.app
+# The macOS and Linux packages keep this name: the macOS keychain item that guards saved credentials and
+# the Linux install folder (/opt/OpenMausBot, its AppArmor profile and package hooks) are named after it.
+# The Windows build is packaged as ArkoBot (`pnpm package:win` passes --config.productName=ArkoBot): the
+# name Task Manager, the installer and the Start menu show. Its profile folder keeps the earlier name where
+# one exists (electron/data-dir.mjs pinnedUserData).
 productName: OpenMausBot
 artifactName: OpenMausBot-${version}-${arch}.${ext}
 
+# The executable's CompanyName and copyright.
+extraMetadata:
+  author:
+    name: Domma Tecnologia
+
 protocols:
-  - name: OpenMausBot package install
-    schemes: [openmausbot]
+  - name: ArkoBot link
+    schemes: [arkobot, openmausbot]
 
 # In-app auto-update reads latest-mac.yml + the .zip (macOS) or latest.yml +
 # the NSIS .exe (Windows) from the PUBLIC releases in this source repo.
@@ -162,6 +174,11 @@ dmg:
       path: /Applications
 
 win:
+  # ArkoBot.exe. An update from an OpenMausBot.exe install keeps the install folder (found by the GUID);
+  # the old version's uninstaller removes OpenMausBot.exe and its shortcuts, and the new shortcuts point
+  # here. Login items are moved by electron/open-at-login.mjs migrateLegacyWindowsLoginItems.
+  executableName: ArkoBot
+  artifactName: ArkoBot-${version}-${arch}.${ext}
   target:
     - target: nsis
       arch: x64
@@ -197,10 +214,11 @@ nsis:
   perMachine: false
   shortcutName: ArkoBot
   uninstallDisplayName: ArkoBot
-  # Versioned, like the .dmg. The README's /latest/download/ button needs a
-  # STABLE filename, so ship a second copy named OpenMausBot-setup.exe on the
-  # release — the same trick as OpenMausBot.dmg beside OpenMausBot-${version}.dmg.
-  artifactName: OpenMausBot-${version}-setup.${ext}
+  # Versioned. latest.yml names this file, and installed apps download it
+  # from the release whatever the name of the one they were installed from.
+  # The release also carries a stable-named copy, ArkoBot-setup.exe, for
+  # /releases/latest/download/ links (.github/workflows/publish-release.yml).
+  artifactName: ArkoBot-${version}-setup.${ext}
 
 linux:
   target:
@@ -216,7 +234,7 @@ linux:
   synopsis: Your own team of AI bots, in a chat app
   description: A local-first chat app for running a team of AI agents.
   maintainer: Milind Soni <46266943+milind-soni@users.noreply.github.com>
-  vendor: OpenMausBot
+  vendor: Domma Tecnologia
   syncDesktopName: true
   # The reviewed x64 CLI runtime is staged before packaging and remains
   # outside ASAR so executable modes and adjacent sidecars are preserved.

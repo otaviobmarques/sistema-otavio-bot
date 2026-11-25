@@ -43,7 +43,13 @@ jobs:
         run: |
           [ -n "$GH_TOKEN" ] || { echo "::error::RELEASES_TOKEN is not set"; exit 1; }
           grep -qx "version: $VERSION" release/latest.yml || { echo "::error::latest.yml does not name version $VERSION"; exit 1; }
-          cp release/*-setup.exe release/OtavioBot-setup.exe
+          # Installed apps, whatever the name of the installer they came from, download the file latest.yml names.
+          installer="ArkoBot-$VERSION-setup.exe"
+          [ -f "release/$installer" ] || { echo "::error::missing release/$installer"; exit 1; }
+          grep -qx "path: $installer" release/latest.yml || { echo "::error::latest.yml does not name $installer"; exit 1; }
+          # Stable names for /releases/latest/download/ links: ArkoBot's, and the one links made before it keep using.
+          cp "release/$installer" release/ArkoBot-setup.exe
+          cp "release/$installer" release/OtavioBot-setup.exe
           gh release create "v$VERSION" --repo otaviobmarques/otavio-bot-releases --target main \
             --title "ArkoBot $VERSION" --notes "${NOTES:-Versão $VERSION do ArkoBot para Windows.}" \
             release/*.exe release/*.exe.blockmap release/latest.yml

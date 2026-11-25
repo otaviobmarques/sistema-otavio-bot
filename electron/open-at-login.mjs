@@ -7,13 +7,16 @@ import path from "node:path";
 export const HIDDEN_ARG = "--omb-hidden";
 const MARK = "X-OpenMausBot-Lending=true";
 /** Windows keeps one Run entry per name, so the person's own entry has a name apart from lending's (the app's). */
-const CHOSEN_NAME = "OpenMausBot at login";
+const CHOSEN_NAME = "ArkoBot at login";
+/** What the Windows build's entries were named, and the file they started, while it was packaged as OpenMausBot: Electron
+ * named lending's entry after the AppUserModelId it derived from that name. */
+export const LEGACY_WINDOWS_LOGIN = { chosenName: "OpenMausBot at login", defaultName: "electron.app.OpenMausBot", executable: "OpenMausBot.exe" };
 
 /** Desktop Entry Exec quoting: the path in double quotes, with ", `, $ and \ escaped. */
 const quoted = (value) => `"${value.replace(/["`$\\]/g, (match) => `\\${match}`)}"`;
 
 export function autostartEntry(exec, { lending = true } = {}) {
-  return ["[Desktop Entry]", "Type=Application", "Name=OpenMausBot", `Exec=${quoted(exec)}${lending ? ` ${HIDDEN_ARG}` : ""}`, "NoDisplay=true",
+  return ["[Desktop Entry]", "Type=Application", "Name=ArkoBot", `Exec=${quoted(exec)}${lending ? ` ${HIDDEN_ARG}` : ""}`, "NoDisplay=true",
     "X-GNOME-Autostart-enabled=true", ...(lending ? [MARK] : []), ""].join("\n");
 }
 
@@ -99,4 +102,34 @@ export function installOpenAtLogin({ ipcMain, guard, loginItem, changed }) {
   const state = () => ({ available: loginItem.available(), on: loginItem.chosen() });
   ipcMain.handle("open-at-login:state", guard("open-at-login:state", state));
   ipcMain.handle("open-at-login:set", guard("open-at-login:set", (_event, on) => { loginItem.choose(on === true); changed(); return state(); }));
+}
+
+/**
+ * Windows: the Run entries an install made while its executable was OpenMausBot.exe, pointed at this executable under
+ * this build's names, each still on or off in Task Manager as it was. Their file is gone after the update, so left alone
+ * they would start nothing and Settings would show Open at login off.
+ */
+export function migrateLegacyWindowsLoginItems({ app, platform = process.platform, execPath = process.execPath }) {
+  if (platform !== "win32" || !app.isPackaged) return 0;
+  const legacyExe = path.win32.join(path.win32.dirname(execPath), LEGACY_WINDOWS_LOGIN.executable);
+  const sameFile = legacyExe.toLowerCase() === execPath.toLowerCase();
+  // Run value names compare without case, and Electron derived the default one from the app's name in either case.
+  const same = (left, right) => typeof left === "string" && left.toLowerCase() === right.toLowerCase();
+  const legacyName = (name) => same(name, LEGACY_WINDOWS_LOGIN.chosenName) || same(name, LEGACY_WINDOWS_LOGIN.defaultName);
+  const items = (options) => { try { return app.getLoginItemSettings(options).launchItems ?? []; } catch { return []; } };
+  const found = [
+    ...(sameFile ? [] : items({ path: legacyExe }).map((item) => ({ ...item, from: legacyExe }))),
+    ...items({}).filter((item) => legacyName(item.name)).map((item) => ({ ...item, from: execPath })),
+  ];
+  let moved = 0;
+  for (const item of found) {
+    const args = item.args ?? [];
+    const name = same(item.name, LEGACY_WINDOWS_LOGIN.chosenName) ? CHOSEN_NAME : same(item.name, LEGACY_WINDOWS_LOGIN.defaultName) ? undefined : item.name;
+    try {
+      app.setLoginItemSettings({ openAtLogin: false, path: item.from, args, name: item.name });
+      app.setLoginItemSettings({ openAtLogin: true, args, ...(name ? { name } : {}), enabled: item.enabled !== false });
+      moved++;
+    } catch {}
+  }
+  return moved;
 }

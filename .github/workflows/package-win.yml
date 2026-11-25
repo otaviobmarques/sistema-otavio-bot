@@ -122,6 +122,25 @@ jobs:
           echo "--- app-update.yml ---"; cat "$res/app-update.yml" 2>/dev/null || true
           exit $fail
 
+      # What Task Manager, the Start menu and the update feed show (electron-builder.yml win and nsis,
+      # package:win's productName).
+      - name: verify the Windows names
+        shell: pwsh
+        run: |
+          $v = node -p "require('./package.json').version"
+          $exe = 'release/win-unpacked/ArkoBot.exe'
+          if (-not (Test-Path $exe)) { Write-Error "missing $exe"; exit 1 }
+          $info = (Get-Item $exe).VersionInfo
+          "FileDescription=$($info.FileDescription) ProductName=$($info.ProductName) CompanyName=$($info.CompanyName)"
+          if ($info.FileDescription -ne 'ArkoBot' -or $info.ProductName -ne 'ArkoBot' -or $info.CompanyName -ne 'Domma Tecnologia') {
+            Write-Error "ArkoBot.exe carries the wrong version info"; exit 1
+          }
+          $installer = "ArkoBot-$v-setup.exe"
+          if (-not (Test-Path "release/$installer")) { Write-Error "missing release/$installer"; exit 1 }
+          if (-not (Select-String -Path release/latest.yml -SimpleMatch -Pattern "path: $installer" -Quiet)) {
+            Write-Error "latest.yml does not name $installer"; exit 1
+          }
+
       # index.js EXISTING is not the same as index.js RUNNING. 0.1.24 shipped a
       # server that died instantly on ERR_MODULE_NOT_FOUND because tsc left a
       # bare `zod` import in a tree that carries no node_modules — and the

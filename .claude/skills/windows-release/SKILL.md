@@ -5,7 +5,7 @@ description: Build and verify the Windows desktop build (NSIS installer + latest
 
 # Windows release
 
-Ships `OpenMausBot-<version>-setup.exe` and its update feed to
+Ships `ArkoBot-<version>-setup.exe` and its update feed to
 [milind-soni/OpenMausBot](https://github.com/milind-soni/OpenMausBot/releases).
 The unified release workflow mirrors the same bytes to the legacy releases
 repository for apps installed before the updater migration.
@@ -43,10 +43,10 @@ Output in `release/`:
 
 | File | Purpose |
 |---|---|
-| `OpenMausBot-<version>-setup.exe` | the installer |
+| `ArkoBot-<version>-setup.exe` | the installer |
 | `latest.yml` | **the update feed** — see step 4 |
-| `OpenMausBot-<version>-setup.exe.blockmap` | differential updates |
-| `OpenMausBot-<version>-x64.zip` | portable, not used by the updater |
+| `ArkoBot-<version>-setup.exe.blockmap` | differential updates |
+| `ArkoBot-<version>-x64.zip` | portable, not used by the updater |
 
 ## 3. Verify before uploading
 
@@ -69,7 +69,7 @@ Then smoke-test the installer itself. Run it, and confirm:
 
 1. It installs per-user with no UAC prompt and launches.
 2. The chat window renders (not the error page). Server logs land in
-   `%APPDATA%\OpenMausBot\logs\server.log`.
+   `%APPDATA%\OpenMausBot\logs\server.log` (the folder keeps that name; see `electron/data-dir.mjs`).
 3. The model picker lists at least one provider — this exercises the `.cmd`-shim
    resolution in `server/procs.ts`, which only ever runs for real on Windows.
 4. No update popup appears on launch. Background check failures are silent by
@@ -81,11 +81,11 @@ Upload to the **same tag** as the macOS release for that version, so one release
 carries both platforms.
 
 ```powershell
-Copy-Item release/OpenMausBot-<version>-setup.exe release/OpenMausBot-setup.exe
+Copy-Item release/ArkoBot-<version>-setup.exe release/ArkoBot-setup.exe
 gh release upload v<version> --repo milind-soni/OpenMausBot `
-  release/OpenMausBot-<version>-setup.exe `
-  release/OpenMausBot-setup.exe `
-  release/OpenMausBot-<version>-setup.exe.blockmap `
+  release/ArkoBot-<version>-setup.exe `
+  release/ArkoBot-setup.exe `
+  release/ArkoBot-<version>-setup.exe.blockmap `
   release/latest.yml
 ```
 
@@ -97,10 +97,10 @@ bytes of an already-published asset.
 
 Both names are required, for different consumers:
 
-- **`OpenMausBot-<version>-setup.exe`** is what `latest.yml` references by name and
+- **`ArkoBot-<version>-setup.exe`** is what `latest.yml` references by name and
   sha512. The auto-updater downloads exactly this.
-- **`OpenMausBot-setup.exe`** is a byte-identical copy that gives the README's
-  `/releases/latest/download/OpenMausBot-setup.exe` button a stable URL. This
+- **`ArkoBot-setup.exe`** is a byte-identical copy that gives the README's
+  `/releases/latest/download/ArkoBot-setup.exe` button a stable URL. This
   mirrors `OpenMausBot.dmg` sitting beside `OpenMausBot-<version>.dmg`.
 
 ### latest.yml is not optional

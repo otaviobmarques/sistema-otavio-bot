@@ -1,4 +1,5 @@
 // Import first: it reads a Cloud home's secrets off the launcher's pipe before any module can start a process.
+import "./env-aliases.ts";
 import { BOOT_CLOUD_SECRETS } from "./cloud-secrets-boot.ts";
 import { startFailureText } from "./start-failure-text.ts";
 import { reserveGmailDrafts } from "./gmail-draft-policy.ts";
@@ -9544,10 +9545,10 @@ try {
     claimRequest: () => { cloudPower?.arrived("/hooks", {}); moveFreeze.assertTurns(); return workspaceMaintenance.request(); }, door: botApi.door,
   });
   const advertised = WEBHOOK_PUBLIC_URL ? ` (advertised as ${webhookIngress.baseUrl})` : "";
-  console.log(`openmausbot webhook receiver on http://${webhookIngress.host}:${webhookIngress.port}${advertised}`);
+  console.log(`arkobot webhook receiver on http://${webhookIngress.host}:${webhookIngress.port}${advertised}`);
 } catch (error) {
   webhookIngressError = error instanceof Error ? error.message : String(error);
-  console.error(`openmausbot webhook receiver unavailable: ${webhookIngressError}`);
+  console.error(`arkobot webhook receiver unavailable: ${webhookIngressError}`);
 }
 
 const webhookIngressStatus = () => ({
@@ -15502,7 +15503,7 @@ if (CLOUD_HOME) registerCloudPower(cloudPower = createCloudPower({ dataDir: DATA
 
 server.listen(PORT, listenHost(server), async () => {
   companyRuntimeReady();
-  console.log(`openmausbot server on http://127.0.0.1:${PORT}`);
+  console.log(`arkobot server on http://127.0.0.1:${PORT}`);
   personWaits.boot(); browserSweep.start(); startCloudTeamPolicy({ cloudHome: CLOUD_HOME, dataDir: DATA_DIR, managed: managedPolicy, sessions }); moveFreeze.hold(() => appTriggers.start(), () => void appTriggers.stop()); startCloudHomeConnectedApps({ cloudHome: CLOUD_HOME !== null, dataDir: DATA_DIR, cloudGrant: CLOUD_ENV.OMB_CLOUD_CONNECTED_APPS_GRANT, apply: (access) => { composio.setManagedBrokerAccess(access); broadcast({ kind: "config", ...configStatus() }); } });
   void afterFirstEngineRead().then(() => { if (builtInBrowserEnabled(cfg)) chromeLauncher.start(); });
   followupsReady = true; engineUpdates.start();
@@ -15528,7 +15529,7 @@ if (TUNNEL_SOCKET) {
   tunnelListener = createServer(IDLE_HTTP_SERVER, gzipTunnelReplies(handleRequest));
   upgrades.attach(tunnelListener, handleRequest);
   tunnelListener.listen(TUNNEL_SOCKET, () => {
-    console.log(`openmausbot tunnel listener on ${TUNNEL_SOCKET}`);
+    console.log(`arkobot tunnel listener on ${TUNNEL_SOCKET}`);
   });
 }
 
