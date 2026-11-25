@@ -198,6 +198,12 @@ export function verificationServerEnvironment(parentEnv: NodeJS.ProcessEnv, data
     childEnv.OMB_CLOUD_X_URL = xUrl;
     if (parentEnv.OMB_CLOUD_X_TOKEN) childEnv.OMB_CLOUD_X_TOKEN = parentEnv.OMB_CLOUD_X_TOKEN;
   }
+  // The ArkoBot AI gateway on loopback only (apps/admin's gateway in development): its instance token crosses only with it.
+  const gatewayUrl = parentEnv.OMB_CLOUD_AI_GATEWAY_URL?.trim() ?? "";
+  if (/^http:\/\/127\.0\.0\.1:\d{1,5}$/.test(gatewayUrl) && parentEnv.OMB_CLOUD_AI_GATEWAY_TOKEN) {
+    childEnv.OMB_CLOUD_AI_GATEWAY_URL = gatewayUrl;
+    childEnv.OMB_CLOUD_AI_GATEWAY_TOKEN = parentEnv.OMB_CLOUD_AI_GATEWAY_TOKEN;
+  }
   // @devs reports reach a loopback fake only, else a closed port: never the MausBot team.
   const bugReportUrl = parentEnv.OMB_BUG_REPORT_URL?.trim() ?? "";
   childEnv.OMB_BUG_REPORT_URL = /^http:\/\/127\.0\.0\.1:\d{1,5}\/[A-Za-z0-9/_-]*$/.test(bugReportUrl) ? bugReportUrl : "http://127.0.0.1:9/api/bug-reports";

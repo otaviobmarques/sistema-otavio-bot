@@ -13,7 +13,6 @@ export function overviewRoutes(ctx: AppContext) {
            (SELECT count(*) FROM organizations WHERE status = 'active')::int AS active_clients,
            (SELECT count(*) FROM organizations WHERE status = 'suspended')::int AS suspended_clients,
            (SELECT count(*) FROM subscriptions s JOIN plans p ON p.id = s.plan_id WHERE s.status IN ('active', 'past_due') AND NOT p.free)::int AS paying,
-           (SELECT count(*) FROM subscriptions s JOIN plans p ON p.id = s.plan_id WHERE s.status = 'active' AND p.free)::int AS free_clients,
            (SELECT count(*) FROM subscriptions WHERE status = 'past_due')::int AS past_due,
            (SELECT count(*) FROM subscriptions s JOIN organizations o ON o.id = s.organization_id
               WHERE s.status = 'suspended' AND o.status_reason_code IN ('billing', 'chargeback'))::int AS suspended_billing,
@@ -23,6 +22,8 @@ export function overviewRoutes(ctx: AppContext) {
             FROM subscriptions s JOIN plans p ON p.id = s.plan_id WHERE s.status IN ('active', 'past_due'))::bigint AS mrr_cents,
            (SELECT COALESCE(-SUM(amount), 0) FROM credit_ledger WHERE kind = 'usage' AND created_at >= $1)::bigint AS credits_used_month,
            (SELECT COALESCE(SUM(amount), 0) FROM credit_ledger WHERE kind IN ('plan_grant', 'purchase') AND created_at >= $1)::bigint AS credits_granted_month,
+           (SELECT COALESCE(SUM(cost_brl_cents), 0) FROM usage_events WHERE created_at >= $1)::float8 AS ai_cost_brl_cents_month,
+           (SELECT COALESCE(SUM(credits), 0) FROM usage_events WHERE created_at >= $1)::bigint AS ai_credits_month,
            (SELECT COALESCE(SUM(value_cents), 0) FROM payments WHERE status IN ('confirmed', 'received') AND paid_at >= $1)::bigint AS received_month_cents,
            (SELECT count(*) FROM billing_events WHERE status = 'received')::int AS events_waiting,
            (SELECT count(*) FROM jobs WHERE status = 'failed')::int AS jobs_failed`,

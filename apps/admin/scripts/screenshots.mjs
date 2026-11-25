@@ -86,6 +86,19 @@ await shot("17-auditoria", "/auditoria");
 await shot("18-instancias", "/instancias");
 await shot("19-computadores", "/computadores");
 await shot("20-consumo", "/consumo");
+await shot("23-consumo-por-bot", "/consumo", () => page.getByRole("button", { name: /^Por bot/ }).click());
+await shot("24-tabela-de-precos", "/precos");
+await shot("25-editar-preco", "/precos", () => page.getByRole("button", { name: "Editar" }).first().click());
+if (client) {
+  await shot("26-cliente-gateway", `/clientes/${client.id}`, () => page.getByText("Gateway de IA").scrollIntoViewIfNeeded());
+  await shot("27-emitir-token", `/clientes/${client.id}`, async () => {
+    await page.getByRole("button", { name: "Emitir token" }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Emitir" }).click();
+    await page.waitForSelector("textarea[readonly]");
+    // The token is a development one, but a screenshot never shows a whole token.
+    await page.$eval("textarea[readonly]", (node) => { node.value = `${node.value.slice(0, 14)}${"•".repeat(37)}`; });
+  });
+}
 await shot("21-minha-conta", "/conta");
 await shot("22-segundo-fator", "/conta", () => page.getByRole("button", { name: "Configurar" }).click());
 

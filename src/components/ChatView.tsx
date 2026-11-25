@@ -41,7 +41,7 @@ import { claudeUpdateTarget, failedTurnCause, failedTurnNotice, signedOutEngine 
 import { plainErrorLine } from "@/lib/plain-error";
 import { openPlaceAction, placeRowViewFor, usePlaceSeat, worksOnSimpleLabel } from "@/lib/place-view";
 import type { PlaceRow } from "../../shared/place-view";
-import { trialCreditKind, type TrialCreditRefusal } from "../../shared/trial-credit";
+import { creditRefusalKind, type CreditRefusal } from "../../shared/trial-credit";
 import { TrialCreditNotice } from "./TrialCreditNotice";
 import { PartlyDoneRow } from "./PartlyDoneRow";
 import { isPureLeakedSystemHarnessMessage, stripLeakedSystemHarnessMessages } from "../../shared/system-message-guard.ts";
@@ -267,9 +267,9 @@ function PlaceFailedRow({ place, botId, threadId, onRetry }: {
 }
 
 const TRIAL_CREDIT_LINE: Record<"paused" | "too_low", LocaleKey> = { paused: "engines.trialCreditPaused", too_low: "engines.trialCreditTooLow" };
-function TrialCreditFailedRow({ kind, onRetry }: { kind: TrialCreditRefusal; onRetry?: () => void }) {
+function TrialCreditFailedRow({ kind, onRetry }: { kind: CreditRefusal; onRetry?: () => void }) {
   const { dispatch } = useStore();
-  if (kind === "used_up" || kind === "ended") return <TrialCreditNotice kind={kind} />;
+  if (kind !== "paused" && kind !== "too_low") return <TrialCreditNotice kind={kind} />;
   if (kind === "paused") return <ErrorRow message={t(TRIAL_CREDIT_LINE[kind])} onRetry={onRetry} />;
   return <ErrorRow message={t(TRIAL_CREDIT_LINE[kind])} action={{ label: t("chat.error.connectOwnAi"), onClick: () => dispatch({ type: "toggleAppSettings", open: true, section: "engines" }) }} />;
 }
@@ -278,7 +278,7 @@ export function FailedTurnRow({ tool, engine, onRetry, botId, threadId, messageA
   const resume = useLimitResetContinue(botId, threadId, tool.limitResetsAt);
   const past = usePastLimitNotice(tool, messageAt);
   if (tool.place && botId) return <PlaceFailedRow place={tool.place} botId={botId} threadId={threadId} onRetry={onRetry} />;
-  const credit = trialCreditKind(failedTurnCause(tool.name) ?? "");
+  const credit = creditRefusalKind(failedTurnCause(tool.name) ?? "");
   if (credit) return <TrialCreditFailedRow kind={credit} onRetry={onRetry} />;
   const { cause, notice } = failedTurnNotice(tool);
   if (tool.partial) return <PartlyDoneRow cause={notice ?? cause} onRetry={onRetry} />;

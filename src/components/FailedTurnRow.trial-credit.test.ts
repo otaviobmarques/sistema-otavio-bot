@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { InstanceInfo, Message } from "@/state/store";
 import { failedTurnTool } from "../../shared/failed-turn";
-import { TRIAL_CREDIT_REFUSED } from "../../shared/trial-credit";
+import { GATEWAY_REFUSED, TRIAL_CREDIT_REFUSED } from "../../shared/trial-credit";
 import { setLocale } from "@/lib/i18n";
 
 const fixture = vi.hoisted(() => {
@@ -62,5 +62,21 @@ describe("a turn the trial's Claude credit refused", () => {
     const html = renderToStaticMarkup(createElement(FailedTurnRow, { tool: stored("used_up"), engine: undefined }));
     expect(html).toContain("Your trial Claude credit is used up. Sign in with your own Claude or ChatGPT account, or add an API key, to keep your bots working.");
     expect(html).toContain("Connect your own AI");
+  });
+});
+
+describe("a turn the plan's AI credits (the ArkoBot gateway) refused", () => {
+  it("is a quiet note in the reader's language, naming the app, with connect your own AI as the way on", () => {
+    for (const kind of Object.keys(GATEWAY_REFUSED) as (keyof typeof GATEWAY_REFUSED)[]) {
+      const { html, buttons } = show(failedTurnTool(GATEWAY_REFUSED[kind], { setup: true }));
+      expect(html).toContain(`role="note" data-trial-credit-notice="${kind}"`);
+      expect(html).not.toMatch(/danger|lucide-triangle-alert|lucide-alert-triangle/);
+      expect(buttons).toEqual(["Connect your own AI"]);
+    }
+    setLocale("pt-br");
+    const usedUp = show(failedTurnTool(GATEWAY_REFUSED.credits_used_up, { setup: true }));
+    expect(usedUp.html).toMatch(/Os créditos de IA do seu plano \S+ acabaram\./);
+    expect(usedUp.html).not.toContain("{app}");
+    expect(usedUp.html).not.toContain(GATEWAY_REFUSED.credits_used_up);
   });
 });

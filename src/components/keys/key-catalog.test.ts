@@ -15,6 +15,7 @@ const NOT_A_PERSONS_KEY: Record<string, string> = {
   OMB_CLOUD_VOICE_TOKEN: "MausBot Cloud's included voice",
   OMB_CLOUD_DECIDER_TOKEN: "MausBot Cloud's included decisions",
   OMB_CLOUD_AI_TOKEN: "MausBot Cloud's included AI",
+  OMB_CLOUD_AI_GATEWAY_TOKEN: "the ArkoBot AI gateway's instance token, issued by the Admin",
   OMB_CLOUD_X_TOKEN: "MausBot Cloud's included X research",
   OMB_CLOUD_CONNECTED_APPS_GRANT: "MausBot Cloud's connected apps",
   OMB_BROWSER_CONNECTION: "the app's own browser, not a credential",

@@ -1,8 +1,8 @@
-import { Boxes, CheckCircle2, Gauge, ServerCog } from "lucide-react";
+import { Boxes, CheckCircle2, ServerCog } from "lucide-react";
 import type { ReactNode } from "react";
 import { PageHeader } from "../ui.tsx";
 
-const CONTENT: Record<"instances" | "computers" | "usage", { title: string; subtitle: string; icon: ReactNode; ready: string[]; next: string[] }> = {
+const CONTENT: Record<"instances" | "computers", { title: string; subtitle: string; icon: ReactNode; ready: string[]; next: string[] }> = {
   instances: {
     title: "Instâncias",
     subtitle: "Uma instância isolada por cliente: o contêiner cloud-home, com o contrato OMB_CLOUD_*.",
@@ -33,21 +33,6 @@ const CONTENT: Record<"instances" | "computers" | "usage", { title: string; subt
       "Custos por máquina para comparar com a receita",
     ],
   },
-  usage: {
-    title: "Consumo de IA",
-    subtitle: "O gateway de IA cobra os créditos ArkoBot (1 crédito = R$ 0,01) e aplica os tetos do plano.",
-    icon: <Gauge className="h-7 w-7" />,
-    ready: [
-      "Tabelas usage_events, gateway_tokens (só o hash) e ai_provider_keys (cifradas)",
-      "Livro de créditos imutável com lançamento de consumo e carteira por cliente",
-      "Tetos diário, mensal e por requisição e modelos permitidos por plano",
-    ],
-    next: [
-      "Gateway que recebe as chamadas das instâncias e do app desktop (managed-desktop)",
-      "Débito por requisição, idempotente pelo id da requisição",
-      "Gráficos de consumo por cliente, modelo e provedor",
-    ],
-  },
 };
 
 export function ComingSoon({ kind }: { kind: keyof typeof CONTENT }) {
@@ -60,7 +45,7 @@ export function ComingSoon({ kind }: { kind: keyof typeof CONTENT }) {
           <span className="grid h-14 w-14 place-items-center rounded-2xl bg-cyan-brand/15 text-cyan-brand">{content.icon}</span>
           <div>
             <div className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-brand">Próxima parte</div>
-            <div className="font-display text-2xl font-bold">Esta tela chega com o provisionamento e o gateway</div>
+            <div className="font-display text-2xl font-bold">Esta tela chega com o provisionamento</div>
           </div>
         </div>
         <div className="mt-8 grid gap-6 md:grid-cols-2">

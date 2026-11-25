@@ -6,7 +6,9 @@ import { apiKeyContext, webhookTokenContext } from "../billing/accounts.ts";
 import { addMonths, isoDate } from "../billing/subscription-machine.ts";
 import { grantPlanPeriod, postLedger } from "../credits/ledger.ts";
 import type { Queryable } from "../db/db.ts";
-import { fingerprint, randomToken, SecretBox } from "../security/crypto.ts";
+import { brlCentsFor, costUsd, creditsFor, markupFor, priceFromRow, type PriceRow } from "../gateway/pricing.ts";
+import { loadSettings } from "../gateway/accounting.ts";
+import { fingerprint, randomToken, SecretBox, sha256Hex } from "../security/crypto.ts";
 import { cliDb, loadDotEnv } from "./env.ts";
 
 loadDotEnv();
@@ -68,6 +70,44 @@ const CLIENTS: Demo[] = [
   { name: "Studio Fit Academia", document: cnpj("678901230001"), owner: ["Paulo Reis", "paulo@studiofit.com.br"], plan: "essencial", status: "canceled_org", months: 1, billingType: "PIX", usage: 1200 },
   { name: "Construtora Horizonte", document: cnpj("789012340001"), owner: ["Fernanda Costa", "fernanda@horizonte.eng.br"], plan: "profissional", status: "active", months: 1, billingType: "PIX", usage: 6820, purchase: 5000 },
 ];
+
+const COMPANIES = ["Matriz", "Filial Centro", "Filial Zona Sul"];
+const BOTS = ["Atendimento", "Agenda", "Financeiro", "Vendas"];
+
+/** Gateway requests spread over the last 28 days, each one settled in the ledger as the gateway would. */
+async function seedUsage(q: Queryable, input: { organizationId: string; instanceId: string | null; tokenId: string; planCode: string; credits: number; index: number }) {
+  const settings = await loadSettings(q);
+  const { rows } = await q.query<PriceRow>(
+    "SELECT m.* FROM model_prices m JOIN plans p ON m.model = ANY (p.allowed_models) WHERE p.code = $1 AND m.enabled ORDER BY m.model", [input.planCode]);
+  const prices = rows.map(priceFromRow);
+  let seed = 7 + input.index * 13;
+  const random = () => (seed = (seed * 1_103_515_245 + 12_345) % 2_147_483_648) / 2_147_483_648;
+  let spent = 0;
+  for (let n = 0; spent < input.credits && n < 400; n++) {
+    const price = prices[Math.floor(random() * prices.length)]!;
+    const usage = { input: Math.round(2000 + random() * 18_000), cacheRead: Math.round(random() * 40_000), cacheWrite: 0, output: Math.round(300 + random() * 3500) };
+    const usd = costUsd(usage, price);
+    const credits = Math.min(creditsFor(usd, price, settings), input.credits - spent);
+    const wallet = await one<{ plan_balance: number }>(q, "SELECT plan_balance FROM credit_wallets WHERE organization_id = $1", [input.organizationId]);
+    if (credits <= 0 || Number(wallet.plan_balance) < credits) break;
+    const requestId = `gw_${randomUUID()}`;
+    const at = new Date(now.getTime() - random() * 28 * DAY);
+    const refused = random() < 0.04;
+    await q.query(
+      `INSERT INTO usage_events (organization_id, instance_id, gateway_token_id, request_id, provider, model, input_tokens, output_tokens, cache_read_tokens, cost_usd_micros,
+         credits, status, endpoint, company, bot, reserved_credits, cost_brl_cents, usd_brl_rate, markup_percent, http_status, error_code, duration_ms, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)`,
+      [input.organizationId, input.instanceId, input.tokenId, requestId, price.provider, price.model, refused ? 0 : usage.input, refused ? 0 : usage.output,
+        refused ? 0 : usage.cacheRead, refused ? 0 : Math.round(usd * 1e6), refused ? 0 : credits, refused ? "refused" : "ok",
+        price.provider === "anthropic" ? "v1/messages" : "v1/chat/completions", COMPANIES[Math.floor(random() * (input.planCode === "essencial" ? 1 : 3))],
+        BOTS[Math.floor(random() * BOTS.length)], refused ? 0 : credits * 3, refused ? 0 : brlCentsFor(usd, settings), settings.usdBrlRate, markupFor(price, settings),
+        refused ? null : 200, refused ? "daily_cap_reached" : null, Math.round(800 + random() * 20_000), at]);
+    if (refused) continue;
+    await postLedger(q, { organizationId: input.organizationId, bucket: "plan", kind: "usage", amount: -credits, externalReference: `usage:${requestId}:plan`,
+      reason: `IA: ${price.model}`, metadata: { requestId, model: price.model, provider: price.provider } });
+    spent += credits;
+  }
+}
 
 try {
   const existing = await db.query("SELECT 1 FROM organizations LIMIT 1");
@@ -183,18 +223,16 @@ try {
           [paymentId, org.id, accountId, `pay_demo${index}c`, client.purchase, client.purchase, isoDate(ago(4)), ago(4)]);
         await postLedger(q, { organizationId: org.id, bucket: "extra", kind: "purchase", amount: client.purchase, externalReference: `payment:${paymentId}:purchase`, paymentId, billingAccountId: accountId, reason: "Compra avulsa de créditos" });
       }
-      if (client.usage) {
-        const wallet = await one<{ plan_balance: number }>(q, "SELECT plan_balance FROM credit_wallets WHERE organization_id = $1", [org.id]);
-        const amount = Math.min(client.usage, Number(wallet.plan_balance));
-        if (amount > 0) {
-          await postLedger(q, { organizationId: org.id, bucket: "plan", kind: "usage", amount: -amount, externalReference: `usage-demo:${org.id}`, reason: "Consumo de IA (resumo do mês)" });
-        }
-      }
-      if (client.status !== "pending" && client.status !== "canceled_org") {
-        await q.query("INSERT INTO instances (organization_id, subscription_id, slug, machine_id, mode, state, state_reason) VALUES ($1, $2, $3, $4, 'dedicated', $5, $6)",
+      const instance = client.status !== "pending" && client.status !== "canceled_org"
+        ? await one<{ id: string }>(q, "INSERT INTO instances (organization_id, subscription_id, slug, machine_id, mode, state, state_reason) VALUES ($1, $2, $3, $4, 'dedicated', $5, $6) RETURNING id",
           [org.id, sub.id, `inst-${index}-${client.plan}`, `m-${randomToken(8).replace(/[^A-Za-z0-9]/g, "a")}`,
-            client.status === "active" ? "ready" : "payment_problem", client.status === "active" ? null : "pagamento em atraso"]);
-      }
+            client.status === "active" ? "ready" : "payment_problem", client.status === "active" ? null : "pagamento em atraso"])
+        : null;
+      const token = `arko_ai_${randomToken(32)}`;
+      const tokenRow = await one<{ id: string }>(q,
+        "INSERT INTO gateway_tokens (organization_id, instance_id, token_hash, token_prefix, label, created_at, last_used_at, revoked_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id",
+        [org.id, instance?.id ?? null, sha256Hex(token), token.slice(0, 14), "Instância principal", created, client.usage ? ago(0.1) : null, client.status === "canceled_org" ? ago(6) : null]);
+      if (client.usage) await seedUsage(q, { organizationId: org.id, instanceId: instance?.id ?? null, tokenId: tokenRow.id, planCode: client.plan, credits: client.usage, index });
     }
 
     const helena = await one<{ id: string }>(q, "SELECT id FROM organizations WHERE name LIKE 'Clínica%'", []);

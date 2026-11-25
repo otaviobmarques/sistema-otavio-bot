@@ -4,6 +4,7 @@ import { cancelSubscription, createCreditCharge, setSubscriptionAddon, startSubs
 import type { AppContext } from "../../context.ts";
 import { DomainError, setOrganizationStatus } from "../../domain/lifecycle.ts";
 import { adjustCredits, createOrganization } from "../../domain/organizations.ts";
+import { issueGatewayToken, revokeGatewayToken } from "../../gateway/tokens.ts";
 import { actorOf, body, param, reason, router } from "../http.ts";
 
 const billingType = z.enum(BILLING_TYPES as unknown as ["PIX", "BOLETO", "CREDIT_CARD", "UNDEFINED"]);
@@ -78,7 +79,7 @@ export function clientRoutes(ctx: AppContext) {
     const id = param(c, "id");
     const org = (await ctx.db.query("SELECT * FROM organizations WHERE id = $1", [id])).rows[0];
     if (!org) throw new DomainError("Cliente não encontrado", 404);
-    const [members, subscription, wallet, ledger, payments, instances, auditRows, terms, addons] = await Promise.all([
+    const [members, subscription, wallet, ledger, payments, instances, auditRows, terms, addons, tokens, usage] = await Promise.all([
       ctx.db.query(`SELECT a.id, a.email, a.name, a.phone, m.role, m.created_at FROM memberships m JOIN accounts a ON a.id = m.account_id
                     WHERE m.organization_id = $1 ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, a.email`, [id]),
       ctx.db.query(`${SUBSCRIPTION_SQL} WHERE s.organization_id = $1 ORDER BY (s.status = 'canceled'), s.created_at DESC LIMIT 1`, [id]),
@@ -94,11 +95,15 @@ export function clientRoutes(ctx: AppContext) {
                     ORDER BY t.accepted_at DESC LIMIT 20`, [id]),
       ctx.db.query(`SELECT sa.addon_id, sa.quantity, sa.unit_price_cents, ad.name, ad.code FROM subscription_addons sa JOIN addons ad ON ad.id = sa.addon_id
                     JOIN subscriptions s ON s.id = sa.subscription_id WHERE s.organization_id = $1 AND s.status <> 'canceled'`, [id]),
+      ctx.db.query(`SELECT t.id, t.token_prefix, t.label, t.instance_id, i.slug AS instance_slug, t.created_at, t.last_used_at, t.revoked_at, t.expires_at
+                    FROM gateway_tokens t LEFT JOIN instances i ON i.id = t.instance_id WHERE t.organization_id = $1 ORDER BY t.revoked_at NULLS FIRST, t.created_at DESC`, [id]),
+      ctx.db.query(`SELECT count(*)::int AS requests, COALESCE(SUM(credits), 0)::bigint AS credits, COALESCE(SUM(cost_brl_cents), 0)::float8 AS cost_brl_cents
+                    FROM usage_events WHERE organization_id = $1 AND created_at >= $2`, [id, new Date(ctx.now().getTime() - 30 * 86_400_000)]),
     ]);
     return c.json({
       client: org, members: members.rows, subscription: subscription.rows[0] ?? null, addons: addons.rows,
       wallet: wallet.rows[0] ?? { plan_balance: 0, extra_balance: 0 }, ledger: ledger.rows, payments: payments.rows,
-      instances: instances.rows, audit: auditRows.rows, terms: terms.rows,
+      instances: instances.rows, audit: auditRows.rows, terms: terms.rows, gatewayTokens: tokens.rows, usage30d: usage.rows[0],
     });
   });
 
@@ -141,6 +146,21 @@ export function clientRoutes(ctx: AppContext) {
     if (!sub) throw new DomainError("Este cliente não tem assinatura em andamento", 404);
     const total = await setSubscriptionAddon(ctx, actorOf(c), sub.id, input.addonId, input.quantity);
     return c.json({ ok: true, totalCents: total });
+  });
+
+  app.post("/:id/gateway-tokens", async (c) => {
+    const id = param(c, "id");
+    const input = await body(c, z.object({ label: z.string().trim().min(2).max(80), instanceId: z.uuid().nullable().optional() }));
+    const issued = await issueGatewayToken(ctx.db, actorOf(c), { organizationId: id, instanceId: input.instanceId ?? null, label: input.label });
+    return c.json(issued, 201);
+  });
+
+  app.post("/:id/gateway-tokens/:tokenId/revoke", async (c) => {
+    const id = param(c, "id");
+    const tokenId = param(c, "tokenId");
+    const input = await body(c, z.object({ reason }));
+    await revokeGatewayToken(ctx.db, actorOf(c), id, tokenId, input.reason);
+    return c.json({ ok: true });
   });
 
   app.post("/:id/credit-charge", async (c) => {

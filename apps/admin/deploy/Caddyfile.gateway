@@ -1,0 +1,15 @@
+{$GATEWAY_DOMAIN} {
+	encode zstd gzip {
+		match {
+			not header Content-Type text/event-stream*
+		}
+	}
+	reverse_proxy gateway:8791 {
+		# SSE: cada evento vai para o cliente na hora.
+		flush_interval -1
+		transport http {
+			read_timeout 30m
+			write_timeout 30m
+		}
+	}
+}

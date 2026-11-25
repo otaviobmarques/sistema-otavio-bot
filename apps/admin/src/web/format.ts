@@ -134,6 +134,14 @@ const ACTIONS: Record<string, string> = {
   "vps_account.created": "Conta Hostinger cadastrada",
   "vps_account.updated": "Conta Hostinger alterada",
   "vps_account.rotated": "Token Hostinger trocado",
+  "gateway_token.issued": "Token do gateway emitido",
+  "gateway_token.revoked": "Token do gateway revogado",
+  "model_price.created": "Modelo adicionado à tabela de preços",
+  "model_price.updated": "Preço de modelo alterado",
+  "gateway_settings.updated": "Câmbio/markup do gateway alterados",
+  "usage.threshold_50": "Consumo chegou a 50% da cota",
+  "usage.threshold_80": "Consumo chegou a 80% da cota",
+  "usage.threshold_100": "Consumo chegou a 100% da cota",
 };
 
 export const actionLabel = (action: string) => ACTIONS[action] ?? action;

@@ -41,6 +41,7 @@ export const CREDENTIAL_ENV_NAMES = [
   "OMB_CLOUD_AI_TOKEN",
   "OMB_CLOUD_X_TOKEN",
   "OMB_CLOUD_CONNECTED_APPS_GRANT",
+  "OMB_CLOUD_AI_GATEWAY_TOKEN",
   // Private even though they are not traditional API credentials.
   "OMB_BROWSER_CONNECTION",
   "OMB_USER_DATA",

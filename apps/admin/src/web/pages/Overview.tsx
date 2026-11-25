@@ -1,4 +1,4 @@
-import { AlertTriangle, Building2, Coins, Gift, Inbox, TrendingUp, Wallet } from "lucide-react";
+import { AlertTriangle, Building2, Coins, Gauge, Inbox, TrendingUp, Wallet } from "lucide-react";
 import { Link } from "react-router";
 import { useApi } from "../api.ts";
 import { actionLabel, ACTOR, brl, date, dateTime, daysSince, int, PAYMENT_STATUS, SUB_STATUS } from "../format.ts";
@@ -26,7 +26,9 @@ export function OverviewPage() {
         <Stat label="Clientes ativos" value={int(s.active_clients)} icon={<Building2 className="h-4 w-4" />}
           hint={`${plural(s.paying, "pagante", "pagantes")} · ${plural(s.suspended_clients, "suspenso", "suspensos")}`} />
         <Stat label="MRR" value={brl(s.mrr_cents)} icon={<TrendingUp className="h-4 w-4" />} hint={`Recebido no mês: ${brl(s.received_month_cents)}`} />
-        <Stat label="Gratuitos" value={int(s.free_clients)} icon={<Gift className="h-4 w-4" />} hint="Assinaturas ativas em planos grátis" />
+        <Stat label="Margem de IA (mês)" value={brl(Number(s.ai_credits_month) - Number(s.ai_cost_brl_cents_month))} icon={<Gauge className="h-4 w-4" />}
+          tone={Number(s.ai_credits_month) - Number(s.ai_cost_brl_cents_month) < 0 ? "alert" : "default"}
+          hint={<Link to="/consumo" className="text-cyan-ink hover:underline">Cobrado {brl(s.ai_credits_month)} · custo {brl(s.ai_cost_brl_cents_month)}</Link>} />
         <Stat label="Inadimplentes" value={int(delinquent)} icon={<AlertTriangle className="h-4 w-4" />} tone={delinquent > 0 ? "alert" : "default"}
           hint={`${int(s.past_due)} em atraso · ${plural(s.suspended_billing, "suspenso", "suspensos")} por cobrança`} />
       </div>
