@@ -9,6 +9,8 @@
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "start": "node src/server/node.ts",
+    "gateway": "node src/gateway/node.ts",
+    "build:gateway": "node scripts/build-gateway.mjs",
     "build": "tsc -p tsconfig.json && vite build",
     "build:vercel": "pnpm run build && node scripts/build-vercel.mjs",
     "typecheck": "tsc -p tsconfig.json",

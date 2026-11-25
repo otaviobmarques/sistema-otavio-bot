@@ -1,4 +1,4 @@
-import { ArrowLeft, Ban, Boxes, Coins, Play, QrCode, RotateCcw, XCircle } from "lucide-react";
+import { ArrowLeft, Ban, Boxes, Coins, KeyRound, Play, QrCode, RotateCcw, XCircle } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
 import { api, useApi } from "../api.ts";
@@ -25,6 +25,13 @@ interface Detail {
   instances: { id: string; slug: string; machine_id: string; mode: string; state: string; state_reason: string | null }[];
   audit: { id: number; created_at: string; actor_type: string; actor_label: string | null; action: string; reason: string | null }[];
   terms: { document: string; version: string; accepted_at: string; ip: string; email: string }[];
+  gatewayTokens: GatewayToken[];
+  usage30d: { requests: number; credits: number; cost_brl_cents: number };
+}
+
+interface GatewayToken {
+  id: string; token_prefix: string; label: string; instance_id: string | null; instance_slug: string | null; created_at: string; last_used_at: string | null;
+  revoked_at: string | null; expires_at: string | null;
 }
 
 interface PlansData {
@@ -161,6 +168,8 @@ export function ClientDetailPage() {
           )}
         </Card>
       </div>
+
+      <GatewayCard detail={data} writable={writable} onChanged={reload} />
 
       <div className="mt-8">
         <Tabs<Section> value={section} onChange={setSection} items={[
@@ -432,5 +441,94 @@ function AddonsEditor({ detail, writable, onChanged }: { detail: Detail; writabl
         );
       })}
     </div>
+  );
+}
+
+function GatewayCard({ detail, writable, onChanged }: { detail: Detail; writable: boolean; onChanged: () => void }) {
+  const [issuing, setIssuing] = useState(false);
+  const [revoking, setRevoking] = useState<GatewayToken | null>(null);
+  const active = detail.gatewayTokens.filter((token) => !token.revoked_at);
+  const usage = detail.usage30d;
+  return (
+    <Card title="Gateway de IA" className="mt-6" padded={false} actions={<>
+      <Link to={`/consumo?cliente=${detail.client.id}`} className="text-xs font-medium text-cyan-ink hover:underline">Consumo detalhado</Link>
+      {writable ? <Button size="sm" onClick={() => setIssuing(true)} disabled={detail.client.status === "canceled"}><KeyRound className="h-3.5 w-3.5" /> Emitir token</Button> : null}
+    </>}>
+      <div className="grid grid-cols-3 gap-3 border-b border-line px-5 py-4 text-sm">
+        <div><div className="text-xs text-slate-500">Requisições (30 dias)</div><div className="mt-0.5 font-semibold tabular">{int(usage.requests)}</div></div>
+        <div><div className="text-xs text-slate-500">Créditos cobrados</div><div className="mt-0.5 font-semibold tabular">{int(usage.credits)} <span className="font-normal text-slate-500">= {brl(usage.credits)}</span></div></div>
+        <div><div className="text-xs text-slate-500">Custo real · margem</div><div className="mt-0.5 font-semibold tabular">{brl(usage.cost_brl_cents)} · <span className={Number(usage.credits) - Number(usage.cost_brl_cents) < 0 ? "text-red-600" : "text-emerald-700"}>{brl(Number(usage.credits) - Number(usage.cost_brl_cents))}</span></div></div>
+      </div>
+      <Table head={["Token", "Instância", "Emitido", "Último uso", "Situação", ""]}
+        empty={<>Nenhum token. A instância usa o token em <Mono>OMB_CLOUD_AI_GATEWAY_TOKEN</Mono> para gastar os créditos do plano na IA da Domma.</>}>
+        {detail.gatewayTokens.map((token) => (
+          <tr key={token.id} className={token.revoked_at ? "text-slate-400" : ""}>
+            <td className={td}><div className="font-medium">{token.label || "—"}</div><Mono>{token.token_prefix}…</Mono></td>
+            <td className={td}>{token.instance_slug ?? <span className="text-slate-500">todas do cliente</span>}</td>
+            <td className={`${td} whitespace-nowrap text-slate-600`}>{dateTime(token.created_at)}</td>
+            <td className={`${td} whitespace-nowrap text-slate-600`}>{token.last_used_at ? dateTime(token.last_used_at) : "nunca"}</td>
+            <td className={td}>{token.revoked_at ? <Badge tone="slate">revogado em {date(token.revoked_at)}</Badge> : <Badge tone="green">ativo</Badge>}</td>
+            <td className={`${td} text-right`}>{writable && !token.revoked_at ? <Button size="sm" variant="ghost" onClick={() => setRevoking(token)}>Revogar</Button> : null}</td>
+          </tr>
+        ))}
+      </Table>
+      {active.length > 1 ? <p className="border-t border-line px-5 py-2.5 text-xs text-slate-500">{active.length} tokens ativos: revogue os que não estão mais em uso.</p> : null}
+      <IssueTokenDialog open={issuing} detail={detail} onClose={() => setIssuing(false)} onDone={onChanged} />
+      <RevokeTokenDialog token={revoking} clientId={detail.client.id} onClose={() => setRevoking(null)} onDone={() => { setRevoking(null); onChanged(); }} />
+    </Card>
+  );
+}
+
+function IssueTokenDialog({ open, detail, onClose, onDone }: { open: boolean; detail: Detail; onClose: () => void; onDone: () => void }) {
+  const [label, setLabel] = useState("Instância principal");
+  const [instanceId, setInstanceId] = useState("");
+  const [issued, setIssued] = useState<string | null>(null);
+  const { busy, error, submit } = useSubmit(onDone, "Token emitido");
+  const closeAll = () => {
+    setIssued(null);
+    onClose();
+  };
+  return (
+    <Modal title="Emitir token do gateway" open={open} onClose={closeAll} footer={issued ? <Button onClick={closeAll}>Já copiei</Button> : <>
+      <Button variant="secondary" onClick={closeAll}>Cancelar</Button>
+      <Button busy={busy} onClick={async () => {
+        const result = await submit(`/api/clients/${detail.client.id}/gateway-tokens`, { label, instanceId: instanceId || null });
+        if (result) setIssued((result as { token: string }).token);
+      }}>Emitir</Button>
+    </>}>
+      {issued ? (
+        <>
+          <p className="text-sm text-slate-600">Copie agora: o token aparece <b>só uma vez</b> (guardamos apenas o hash). Configure na instância como <Mono>OMB_CLOUD_AI_GATEWAY_TOKEN</Mono>, junto com <Mono>OMB_CLOUD_AI_GATEWAY_URL</Mono>.</p>
+          <Field label="Token"><Textarea readOnly value={issued} className="font-mono text-xs" onFocus={(e) => e.target.select()} /></Field>
+        </>
+      ) : (
+        <>
+          <Field label="Nome" hint="Para reconhecer o token depois"><Input value={label} onChange={(e) => setLabel(e.target.value)} /></Field>
+          <Field label="Instância" hint="Vincular a uma instância deixa o consumo atribuído a ela">
+            <Select value={instanceId} onChange={(e) => setInstanceId(e.target.value)}>
+              <option value="">Qualquer instância do cliente</option>
+              {detail.instances.map((instance) => <option key={instance.id} value={instance.id}>{instance.slug}</option>)}
+            </Select>
+          </Field>
+          <ErrorNote message={error} />
+        </>
+      )}
+    </Modal>
+  );
+}
+
+function RevokeTokenDialog({ token, clientId, onClose, onDone }: { token: GatewayToken | null; clientId: string; onClose: () => void; onDone: () => void }) {
+  const [reason, setReason] = useState("");
+  const { busy, error, submit } = useSubmit(() => { setReason(""); onDone(); }, "Token revogado");
+  if (!token) return null;
+  return (
+    <Modal title="Revogar token do gateway" open onClose={onClose} footer={<>
+      <Button variant="secondary" onClick={onClose}>Voltar</Button>
+      <Button variant="danger" busy={busy} onClick={() => submit(`/api/clients/${clientId}/gateway-tokens/${token.id}/revoke`, { reason })}>Revogar</Button>
+    </>}>
+      <p className="text-sm text-slate-600">O token <Mono>{token.token_prefix}…</Mono> ({token.label}) para de funcionar na hora. A instância passa a receber 401 até receber um novo.</p>
+      <Field label="Motivo" hint="Fica na auditoria com o seu nome."><Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ex.: instância recriada" /></Field>
+      <ErrorNote message={error} />
+    </Modal>
   );
 }

@@ -11,6 +11,7 @@ import type { Ctx, Env } from "./http.ts";
 import { authRoutes } from "./routes/auth.ts";
 import { billingRoutes } from "./routes/billing.ts";
 import { clientRoutes } from "./routes/clients.ts";
+import { gatewayRoutes } from "./routes/gateway.ts";
 import { integrationRoutes } from "./routes/integrations.ts";
 import { auditRoutes, meRoutes } from "./routes/misc.ts";
 import { overviewRoutes } from "./routes/overview.ts";
@@ -103,6 +104,7 @@ export function createApp(ctx: AppContext) {
   api.route("/plans", planRoutes(ctx));
   api.route("/billing", billingRoutes(ctx));
   api.route("/integrations", integrationRoutes(ctx));
+  api.route("/gateway", gatewayRoutes(ctx));
   api.route("/audit", auditRoutes(ctx));
   api.route("/me", meRoutes(ctx));
   app.route("/api", api);

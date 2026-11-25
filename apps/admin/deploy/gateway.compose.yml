@@ -1,0 +1,32 @@
+# Gateway de IA num VPS da Domma, com HTTPS pelo Caddy.
+#   cd apps/admin/deploy
+#   cp gateway.env.example gateway.env   # preencha DATABASE_URL e ADMIN_ENCRYPTION_KEY (as mesmas do Admin)
+#   GATEWAY_DOMAIN=ia.arkobot.com.br docker compose -f gateway.compose.yml up -d --build
+services:
+  gateway:
+    build:
+      context: ../../..
+      dockerfile: apps/admin/Dockerfile.gateway
+    env_file: gateway.env
+    restart: unless-stopped
+    # Encerramento gracioso: espera os streams em andamento liquidarem os créditos.
+    stop_grace_period: 2m
+
+  caddy:
+    image: caddy:2.10
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      GATEWAY_DOMAIN: ${GATEWAY_DOMAIN:?defina GATEWAY_DOMAIN}
+    volumes:
+      - ./Caddyfile.gateway:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - gateway
+
+volumes:
+  caddy_data:
+  caddy_config:

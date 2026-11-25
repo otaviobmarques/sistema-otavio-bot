@@ -1,0 +1,21 @@
+# Gateway de IA do ArkoBot. Build a partir da raiz do repositório:
+#   docker build -f apps/admin/Dockerfile.gateway -t arkobot-gateway .
+# A imagem final leva só o gateway empacotado num arquivo (dist/gateway/gateway.mjs) e o Node.
+FROM node:24-slim AS build
+ENV CI=true
+RUN corepack enable
+WORKDIR /src
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY apps/admin/package.json apps/admin/
+RUN pnpm install --filter @arkobot/admin --frozen-lockfile --ignore-scripts
+COPY apps/admin apps/admin
+RUN node apps/admin/scripts/build-gateway.mjs
+
+FROM node:24-slim
+WORKDIR /app
+COPY --from=build /src/apps/admin/dist/gateway/gateway.mjs ./gateway.mjs
+ENV NODE_ENV=production GATEWAY_HOST=0.0.0.0 GATEWAY_PORT=8791
+USER node
+EXPOSE 8791
+HEALTHCHECK --interval=30s --timeout=5s CMD node -e "fetch('http://127.0.0.1:8791/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+CMD ["node", "gateway.mjs"]

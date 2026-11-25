@@ -15,6 +15,8 @@ export interface LedgerInput {
   adminId?: string | null;
   reason?: string | null;
   metadata?: Record<string, unknown>;
+  /** Only AI usage may take the extra bucket below zero, within the gateway's tolerance. */
+  allowOverdraft?: boolean;
 }
 
 export interface LedgerPost {
@@ -51,7 +53,7 @@ export async function postLedger(q: Queryable, input: LedgerInput): Promise<Ledg
   if (existing.rows[0]) return { applied: false, balanceAfter: Number(existing.rows[0].balance_after) };
   const current = input.bucket === "plan" ? wallet.plan : wallet.extra;
   const balanceAfter = current + input.amount;
-  if (balanceAfter < 0) throw new InsufficientCreditsError(`Saldo insuficiente: ${current} créditos (${input.bucket === "plan" ? "do plano" : "avulsos"})`);
+  if (balanceAfter < 0 && !(input.allowOverdraft && input.bucket === "extra")) throw new InsufficientCreditsError(`Saldo insuficiente: ${current} créditos (${input.bucket === "plan" ? "do plano" : "avulsos"})`);
   const inserted = await q.query(
     `INSERT INTO credit_ledger (organization_id, billing_account_id, payment_id, admin_id, bucket, kind, amount, balance_after, external_reference, reason, metadata)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)

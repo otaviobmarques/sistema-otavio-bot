@@ -1,5 +1,5 @@
 import {
-  Boxes, Building2, CreditCard, Gauge, KeyRound, LayoutDashboard, LogOut, Package, ScrollText, ServerCog, UserRound,
+  Boxes, Building2, CreditCard, Gauge, KeyRound, LayoutDashboard, LogOut, Package, ReceiptText, ScrollText, ServerCog, UserRound,
 } from "lucide-react";
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { NavLink, Navigate, Route, Routes } from "react-router";
@@ -14,6 +14,8 @@ import { LoginPage } from "./pages/Login.tsx";
 import { OverviewPage } from "./pages/Overview.tsx";
 import { ComingSoon } from "./pages/ComingSoon.tsx";
 import { PlansPage } from "./pages/Plans.tsx";
+import { PricesPage } from "./pages/Prices.tsx";
+import { UsagePage } from "./pages/Usage.tsx";
 import { cx, Loading, Mark, Wordmark } from "./ui.tsx";
 
 export interface Me {
@@ -35,7 +37,8 @@ const NAV: { to: string; label: string; icon: ReactNode; soon?: boolean }[] = [
   { to: "/cobranca", label: "Cobrança", icon: <CreditCard className="h-4 w-4" /> },
   { to: "/instancias", label: "Instâncias", icon: <Boxes className="h-4 w-4" />, soon: true },
   { to: "/computadores", label: "Computadores", icon: <ServerCog className="h-4 w-4" />, soon: true },
-  { to: "/consumo", label: "Consumo de IA", icon: <Gauge className="h-4 w-4" />, soon: true },
+  { to: "/consumo", label: "Consumo de IA", icon: <Gauge className="h-4 w-4" /> },
+  { to: "/precos", label: "Tabela de preços", icon: <ReceiptText className="h-4 w-4" /> },
   { to: "/integracoes", label: "Integrações", icon: <KeyRound className="h-4 w-4" /> },
   { to: "/auditoria", label: "Auditoria", icon: <ScrollText className="h-4 w-4" /> },
 ];
@@ -130,7 +133,8 @@ export function App() {
           <Route path="/conta" element={<AccountPage />} />
           <Route path="/instancias" element={<ComingSoon kind="instances" />} />
           <Route path="/computadores" element={<ComingSoon kind="computers" />} />
-          <Route path="/consumo" element={<ComingSoon kind="usage" />} />
+          <Route path="/consumo" element={<UsagePage />} />
+          <Route path="/precos" element={<PricesPage />} />
           <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
