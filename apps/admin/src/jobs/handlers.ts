@@ -1,3 +1,4 @@
+import { renewCourtesies, type CourtesySummary } from "../billing/courtesy.ts";
 import { CANCEL_PROVIDER_SUBSCRIPTION_JOB, cancelProviderSubscriptionJob, runDunning, type DunningSummary } from "../billing/service.ts";
 import { markBillingEventFailed, PROCESS_EVENT_JOB, processBillingEvent } from "../billing/webhooks.ts";
 import { sweepRateLimits } from "../auth/rate-limit.ts";
@@ -21,12 +22,14 @@ export const JOB_HANDLERS: Record<string, JobHandler> = {
 export interface TickSummary {
   jobs: RunSummary;
   dunning: DunningSummary;
+  courtesy: CourtesySummary;
   expiredReservations: number;
 }
 
-/** One cron tick: the overdue ladder, then the queue. Safe to run concurrently and as often as wanted. */
+/** One cron tick: the overdue ladder and the courtesies, then the queue. Safe to run concurrently and as often as wanted. */
 export async function tick(ctx: AppContext, limit = 50): Promise<TickSummary> {
   const dunning = await runDunning(ctx);
+  const courtesy = await renewCourtesies(ctx);
   const jobs = await runJobs(ctx, JOB_HANDLERS, { limit });
   await sweepRateLimits(ctx.db, ctx.now());
   const expiredReservations = await expireReservations(ctx.db, ctx.now());
@@ -34,5 +37,5 @@ export async function tick(ctx: AppContext, limit = 50): Promise<TickSummary> {
   await ctx.db.query("DELETE FROM admin_sessions WHERE expires_at < $1", [weekAgo]);
   await ctx.db.query("DELETE FROM account_sessions WHERE expires_at < $1", [weekAgo]);
   await ctx.db.query("DELETE FROM account_otps WHERE expires_at < $1", [ctx.now()]);
-  return { jobs, dunning, expiredReservations };
+  return { jobs, dunning, courtesy, expiredReservations };
 }

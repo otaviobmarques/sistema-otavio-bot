@@ -20,6 +20,11 @@ export interface SubscriptionRow {
   next_due_date: string | null;
   past_due_since: Date | null;
   canceled_at: Date | null;
+  courtesy: boolean;
+  courtesy_reason: string | null;
+  /** YYYY-MM-DD, the last day of the courtesy (Brasília); null = no end. */
+  courtesy_until: string | null;
+  courtesy_granted_by: string | null;
 }
 
 export interface OrganizationRow {

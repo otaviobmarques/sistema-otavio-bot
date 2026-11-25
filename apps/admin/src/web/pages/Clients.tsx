@@ -8,7 +8,7 @@ import { Badge, Button, Card, Empty, ErrorNote, Field, Input, Modal, PageHeader,
 
 interface ClientRow {
   id: string; name: string; document_type: string; document: string; status: string; status_reason: string | null; created_at: string;
-  subscription_status: string | null; plan_name: string | null; plan_free: boolean | null; credits: number; owner_email: string | null;
+  subscription_status: string | null; plan_name: string | null; plan_free: boolean | null; courtesy: boolean | null; credits: number; owner_email: string | null;
 }
 
 type Filter = "" | "active" | "past_due" | "suspended" | "canceled";
@@ -60,7 +60,7 @@ export function ClientsPage() {
                   <div className="text-xs text-slate-500">{row.document_type.toUpperCase()} {documentFormat(row.document)}</div>
                 </td>
                 <td className={`${td} text-slate-600`}>{row.owner_email ?? "—"}</td>
-                <td className={td}>{row.plan_name ? <>{row.plan_name} {row.plan_free ? <Badge tone="cyan">grátis</Badge> : null}</> : <span className="text-slate-400">sem plano</span>}</td>
+                <td className={td}>{row.plan_name ? <>{row.plan_name} {row.plan_free ? <Badge tone="cyan">grátis</Badge> : null}{row.courtesy ? <Badge tone="violet">cortesia</Badge> : null}</> : <span className="text-slate-400">sem plano</span>}</td>
                 <td className={td}><StatusBadge map={SUB_STATUS} value={row.subscription_status} /></td>
                 <td className={`${td} tabular`}>{int(row.credits)}</td>
                 <td className={td}><StatusBadge map={ORG_STATUS} value={row.status} /></td>

@@ -8,7 +8,8 @@ export type BillingSignal =
   | "provider_ended"
   | "dunning_suspend"
   | "dunning_cancel"
-  | "admin_cancel";
+  | "admin_cancel"
+  | "courtesy_expired";
 
 /**
  * The subscription's next status for a signal, or null when the signal leaves
@@ -28,6 +29,7 @@ export function nextSubscriptionStatus(current: SubscriptionStatus, signal: Bill
       return current === "suspended" ? null : "suspended";
     case "provider_ended":
     case "admin_cancel":
+    case "courtesy_expired":
       return "canceled";
     case "dunning_suspend":
       return current === "past_due" ? "suspended" : null;
@@ -76,4 +78,11 @@ export function addMonths(date: Date, months: number): Date {
 
 export function isoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
+}
+
+const BRASILIA_OFFSET_MS = 3 * 60 * 60_000;
+
+/** Today's date in Brasília (UTC−3, no daylight saving since 2019), as YYYY-MM-DD. */
+export function brasiliaDate(now: Date): string {
+  return isoDate(new Date(now.getTime() - BRASILIA_OFFSET_MS));
 }

@@ -12,7 +12,8 @@ export function overviewRoutes(ctx: AppContext) {
         `SELECT
            (SELECT count(*) FROM organizations WHERE status = 'active')::int AS active_clients,
            (SELECT count(*) FROM organizations WHERE status = 'suspended')::int AS suspended_clients,
-           (SELECT count(*) FROM subscriptions s JOIN plans p ON p.id = s.plan_id WHERE s.status IN ('active', 'past_due') AND NOT p.free)::int AS paying,
+           (SELECT count(*) FROM subscriptions s JOIN plans p ON p.id = s.plan_id WHERE s.status IN ('active', 'past_due') AND NOT p.free AND NOT s.courtesy)::int AS paying,
+           (SELECT count(*) FROM subscriptions WHERE status = 'active' AND courtesy)::int AS courtesy,
            (SELECT count(*) FROM subscriptions WHERE status = 'past_due')::int AS past_due,
            (SELECT count(*) FROM subscriptions s JOIN organizations o ON o.id = s.organization_id
               WHERE s.status = 'suspended' AND o.status_reason_code IN ('billing', 'chargeback'))::int AS suspended_billing,

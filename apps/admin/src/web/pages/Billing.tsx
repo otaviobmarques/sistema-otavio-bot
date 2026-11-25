@@ -203,8 +203,8 @@ function Subscriptions() {
         {(data?.subscriptions ?? []).map((row) => (
           <tr key={row.id} className="hover:bg-slate-50">
             <td className={td}><Link className="font-medium hover:text-cyan-ink" to={`/clientes/${row.organization_id}`}>{row.organization_name}</Link></td>
-            <td className={td}>{row.plan_name}</td>
-            <td className={`${td} tabular`}>{brl(row.total_cents)}</td>
+            <td className={td}>{row.plan_name} {row.courtesy ? <Badge tone="violet">cortesia</Badge> : null}</td>
+            <td className={`${td} tabular`}>{row.courtesy ? "sem cobrança" : brl(row.total_cents)}</td>
             <td className={td}>{row.billing_type ? BILLING_TYPE[row.billing_type] : "—"}</td>
             <td className={td}><StatusBadge map={SUB_STATUS} value={row.status} /></td>
             <td className={td}>{row.status === "canceled" ? "—" : date(row.next_due_date)}</td>

@@ -114,6 +114,8 @@ const ACTIONS: Record<string, string> = {
   "subscription.suspended": "Assinatura suspensa",
   "subscription.canceled": "Assinatura cancelada",
   "subscription.addon_changed": "Adicionais alterados",
+  "subscription.courtesy_granted": "Cortesia liberada",
+  "subscription.courtesy_revoked": "Cortesia encerrada",
   "payment.credit_charge_created": "Cobrança de créditos gerada",
   "payment.refunded": "Pagamento estornado",
   "payment.after_cancel": "Pagamento após cancelamento",

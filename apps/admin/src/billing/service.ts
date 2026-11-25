@@ -182,6 +182,7 @@ export async function setSubscriptionAddon(
   if (!Number.isInteger(quantity) || quantity < 0 || quantity > 500) throw new DomainError("Quantidade inválida");
   const sub = (await ctx.db.query<SubscriptionRow>("SELECT * FROM subscriptions WHERE id = $1", [subscriptionId])).rows[0];
   if (!sub || sub.status === "canceled") throw new DomainError("Assinatura inexistente ou cancelada", 404);
+  if (sub.courtesy) throw new DomainError("A cortesia não leva adicionais: eles seriam cobrados e a cortesia não tem cobrança");
   const addon = (await ctx.db.query<{ id: string; code: string; price_cents: number; paid_plans_only: boolean; active: boolean }>(
     "SELECT * FROM addons WHERE id = $1", [addonId])).rows[0];
   if (!addon || !addon.active) throw new DomainError("Adicional inexistente ou inativo");
@@ -258,6 +259,7 @@ export interface DunningSummary {
  * payment_problem) → suspended after `suspendAfterDays` → subscription and
  * client canceled after `cancelAfterDays`, with the provider subscription
  * cancelled by a queued job. Free plans get their monthly quota here too.
+ * Courtesy subscriptions are never charged, so the ladder leaves them alone.
  */
 export async function runDunning(ctx: AppContext): Promise<DunningSummary> {
   const now = ctx.now();
@@ -266,7 +268,7 @@ export async function runDunning(ctx: AppContext): Promise<DunningSummary> {
   const system: Actor = { type: "system", label: "régua de inadimplência" };
 
   const toSuspend = await ctx.db.query<{ id: string }>(
-    "SELECT id FROM subscriptions WHERE status = 'past_due' AND past_due_since <= $1",
+    "SELECT id FROM subscriptions WHERE status = 'past_due' AND NOT courtesy AND past_due_since <= $1",
     [new Date(now.getTime() - ctx.config.dunning.suspendAfterDays * day)]);
   for (const { id } of toSuspend.rows) {
     const next = await ctx.db.tx((q) => applySubscriptionSignal(q, system, id, "dunning_suspend", now,
@@ -276,7 +278,7 @@ export async function runDunning(ctx: AppContext): Promise<DunningSummary> {
 
   const toCancel = await ctx.db.query<{ id: string }>(
     `SELECT s.id FROM subscriptions s JOIN organizations o ON o.id = s.organization_id
-     WHERE s.status = 'suspended' AND o.status_reason_code = 'billing' AND s.past_due_since <= $1`,
+     WHERE s.status = 'suspended' AND NOT s.courtesy AND o.status_reason_code = 'billing' AND s.past_due_since <= $1`,
     [new Date(now.getTime() - ctx.config.dunning.cancelAfterDays * day)]);
   for (const { id } of toCancel.rows) {
     const next = await ctx.db.tx(async (q) => {
@@ -289,7 +291,7 @@ export async function runDunning(ctx: AppContext): Promise<DunningSummary> {
 
   const freeDue = await ctx.db.query<SubscriptionRow>(
     `SELECT s.* FROM subscriptions s JOIN plans p ON p.id = s.plan_id
-     WHERE p.free AND s.status = 'active' AND s.current_period_end <= $1`, [now]);
+     WHERE p.free AND NOT s.courtesy AND s.status = 'active' AND s.current_period_end <= $1`, [now]);
   for (const sub of freeDue.rows) {
     await ctx.db.tx(async (q) => {
       const start = sub.current_period_end!;

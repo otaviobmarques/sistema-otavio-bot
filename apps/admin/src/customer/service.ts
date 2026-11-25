@@ -233,7 +233,7 @@ export async function dashboard(ctx: AppContext, req: CustomerRequest, factory: 
     ctx.db.query("SELECT id, name, document_type, document, status, status_reason_code, created_at FROM organizations WHERE id = $1", [orgId]),
     ctx.db.query(
       `SELECT s.id, s.status, s.billing_type, s.price_cents, s.credits_per_month, s.current_period_start, s.current_period_end, s.next_due_date,
-         s.past_due_since, s.canceled_at, s.created_at, p.code AS plan_code, p.name AS plan_name, p.included_vps,
+         s.past_due_since, s.canceled_at, s.created_at, s.courtesy, s.courtesy_until, p.code AS plan_code, p.name AS plan_name, p.included_vps,
          (s.price_cents + COALESCE((SELECT SUM(a.quantity * a.unit_price_cents) FROM subscription_addons a WHERE a.subscription_id = s.id), 0))::int AS total_cents
        FROM subscriptions s JOIN plans p ON p.id = s.plan_id
        WHERE s.organization_id = $1 ORDER BY (s.status = 'canceled'), s.created_at DESC LIMIT 1`, [orgId]),
@@ -273,11 +273,14 @@ export async function buyCredits(
   return createCreditCharge(ctx, customerActor(req), { organizationId: membership.organization_id, credits: pkg.credits, billingType: input.billingType }, factory);
 }
 
+const COURTESY_SUPPORT = "Seu plano é uma cortesia da ArkoBot. Para mudar ou encerrar, fale com a gente pelo WhatsApp.";
+
 export async function setExtraComputers(ctx: AppContext, req: CustomerRequest, quantity: number, factory: ProviderFactory = defaultProviderFactory): Promise<number> {
   if (!Number.isInteger(quantity) || quantity < 0 || quantity > MAX_EXTRA_COMPUTERS) throw new DomainError(`Escolha de 0 a ${MAX_EXTRA_COMPUTERS} computadores adicionais`);
   const membership = await requireMembership(ctx.db, req.session.accountId, true);
   const sub = await currentSubscription(ctx.db, membership.organization_id);
   if (!sub) throw new DomainError("Você não tem uma assinatura em andamento", 404);
+  if (sub.courtesy) throw new DomainError(COURTESY_SUPPORT, 409);
   return setSubscriptionAddon(ctx, customerActor(req), sub.id, await extraComputerAddonId(ctx.db), quantity, factory);
 }
 
@@ -288,6 +291,7 @@ export async function cancelOwnSubscription(ctx: AppContext, req: CustomerReques
   const membership = await requireMembership(ctx.db, req.session.accountId, true);
   const sub = await currentSubscription(ctx.db, membership.organization_id);
   if (!sub) throw new DomainError("Você não tem uma assinatura em andamento", 404);
+  if (sub.courtesy) throw new DomainError(COURTESY_SUPPORT, 409);
   const created = (await ctx.db.query<{ created_at: Date }>("SELECT created_at FROM subscriptions WHERE id = $1", [sub.id])).rows[0]!.created_at;
   const withinWithdrawal = ctx.now().getTime() - created.getTime() <= WITHDRAWAL_DAYS * 86_400_000;
   const text = `Cancelado pelo cliente: ${reason.trim()}`.slice(0, 500);
@@ -317,7 +321,7 @@ export async function exportData(ctx: AppContext, req: CustomerRequest) {
     ctx.db.query("SELECT created_at, last_seen_at, expires_at, revoked_at, ip, user_agent FROM account_sessions WHERE account_id = $1 ORDER BY created_at", [accountId]).then((r) => r.rows),
     ctx.db.query("SELECT status, reason, created_at, resolved_at FROM account_deletion_requests WHERE account_id = $1 ORDER BY created_at", [accountId]).then((r) => r.rows),
     byOrg(`SELECT s.id, p.name AS plan, s.status, s.billing_type, s.price_cents, s.credits_per_month, s.current_period_start, s.current_period_end,
-             s.next_due_date, s.canceled_at, s.cancel_reason, s.created_at FROM subscriptions s JOIN plans p ON p.id = s.plan_id
+             s.next_due_date, s.canceled_at, s.cancel_reason, s.courtesy, s.courtesy_until, s.created_at FROM subscriptions s JOIN plans p ON p.id = s.plan_id
            WHERE s.organization_id = $1 ORDER BY s.created_at`),
     byOrg(`SELECT ad.name, sa.quantity, sa.unit_price_cents, sa.created_at FROM subscription_addons sa JOIN addons ad ON ad.id = sa.addon_id
            JOIN subscriptions s ON s.id = sa.subscription_id WHERE s.organization_id = $1`),

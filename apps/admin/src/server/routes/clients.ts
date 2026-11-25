@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { grantCourtesy, revokeCourtesy } from "../../billing/courtesy.ts";
 import { BILLING_TYPES } from "../../billing/provider.ts";
 import { cancelSubscription, createCreditCharge, setSubscriptionAddon, startSubscription } from "../../billing/service.ts";
 import { audit } from "../../audit.ts";
@@ -21,9 +22,9 @@ const createSchema = z.object({
 });
 
 const SUBSCRIPTION_SQL = `
-  SELECT s.*, p.name AS plan_name, p.code AS plan_code, p.free AS plan_free, p.billing_cycle,
+  SELECT s.*, p.name AS plan_name, p.code AS plan_code, p.free AS plan_free, p.billing_cycle, ga.email AS courtesy_granted_by_email,
     (s.price_cents + COALESCE((SELECT SUM(a.quantity * a.unit_price_cents) FROM subscription_addons a WHERE a.subscription_id = s.id), 0))::int AS total_cents
-  FROM subscriptions s JOIN plans p ON p.id = s.plan_id`;
+  FROM subscriptions s JOIN plans p ON p.id = s.plan_id LEFT JOIN admins ga ON ga.id = s.courtesy_granted_by`;
 
 export function clientRoutes(ctx: AppContext) {
   const app = router();
@@ -55,7 +56,7 @@ export function clientRoutes(ctx: AppContext) {
     params.push(50, (page - 1) * 50);
     const { rows } = await ctx.db.query(
       `SELECT o.id, o.name, o.slug, o.document_type, o.document, o.status, o.status_reason, o.created_at,
-         s.status AS subscription_status, p.name AS plan_name, p.free AS plan_free,
+         s.status AS subscription_status, s.courtesy, p.name AS plan_name, p.free AS plan_free,
          COALESCE(w.plan_balance, 0) + COALESCE(w.extra_balance, 0) AS credits,
          (SELECT a.email FROM memberships m JOIN accounts a ON a.id = m.account_id WHERE m.organization_id = o.id AND m.role = 'owner') AS owner_email,
          count(*) OVER ()::int AS total
@@ -161,6 +162,23 @@ export function clientRoutes(ctx: AppContext) {
     const sub = (await ctx.db.query<{ id: string }>("SELECT id FROM subscriptions WHERE organization_id = $1 AND status <> 'canceled'", [id])).rows[0];
     if (!sub) throw new DomainError("Este cliente não tem assinatura em andamento", 404);
     await cancelSubscription(ctx, actorOf(c), sub.id, input.reason);
+    return c.json({ ok: true });
+  });
+
+  app.post("/:id/courtesy", async (c) => {
+    const id = param(c, "id");
+    const input = await body(c, z.object({ planId: z.uuid(), until: isoDay.nullable().optional(), reason }));
+    const sub = await grantCourtesy(ctx, actorOf(c), { organizationId: id, ...input });
+    return c.json({ subscription: sub }, 201);
+  });
+
+  app.post("/:id/courtesy/revoke", async (c) => {
+    const id = param(c, "id");
+    const input = await body(c, z.object({ reason }));
+    const sub = (await ctx.db.query<{ id: string }>(
+      "SELECT id FROM subscriptions WHERE organization_id = $1 AND status <> 'canceled' AND courtesy", [id])).rows[0];
+    if (!sub) throw new DomainError("Este cliente não tem cortesia em andamento", 404);
+    await revokeCourtesy(ctx, actorOf(c), sub.id, input.reason);
     return c.json({ ok: true });
   });
 
