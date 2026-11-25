@@ -33,9 +33,9 @@ describe("the product's name", () => {
   });
 
   it("ships the license and the NOTICE that credits OpenMausBot with every package", () => {
-    expect(builder).toMatch(/- from: LICENSE\n {4}to: licenses\/OpenMausBot-LICENSE\.txt/);
-    expect(builder).toMatch(/- from: NOTICE\n {4}to: licenses\/OpenMausBot-NOTICE\.txt/);
-    expect(read("NOTICE")).toMatch(/^ArkoBot\n[\s\S]*modified version of OpenMausBot, used under the Apache License,\nVersion 2\.0/);
+    expect(builder).toMatch(/- from: LICENSE\r?\n {4}to: licenses\/OpenMausBot-LICENSE\.txt/);
+    expect(builder).toMatch(/- from: NOTICE\r?\n {4}to: licenses\/OpenMausBot-NOTICE\.txt/);
+    expect(read("NOTICE")).toMatch(/^ArkoBot\r?\n[\s\S]*modified version of OpenMausBot, used under the Apache License,\r?\nVersion 2\.0/);
     expect(read("scripts/build-npm-package.mjs")).toContain('"LICENSE", "NOTICE", "README.md"');
   });
 
