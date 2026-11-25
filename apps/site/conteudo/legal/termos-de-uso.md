@@ -53,8 +53,8 @@ Este resumo não substitui o texto completo, mas mostra o essencial:
 
 1.2. Canais de atendimento:
 
-- **Atendimento, dúvidas, cancelamento e arrependimento:** [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290)<!-- TROCAR: canal provisório; substituir pelo e-mail quando o dono informar --> e a área de conta do app.
-- **Privacidade e proteção de dados (encarregado):** o nome será publicado nesta página; até lá, os pedidos são recebidos pelo [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290)<!-- TROCAR: NOME_ENCARREGADO e EMAIL_ENCARREGADO ainda não informados -->.
+- **Atendimento, dúvidas, cancelamento e arrependimento:** e-mail [contato@arkobot.com.br](mailto:contato@arkobot.com.br) ou [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290) e a área de conta do app.
+- **Privacidade e proteção de dados (encarregado):** Otávio Bruno Marques, pelo e-mail [contato@arkobot.com.br](mailto:contato@arkobot.com.br).
 - **Site:** <https://arkobot.com.br>.
 
 1.3. Respondemos às solicitações enviadas pelos canais acima em até **5 (cinco) dias**, como determina o Decreto nº 7.962/2013. Pedidos sobre dados pessoais seguem os prazos da Política de Privacidade.
@@ -97,7 +97,7 @@ O ArkoBot não é destinado a menores de 18 anos. Se identificarmos conta de men
 
 4.2. **Dados verdadeiros.** Você deve informar dados corretos, completos e atualizados, e mantê-los assim. Para emitir cobranças e notas fiscais, podemos pedir nome ou razão social, CPF ou CNPJ, endereço, e-mail e telefone. Podemos recusar, suspender ou encerrar cadastros com dados falsos, incompletos ou usados para fraude.
 
-4.3. **Segurança da conta.** Você é responsável por guardar os seus meios de acesso (senhas, códigos de pareamento, links de login e aparelhos pareados), por não compartilhá-los com pessoas não autorizadas e por tudo o que acontecer na conta a partir deles. Avise-nos imediatamente pelo [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290)<!-- TROCAR: canal provisório; substituir pelo e-mail quando o dono informar --> se suspeitar de acesso indevido.
+4.3. **Segurança da conta.** Você é responsável por guardar os seus meios de acesso (senhas, códigos de pareamento, links de login e aparelhos pareados), por não compartilhá-los com pessoas não autorizadas e por tudo o que acontecer na conta a partir deles. Avise-nos imediatamente pelo e-mail [contato@arkobot.com.br](mailto:contato@arkobot.com.br) ou pelo [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290) se suspeitar de acesso indevido.
 
 4.4. **Usuários da empresa.** Se o Cliente for empresa, ela escolhe quem acessa a conta e com quais permissões (dono, administrador, membro), responde pelos atos dos seus Usuários e deve retirar o acesso de quem não fizer mais parte da equipe.
 
@@ -161,13 +161,13 @@ O ArkoBot não é destinado a menores de 18 anos. Se identificarmos conta de men
 
 ## 8. Cancelamento, direito de arrependimento e reembolsos
 
-8.1. **Cancelar quando quiser.** Você pode cancelar o plano pago a qualquer momento, sem multa, pela área de conta do app ou pelo [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290)<!-- TROCAR: canal provisório; substituir pelo e-mail quando o dono informar -->, pelo mesmo meio usado para contratar. Confirmamos o recebimento do pedido imediatamente.
+8.1. **Cancelar quando quiser.** Você pode cancelar o plano pago a qualquer momento, sem multa, pela área de conta do app ou pelo e-mail [contato@arkobot.com.br](mailto:contato@arkobot.com.br) ou pelo [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290), pelo mesmo meio usado para contratar. Confirmamos o recebimento do pedido imediatamente.
 
 8.2. **Efeito do cancelamento.** Salvo no caso de arrependimento (8.3), o cancelamento vale ao fim do período já pago: você continua com acesso ao plano até lá e não há nova cobrança. Não há devolução proporcional de período já iniciado, exceto nos casos dos itens 8.3, 8.5 e 8.6.
 
 8.3. **Direito de arrependimento (Consumidor).** Se você é **Consumidor** e contratou pela internet, pode **desistir da contratação em até 7 (sete) dias** contados da contratação ou do primeiro pagamento, o que ocorrer por último, sem precisar justificar (art. 49 do CDC e art. 5º do Decreto nº 7.962/2013). Isso vale para a assinatura de plano pago, para a compra de pacotes de Créditos e para a contratação de VPS adicional. Nesse caso:
 
-- a) você pode exercer o direito pelo mesmo meio usado para contratar (área de conta do app) ou pelo [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290)<!-- TROCAR: canal provisório; substituir pelo e-mail quando o dono informar -->;
+- a) você pode exercer o direito pelo mesmo meio usado para contratar (área de conta do app) ou pelo e-mail [contato@arkobot.com.br](mailto:contato@arkobot.com.br) ou pelo [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290);
 - b) confirmamos o recebimento do pedido imediatamente;
 - c) **devolvemos integralmente os valores pagos**, pelo mesmo meio de pagamento: no cartão de crédito, comunicamos o estorno ao Asaas e à administradora do cartão imediatamente; no Pix ou boleto, a devolução é feita para conta de sua titularidade em até 10 (dez) dias; e
 - d) o plano, os Créditos e o VPS adicional contratados são cancelados.
@@ -192,7 +192,7 @@ O reembolso considera o preço efetivamente pago por Crédito, sem incluir Créd
 
 8.8. **Exclusão da conta e exportação.** Você pode pedir a exclusão da conta a qualquer momento. Depois do encerramento da conta, por qualquer motivo:
 
-- a) você tem **30 (trinta) dias** para exportar os seus dados pelas ferramentas do app ou pedindo pelo [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290)<!-- TROCAR: canal provisório; substituir pelo e-mail quando o dono informar -->;
+- a) você tem **30 (trinta) dias** para exportar os seus dados pelas ferramentas do app ou pedindo pelo e-mail [contato@arkobot.com.br](mailto:contato@arkobot.com.br) ou pelo [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290);
 - b) passado esse prazo, o Conteúdo do Cliente é excluído dos sistemas ativos em até mais 30 dias, e as cópias de segurança são apagadas no ciclo normal de rotação dos backups; e
 - c) guardamos apenas o que a lei exige ou permite guardar, como registros de acesso e dados fiscais, pelos prazos indicados na Política de Privacidade.
 
@@ -236,7 +236,7 @@ Se você pedir a exclusão imediata, sem prazo de exportação, os dados são ex
 
 10.3. **Monitoramento técnico.** Para proteger o Serviço, a Domma usa controles automáticos de segurança e de abuso (por exemplo, limites de envio, detecção de consumo anormal e filtros dos próprios Provedores de IA). A Domma não lê o Conteúdo do Cliente rotineiramente; o acesso humano acontece apenas nos casos da Política de Privacidade (suporte a seu pedido, investigação de abuso ou incidente, ou obrigação legal).
 
-10.4. **Falhas de segurança.** Se encontrar uma vulnerabilidade no ArkoBot, avise-nos pelo [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290)<!-- TROCAR: canal provisório; substituir pelo e-mail quando o dono informar --> antes de divulgá-la. Não acesse dados de outros clientes nem prejudique o Serviço ao investigar.
+10.4. **Falhas de segurança.** Se encontrar uma vulnerabilidade no ArkoBot, avise-nos pelo e-mail [contato@arkobot.com.br](mailto:contato@arkobot.com.br) ou pelo [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290) antes de divulgá-la. Não acesse dados de outros clientes nem prejudique o Serviço ao investigar.
 
 ## 11. Integrações: WhatsApp, e-mail, navegador, seu computador e outros serviços
 
@@ -332,7 +332,7 @@ Se você pedir a exclusão imediata, sem prazo de exportação, os dados são ex
 
 17.3. Nenhum plano inclui acordo de nível de serviço (SLA) com metas de disponibilidade ou compensação, salvo contratação específica por escrito. Em caso de falha prolongada do Serviço, aplica-se a seção 8.5.
 
-17.4. O suporte é prestado pelo [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290)<!-- TROCAR: canal provisório; substituir pelo e-mail quando o dono informar --> e pelos canais indicados no app, em dias úteis, no horário comercial de Brasília, com resposta em até 5 dias.
+17.4. O suporte é prestado pelo e-mail [contato@arkobot.com.br](mailto:contato@arkobot.com.br) ou pelo [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290) e pelos canais indicados no app, em dias úteis, no horário comercial de Brasília, com resposta em até 5 dias.
 
 17.5. A Domma pode alterar, adicionar ou remover recursos para melhorar o Serviço. Se a remoção atingir recurso essencial de um plano pago em vigor, avisaremos com 30 dias de antecedência e você poderá cancelar com reembolso dos Créditos comprados e não vencidos.
 
@@ -364,7 +364,7 @@ Se você pedir a exclusão imediata, sem prazo de exportação, os dados são ex
 - d) houver inadimplência (seção 7); ou
 - e) houver fraude ou indício razoável de fraude no cadastro ou no pagamento.
 
-19.2. Salvo em casos graves ou urgentes, avisaremos antes, com o motivo, e daremos prazo razoável para corrigir o problema. Em casos de suspensão, você pode pedir revisão da decisão pelo [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290)<!-- TROCAR: canal provisório; substituir pelo e-mail quando o dono informar -->.
+19.2. Salvo em casos graves ou urgentes, avisaremos antes, com o motivo, e daremos prazo razoável para corrigir o problema. Em casos de suspensão, você pode pedir revisão da decisão pelo e-mail [contato@arkobot.com.br](mailto:contato@arkobot.com.br) ou pelo [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290).
 
 19.3. Em caso de encerramento por violação grave, os Créditos não são reembolsados, salvo se a lei exigir. Em caso de encerramento sem culpa sua, aplica-se a seção 8.6, b.
 
@@ -376,7 +376,7 @@ Se você pedir a exclusão imediata, sem prazo de exportação, os dados são ex
 
 20.2. Se você não concordar com a nova versão, pode cancelar antes de ela entrar em vigor, sem multa, com os reembolsos da seção 8.6, c. Se continuar usando o ArkoBot depois da data de vigência, a nova versão passa a valer para você.
 
-20.3. As versões anteriores destes Termos ficam disponíveis mediante pedido pelo [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290)<!-- TROCAR: canal provisório; substituir pelo e-mail quando o dono informar -->.
+20.3. As versões anteriores destes Termos ficam disponíveis mediante pedido pelo e-mail [contato@arkobot.com.br](mailto:contato@arkobot.com.br) ou pelo [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290).
 
 ## 21. Disposições gerais
 
@@ -402,7 +402,7 @@ Se você pedir a exclusão imediata, sem prazo de exportação, os dados são ex
 
 22.3. **Clientes que não são Consumidores:** fica eleito o foro da comarca de **São Paulo/SP**, com renúncia a qualquer outro, por mais privilegiado que seja.
 
-22.4. Antes de recorrer à Justiça, procure-nos pelo [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290)<!-- TROCAR: canal provisório; substituir pelo e-mail quando o dono informar -->: tentaremos resolver a questão de forma amigável.
+22.4. Antes de recorrer à Justiça, procure-nos pelo e-mail [contato@arkobot.com.br](mailto:contato@arkobot.com.br) ou pelo [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290): tentaremos resolver a questão de forma amigável.
 
 ---
 

@@ -4,7 +4,7 @@
 
 Esta Política explica quais cookies e tecnologias semelhantes o site arkobot.com.br e o app do ArkoBot usam, para quê e como você pode controlá-los. Ela segue a LGPD, o Marco Civil da Internet e o **Guia Orientativo sobre Cookies e Proteção de Dados Pessoais da ANPD** (2022), e complementa a [Política de Privacidade](politica-de-privacidade.md) e os [Termos de Uso](termos-de-uso.md).
 
-**Responsável:** Domma Tecnologia e Desenvolvimento de Softwares Ltda ("Domma"), CNPJ 70.075.405/0001-74, Av. Paulista, 1636, Conj. 5, Pav. 11, Bela Vista, São Paulo/SP. **Encarregado:** o nome será publicado nesta página; até lá, os pedidos são recebidos pelo [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290)<!-- TROCAR: NOME_ENCARREGADO e EMAIL_ENCARREGADO ainda não informados -->.
+**Responsável:** Domma Tecnologia e Desenvolvimento de Softwares Ltda ("Domma"), CNPJ 70.075.405/0001-74, Av. Paulista, 1636, Conj. 5, Pav. 11, Bela Vista, São Paulo/SP. **Encarregado:** Otávio Bruno Marques, pelo e-mail [contato@arkobot.com.br](mailto:contato@arkobot.com.br).
 
 ## Resumo em linguagem simples
 
@@ -129,7 +129,7 @@ O navegador que os bots usam no computador do bot guarda cookies e sessões dos 
 
 8.3. Apagar o armazenamento local do navegador volta as preferências ao padrão e pode apagar rascunhos não enviados.
 
-8.4. Dúvidas ou pedidos sobre cookies: [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290).<!-- TROCAR: canal provisório; substituir pelo e-mail quando o dono informar -->
+8.4. Dúvidas ou pedidos sobre cookies: e-mail [contato@arkobot.com.br](mailto:contato@arkobot.com.br) ou [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290).
 
 ## 9. Alterações desta Política
 
