@@ -62,7 +62,7 @@ describe("fila de tarefas em Postgres", () => {
   });
 
   it("claims a job once and retries with backoff, then fails", async () => {
-    await enqueue(ctx.db, "flaky", { n: 1 }, { maxAttempts: 2 });
+    await enqueue(ctx.db, "flaky", { n: 1 }, { maxAttempts: 2, runAt: ctx.now() });
     const first = await ctx.db.tx((q) => claimJobs(q, ctx.now(), 10));
     expect(first).toHaveLength(1);
     expect(await ctx.db.tx((q) => claimJobs(q, ctx.now(), 10))).toHaveLength(0);
@@ -81,7 +81,7 @@ describe("fila de tarefas em Postgres", () => {
   });
 
   it("concurrent workers never take the same job (FOR UPDATE SKIP LOCKED)", async () => {
-    for (let i = 0; i < 20; i++) await enqueue(ctx.db, "ok", { i });
+    for (let i = 0; i < 20; i++) await enqueue(ctx.db, "ok", { i }, { runAt: ctx.now() });
     const seen: number[] = [];
     const handlers = { ok: async (_: unknown, payload: Record<string, unknown>) => { seen.push(Number(payload.i)); } };
     const results = await Promise.all([runJobs(ctx, handlers, { limit: 8 }), runJobs(ctx, handlers, { limit: 8 }), runJobs(ctx, handlers, { limit: 8 })]);

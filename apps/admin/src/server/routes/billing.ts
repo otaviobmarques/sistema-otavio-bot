@@ -175,7 +175,7 @@ export function billingRoutes(ctx: AppContext) {
     if (!event) throw new DomainError("Evento não encontrado", 404);
     if (event.status !== "received" && event.status !== "failed") throw new DomainError("Este evento já foi processado");
     await ctx.db.tx(async (q) => {
-      await enqueue(q, PROCESS_EVENT_JOB, { billingEventId: id }, { dedupeKey: `billing_event:${id}` });
+      await enqueue(q, PROCESS_EVENT_JOB, { billingEventId: id }, { dedupeKey: `billing_event:${id}`, runAt: ctx.now() });
       await audit(q, actorOf(c), { action: "billing_event.retried", targetType: "billing_event", targetId: id });
     });
     return c.json({ ok: true });
