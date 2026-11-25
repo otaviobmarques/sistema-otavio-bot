@@ -14,7 +14,7 @@ Ela complementa os [Termos de Uso](termos-de-uso.md) e a [Política de Cookies](
 - Pagamentos são feitos pelo **Asaas**. **Não guardamos o número do seu cartão.**
 - **Não vendemos dados pessoais** e não usamos o seu conteúdo para publicidade.
 - Guardamos os registros de acesso por **6 meses**, como exige o Marco Civil da Internet.
-- Você pode pedir acesso, correção, exclusão, portabilidade e outros direitos pelo **[WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290)**<!-- TROCAR: canal provisório; substituir pelo e-mail quando o dono informar -->.
+- Você pode pedir acesso, correção, exclusão, portabilidade e outros direitos pelo **e-mail [contato@arkobot.com.br](mailto:contato@arkobot.com.br)** ou pelo [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290).
 
 ## Sumário
 
@@ -45,9 +45,9 @@ Ela complementa os [Termos de Uso](termos-de-uso.md) e a [Política de Cookies](
 
 1.1. **Controladora:** Domma Tecnologia e Desenvolvimento de Softwares Ltda ("Domma Tecnologia" ou "Domma"), CNPJ **70.075.405/0001-74**, com sede em **Av. Paulista, 1636, Conj. 5, Pav. 11, Bela Vista, São Paulo/SP**, responsável pelo ArkoBot e pelo site <https://arkobot.com.br>.
 
-1.2. **Encarregado pelo tratamento de dados pessoais (DPO):** o nome será publicado nesta página; até lá, os pedidos são recebidos pelo [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290)<!-- TROCAR: NOME_ENCARREGADO e EMAIL_ENCARREGADO ainda não informados -->. O encarregado recebe reclamações e pedidos dos titulares, presta esclarecimentos, recebe comunicações da Autoridade Nacional de Proteção de Dados (ANPD) e orienta a equipe sobre proteção de dados (art. 41 da LGPD).
+1.2. **Encarregado pelo tratamento de dados pessoais (DPO):** Otávio Bruno Marques, pelo e-mail [contato@arkobot.com.br](mailto:contato@arkobot.com.br). O encarregado recebe reclamações e pedidos dos titulares, presta esclarecimentos, recebe comunicações da Autoridade Nacional de Proteção de Dados (ANPD) e orienta a equipe sobre proteção de dados (art. 41 da LGPD).
 
-1.3. **Atendimento geral:** [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290)<!-- TROCAR: canal provisório; substituir pelo e-mail quando o dono informar -->.
+1.3. **Atendimento geral:** e-mail [contato@arkobot.com.br](mailto:contato@arkobot.com.br) ou [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290).
 
 ## 2. A quem esta Política se aplica
 
@@ -171,7 +171,7 @@ Quando usamos o **legítimo interesse**, avaliamos se ele não se sobrepõe aos 
 
 9.3. **Salvaguardas.** Em ambos os casos, a Domma: adota as **cláusulas-padrão contratuais aprovadas pela ANPD** sempre que o provedor permitir, ou garantias contratuais equivalentes de sigilo, segurança e limitação de finalidade; escolhe provedores com programas reconhecidos de segurança da informação; envia aos provedores apenas o necessário para a tarefa; e usa modalidades em que os dados não são usados para treinar modelos.
 
-9.4. Você pode pedir mais informações sobre as salvaguardas adotadas pelo [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290)<!-- TROCAR: canal provisório; substituir pelo e-mail quando o dono informar -->.
+9.4. Você pode pedir mais informações sobre as salvaguardas adotadas pelo e-mail [contato@arkobot.com.br](mailto:contato@arkobot.com.br) ou pelo [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290).
 
 ## 10. Por quanto tempo guardamos os dados
 
@@ -247,7 +247,7 @@ Para dados que tratamos como operadora (Conteúdo do Cliente), exerça seus dire
 
 ## 15. Como exercer os seus direitos
 
-15.1. Envie o pedido pelo **[WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290)**<!-- TROCAR: canal provisório; substituir pelo e-mail quando o dono informar -->, identificando-se com os dados da sua conta, se tiver uma. Muitas ações você faz sozinho no app: corrigir cadastro, exportar dados, apagar bots e conversas, desconectar Integrações e excluir a conta.
+15.1. Envie o pedido pelo **e-mail [contato@arkobot.com.br](mailto:contato@arkobot.com.br)** ou pelo [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290), identificando-se com os dados da sua conta, se tiver uma. Muitas ações você faz sozinho no app: corrigir cadastro, exportar dados, apagar bots e conversas, desconectar Integrações e excluir a conta.
 
 15.2. Podemos pedir informações para **confirmar a sua identidade** antes de atender, para evitar que outra pessoa acesse seus dados.
 
@@ -257,7 +257,7 @@ Para dados que tratamos como operadora (Conteúdo do Cliente), exerça seus dire
 
 ## 16. Decisões automatizadas
 
-16.1. A Domma não toma decisões sobre você baseadas unicamente em tratamento automatizado que afetem seus interesses, **exceto** controles automáticos de segurança e de prevenção a fraude e abuso (por exemplo, bloqueio temporário após tentativas de login erradas, limites de envio e detecção de consumo anormal). Você pode pedir a **revisão** dessas decisões e informações sobre os critérios usados, pelo [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290)<!-- TROCAR: canal provisório; substituir pelo e-mail quando o dono informar --> (art. 20 da LGPD), observados os segredos comercial e industrial.
+16.1. A Domma não toma decisões sobre você baseadas unicamente em tratamento automatizado que afetem seus interesses, **exceto** controles automáticos de segurança e de prevenção a fraude e abuso (por exemplo, bloqueio temporário após tentativas de login erradas, limites de envio e detecção de consumo anormal). Você pode pedir a **revisão** dessas decisões e informações sobre os critérios usados, pelo e-mail [contato@arkobot.com.br](mailto:contato@arkobot.com.br) ou pelo [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290) (art. 20 da LGPD), observados os segredos comercial e industrial.
 
 16.2. Decisões que os bots tomam por instrução do Cliente sobre terceiros são de responsabilidade do Cliente, como controlador (seção 9.4 dos Termos de Uso).
 
@@ -273,7 +273,7 @@ Usamos cookies e armazenamento local no navegador para manter você conectado, g
 
 19.1. Podemos atualizar esta Política. A data da versão em vigor fica no topo. Mudanças relevantes (por exemplo, nova finalidade, novo tipo de dado, novo suboperador ou nova transferência internacional) serão avisadas por e-mail e no app com pelo menos **15 dias** de antecedência. Quando a mudança depender do seu consentimento, pediremos antes.
 
-19.2. Versões anteriores podem ser pedidas pelo [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290)<!-- TROCAR: canal provisório; substituir pelo e-mail quando o dono informar -->.
+19.2. Versões anteriores podem ser pedidas pelo e-mail [contato@arkobot.com.br](mailto:contato@arkobot.com.br) ou pelo [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290).
 
 ---
 

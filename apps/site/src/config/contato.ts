@@ -14,7 +14,7 @@ export const contato = {
   urlAssinatura: '',
   whatsapp: '5519987822290',
   whatsappVisivel: '+55 (19) 98782-2290',
-  email: '',
+  email: 'contato@arkobot.com.br',
   mensagemInicial: 'Olá! Quero conhecer o ArkoBot.',
 };
 
