@@ -24,21 +24,21 @@ export function Cabecalho() {
         <a href="#inicio" className="h-7 text-base" aria-label="ArkoBot, voltar ao início">
           <Logo className="h-7" />
         </a>
-        <nav aria-label="Principal" className="ml-6 hidden items-center gap-1 lg:flex">
+        <nav aria-label="Principal" className="ml-2 hidden items-center gap-1 lg:flex">
           {navegacao.map((item) => (
-            <a key={item.href} href={item.href} className="rounded-full px-3 py-2 text-[15px] text-cinza transition hover:text-tinta">
+            <a key={item.href} href={item.href} className="whitespace-nowrap rounded-full px-3 py-2 text-[15px] text-cinza transition hover:text-tinta">
               {item.rotulo}
             </a>
           ))}
         </nav>
         <div className="ml-auto hidden items-center gap-2 lg:flex">
-          <a href={contato.urlEntrar} className="rounded-full px-3 py-2 text-[15px] font-medium text-tinta transition hover:text-azul">
+          <a href={contato.urlEntrar} className="whitespace-nowrap rounded-full px-3 py-2 text-[15px] font-medium text-tinta transition hover:text-azul">
             Entrar
           </a>
-          <BotaoContato variante="secundario" className="!px-4 !py-2 !text-sm">
+          <BotaoContato variante="secundario" className="!hidden whitespace-nowrap !px-4 !py-2 !text-sm xl:!inline-flex">
             Falar com um especialista
           </BotaoContato>
-          <BotaoContato acao="assinar" className="!px-4 !py-2 !text-sm" seta={false}>
+          <BotaoContato acao="assinar" className="whitespace-nowrap !px-4 !py-2 !text-sm" seta={false}>
             Começar agora
           </BotaoContato>
         </div>
