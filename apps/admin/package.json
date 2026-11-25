@@ -1,0 +1,48 @@
+{
+  "name": "@arkobot/admin",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "start": "node src/server/node.ts",
+    "build": "tsc -p tsconfig.json && vite build",
+    "build:vercel": "pnpm run build && node scripts/build-vercel.mjs",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "migrate": "node src/cli/migrate.ts",
+    "create-admin": "node src/cli/create-admin.ts",
+    "jobs": "node src/cli/run-jobs.ts",
+    "seed:demo": "node src/cli/seed-demo.ts",
+    "screenshots": "node scripts/screenshots.mjs"
+  },
+  "dependencies": {
+    "@hono/node-server": "2.1.11",
+    "hono": "4.13.22",
+    "pg": "8.23.1",
+    "qrcode": "1.5.4",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.6.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.2.0",
+    "@types/pg": "8.23.1",
+    "@types/qrcode": "1.5.6",
+    "@types/react": "^19.1.9",
+    "@types/react-dom": "^19.1.7",
+    "@vitejs/plugin-react": "^4.7.0",
+    "esbuild": "^0.28.2",
+    "lucide-react": "^0.539.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-router": "^7.18.5",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.6",
+    "vitest": "^4.1.11"
+  }
+}
