@@ -4,6 +4,7 @@
 //   OMB_CLOUD_DECIDER_URL + OMB_CLOUD_DECIDER_TOKEN  the Jev relay, a Jev base URL
 //   OMB_CLOUD_AI_URL      + OMB_CLOUD_AI_TOKEN       the trial's Claude credit, an OpenAI-compatible base URL
 //   OMB_CLOUD_X_URL       + OMB_CLOUD_X_TOKEN        the X research relay (a desktop gets its own over the parent port)
+//   OMB_CLOUD_AI_GATEWAY_URL + OMB_CLOUD_AI_GATEWAY_TOKEN  the ArkoBot AI gateway: the plan's credits on Claude, Codex and OpenRouter
 // The person's own key always wins and is resolved per request; an included token goes only to its relay and is never
 // written to config.json or reported to a client.
 import { JEV_DEFAULT_BASE_URL } from "./decider/jev.ts";
@@ -11,7 +12,7 @@ import { JEV_DEFAULT_BASE_URL } from "./decider/jev.ts";
 export const BOAT_API_DEFAULT = "https://boat.dev/api/v1";
 export const ELEVENLABS_API_DEFAULT = "https://api.elevenlabs.io/v1";
 /** Must also be on WORKSPACE_CREDENTIAL_ENV. */
-export const INCLUDED_TOKEN_ENV = ["OMB_CLOUD_BOAT_TOKEN", "OMB_CLOUD_VOICE_TOKEN", "OMB_CLOUD_DECIDER_TOKEN", "OMB_CLOUD_AI_TOKEN", "OMB_CLOUD_X_TOKEN"] as const;
+export const INCLUDED_TOKEN_ENV = ["OMB_CLOUD_BOAT_TOKEN", "OMB_CLOUD_VOICE_TOKEN", "OMB_CLOUD_DECIDER_TOKEN", "OMB_CLOUD_AI_TOKEN", "OMB_CLOUD_X_TOKEN", "OMB_CLOUD_AI_GATEWAY_TOKEN"] as const;
 
 export interface ServiceCredential {
   token: string;
@@ -26,6 +27,7 @@ interface Included {
   decider: ServiceCredential | null;
   ai: ServiceCredential | null;
   x: ServiceCredential | null;
+  aiGateway: ServiceCredential | null;
 }
 
 function includedService(url: string | undefined, token: string | undefined): ServiceCredential | null {
@@ -38,14 +40,15 @@ const includedFrom = (env: NodeJS.ProcessEnv): Included => ({
   boat: includedService(env.OMB_CLOUD_BOAT_URL, env.OMB_CLOUD_BOAT_TOKEN),
   voice: includedService(env.OMB_CLOUD_VOICE_URL, env.OMB_CLOUD_VOICE_TOKEN),
   decider: includedService(env.OMB_CLOUD_DECIDER_URL, env.OMB_CLOUD_DECIDER_TOKEN),
-  ai: trialCreditService(env.OMB_CLOUD_AI_URL, env.OMB_CLOUD_AI_TOKEN),
+  ai: relayService(env.OMB_CLOUD_AI_URL, env.OMB_CLOUD_AI_TOKEN, /^omb_ai_[A-Za-z0-9_-]{43}$/),
   x: includedService(env.OMB_CLOUD_X_URL, env.OMB_CLOUD_X_TOKEN),
+  aiGateway: relayService(env.OMB_CLOUD_AI_GATEWAY_URL, env.OMB_CLOUD_AI_GATEWAY_TOKEN, /^arko_ai_[A-Za-z0-9_-]{43}$/),
 });
 
-/** The token is a key the chat engine sends here, so the address must be HTTPS (loopback for tests) and the token the Admin's shape. */
-function trialCreditService(url: string | undefined, token: string | undefined): ServiceCredential | null {
+/** The token is a key an engine sends here, so the address must be HTTPS (loopback for tests) and the token the Admin's shape. */
+function relayService(url: string | undefined, token: string | undefined, shape: RegExp): ServiceCredential | null {
   const credential = includedService(url, token);
-  if (!credential || !/^omb_ai_[A-Za-z0-9_-]{43}$/.test(credential.token)) return null;
+  if (!credential || !shape.test(credential.token)) return null;
   try {
     const parsed = new URL(credential.api);
     const loopback = parsed.protocol === "http:" && ["127.0.0.1", "[::1]"].includes(parsed.hostname);
@@ -86,6 +89,11 @@ export function voiceCredential(own: string | undefined, env: NodeJS.ProcessEnv 
 
 export function trialCreditCredential(env: NodeJS.ProcessEnv = process.env): ServiceCredential | null {
   return (held ?? includedFrom(env)).ai;
+}
+
+/** The ArkoBot AI gateway's root URL and this instance's token: never written to config, sent only to that URL. */
+export function aiGatewayCredential(env: NodeJS.ProcessEnv = process.env): ServiceCredential | null {
+  return (held ?? includedFrom(env)).aiGateway;
 }
 
 export function deciderCredential(

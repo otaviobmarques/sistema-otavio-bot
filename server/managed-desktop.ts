@@ -2,7 +2,8 @@ import { createHash } from "node:crypto";
 import { existsSync, lstatSync, mkdirSync, renameSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
-import type { InstanceConfigMap, ModelCatalog, ProviderInstance } from "./contracts.ts";
+import type { InstanceConfigMap, ModelCatalog, ProviderInstance, RuntimeEvent, TextGenerationOptions } from "./contracts.ts";
+import { GATEWAY_REFUSED, gatewayRefusal } from "./trial-credit.ts";
 import type { ProviderRegistry } from "./harness/registry.ts";
 
 const uuid = z.string().uuid();
@@ -14,7 +15,8 @@ const connectionSchema = z.object({
   providers: z.array(z.object({ id: z.enum(["anthropic", "openai", "openrouter"]), configured: z.boolean(), models: z.array(model).max(500) }).strict()).max(3),
   suspended: z.literal("license-expired").optional(),
 }).strict();
-export type ManagedDesktopConnection = z.infer<typeof connectionSchema>;
+/** `gateway` is set only by this server for the ArkoBot AI gateway (startArkoGateway), never by the desktop parent's message. */
+export type ManagedDesktopConnection = z.infer<typeof connectionSchema> & { gateway?: string };
 /** The saved enrollment's identity, never its token. */
 const identitySchema = z.object({ portalOrigin: z.string().max(2048), organizationId: uuid, email: z.string().email().max(320), deviceId: uuid }).strict();
 const PROVIDER_IDS = ["anthropic", "openai", "openrouter"] as const;
@@ -59,8 +61,9 @@ export function companyInstanceConfigs(connection: ManagedDesktopConnection, run
   const entries: InstanceConfigMap = {};
   for (const provider of connection.providers) {
     if (!provider.configured || !provider.models.length) continue;
-    const id = companyInstanceId(connection, provider.id), base = `${connection.portalOrigin}/api/desktop/gateway/${provider.id}`;
-    const displayName = `Company · ${connection.organizationName} · ${provider.id === "anthropic" ? "Claude" : provider.id === "openai" ? "Codex" : "OpenRouter"}`;
+    const id = companyInstanceId(connection, provider.id);
+    const base = connection.gateway ? `${connection.gateway}/v1/${provider.id}` : `${connection.portalOrigin}/api/desktop/gateway/${provider.id}`;
+    const displayName = `${connection.gateway ? "" : "Company · "}${connection.organizationName} · ${provider.id === "anthropic" ? "Claude" : provider.id === "openai" ? "Codex" : "OpenRouter"}`;
     if (provider.id === "anthropic") entries[id] = {
       driver: "claudeAgent", displayName,
       config: { configDir: join(runtimeDirectory, id, "claude"), managed: true },
@@ -76,6 +79,27 @@ export function companyInstanceConfigs(connection: ManagedDesktopConnection, run
     };
   }
   return entries;
+}
+
+/** The gateway's refusals (credits used up, plan suspended, model outside the plan) as the plain note the chat shows. */
+function gatewayNote(event: RuntimeEvent): RuntimeEvent {
+  if (event.type !== "runtime.error") return event;
+  const refused = gatewayRefusal(event.message);
+  return refused ? { ...event, message: GATEWAY_REFUSED[refused], setup: true } : event;
+}
+
+function withGatewayNotes(instance: ProviderInstance): Partial<ProviderInstance> {
+  if (!instance.generateText) return {};
+  return {
+    generateText: async (prompt: string, options?: TextGenerationOptions) => {
+      try {
+        return await instance.generateText!(prompt, options);
+      } catch (error) {
+        const refused = gatewayRefusal(error instanceof Error ? error.message : "");
+        throw refused ? new Error(GATEWAY_REFUSED[refused]) : error;
+      }
+    },
+  };
 }
 
 /** Revocation fences wrappers synchronously, then stops only their instances. */
@@ -97,10 +121,15 @@ export class ManagedDesktopProviders {
   /** So a personal instance that happens to be named company.* is never treated as managed. */
   private readonly known = new Set<string>();
   owns(instanceId: string): boolean { return this.known.has(instanceId); }
-  enrolled(): boolean { return this.connection !== null; }
+  /** A desktop enrolled in a company; the ArkoBot gateway's engines sit beside the person's own and enroll nothing. */
+  enrolled(): boolean { return this.connection !== null && !this.connection.gateway; }
 
   apply(raw: unknown, force = false): Promise<void> {
-    const connection = parseManagedDesktopConnection(raw, this.now()), nextSignature = instanceSignature(connection);
+    return this.applyConnection(parseManagedDesktopConnection(raw, this.now()), force);
+  }
+
+  applyConnection(connection: ManagedDesktopConnection | null, force = false): Promise<void> {
+    const nextSignature = instanceSignature(connection);
     if (!force && nextSignature === this.currentSignature) {
       const previous = this.connection;
       this.connection = connection;
@@ -136,19 +165,21 @@ export class ManagedDesktopProviders {
       const unavailable = () => this.connection?.suspended === "license-expired" ? LICENSE_EXPIRED_MESSAGE : expiredMessage;
       await this.options.registry.load(configs, instance => {
         const provider = connection.providers.find(provider => companyInstanceId(connection, provider.id) === instance.instanceId)!;
-        const models: ModelCatalog = { default: provider.models[0], options: provider.models.map(id => ({ id, label: `${id} (Company)` })) };
+        const models: ModelCatalog = { default: provider.models[0], options: provider.models.map(id => ({ id, label: connection.gateway ? id : `${id} (Company)` })) };
         return {
-          ...instance, models,
+          ...instance, models, ...(connection.gateway ? withGatewayNotes(instance) : {}),
           refreshModels: async () => {},
           startAuthentication: undefined, getAuthentication: undefined, completeAuthentication: undefined, cancelAuthentication: undefined, signOut: undefined,
           snapshot: async () => {
             if (!active()) return { state: "unavailable", reason: unavailable() };
             const snapshot = await instance.snapshot();
             if (!active()) return { state: "unavailable", reason: unavailable() };
-            return { ...snapshot, authenticated: snapshot.state === "available", billing: "metered", account: { email: connection.email, organization: connection.organizationName, method: "api-key" } };
+            return { ...snapshot, authenticated: snapshot.state === "available", billing: "metered",
+              account: connection.gateway ? undefined : { email: connection.email, organization: connection.organizationName, method: "api-key" } };
           },
           adapter: {
             ...instance.adapter,
+            ...(connection.gateway ? { onEvent: (listener: (event: RuntimeEvent) => void) => instance.adapter.onEvent(event => listener(gatewayNote(event))) } : {}),
             sendTurn: async input => {
               if (!active()) throw new Error(unavailable());
               if (!input.model || !provider.models.includes(input.model)) throw new Error("This model is not enabled by your Company administrator.");

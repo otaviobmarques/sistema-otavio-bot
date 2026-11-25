@@ -5,6 +5,8 @@ import { writeFileAtomic } from "./atomic.ts";
 import { cloudHomeConfigured } from "./cloud-home.ts";
 import { hostedWorkspaceConfiguration } from "./enterprise.ts";
 import type { InstanceConfigMap, ModelSelection, ProviderInstance } from "./contracts.ts";
+import type { ServiceCredential } from "./included-services.ts";
+import type { ManagedDesktopConnection, ManagedDesktopProviders } from "./managed-desktop.ts";
 import type { Store } from "./store.ts";
 
 export const HOSTED_MODEL_POLICY_HEADER = "X-Omb-Hosted-Model-Policy";
@@ -133,4 +135,71 @@ export function hostedModelPolicy(dataDirectory: string, env: NodeJS.ProcessEnv 
       writeFileAtomic(marker, identity, { mode: 0o600 });
     },
   };
+}
+
+const gatewayCatalogSchema = z.object({
+  organization: z.object({ id: z.string().uuid(), name: z.string().trim().min(1).max(160) }),
+  data: z.array(z.object({ id: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._:/-]{0,159}$/), provider: z.enum(["anthropic", "openai", "openrouter"]) }).passthrough()).max(300),
+}).passthrough();
+const GATEWAY_RETRY_MS = [15_000, 30_000, 60_000, 120_000, 300_000, 600_000] as const;
+const GATEWAY_REFRESH_MS = 15 * 60_000;
+/** How long the last catalog keeps the engines listed while the gateway cannot be asked again. */
+const GATEWAY_CATALOG_LIFE_MS = 7 * 24 * 60 * 60_000;
+
+/** The ArkoBot AI gateway's `/v1/models` as engines beside the person's own: Claude Code, Codex and OpenRouter on the plan's credits. */
+export function arkoGatewayConnection(credential: ServiceCredential, body: unknown, now = Date.now()): ManagedDesktopConnection {
+  const catalog = gatewayCatalogSchema.parse(body);
+  const url = new URL(credential.api);
+  const providers = (["anthropic", "openai", "openrouter"] as const).map(id => {
+    const models = [...new Set(catalog.data.filter(model => model.provider === id).map(model => model.id))];
+    return { id, configured: models.length > 0, models };
+  }).filter(provider => provider.configured);
+  return {
+    portalOrigin: url.origin, organizationId: catalog.organization.id, organizationName: "ArkoBot", email: `ia@${url.hostname}`,
+    deviceId: catalog.organization.id, token: credential.token, expiresAt: now + GATEWAY_CATALOG_LIFE_MS, providers, gateway: credential.api,
+  };
+}
+
+/** Asks the gateway for the plan's catalog now and every few minutes; a revoked token takes the engines away. */
+export function startArkoGateway(options: {
+  credential: ServiceCredential | null;
+  providers: Pick<ManagedDesktopProviders, "applyConnection">;
+  fetch?: typeof fetch;
+  log?: (line: string) => void;
+  now?: () => number;
+}): { stop(): void } | null {
+  const { credential } = options;
+  if (!credential) return null;
+  const fetcher = options.fetch ?? globalThis.fetch;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let failures = 0;
+  let stopped = false;
+  const schedule = (delay: number) => {
+    if (stopped) return;
+    timer = setTimeout(() => void ask(), delay);
+    timer.unref?.();
+  };
+  const ask = async () => {
+    try {
+      const response = await fetcher(`${credential.api}/v1/models`, {
+        headers: { authorization: `Bearer ${credential.token}`, accept: "application/json" }, redirect: "error", signal: AbortSignal.timeout(15_000),
+      });
+      if (response.status === 401) {
+        options.log?.("[arkobot gateway] the gateway no longer accepts this instance's token; its engines are off");
+        await options.providers.applyConnection(null);
+        failures = 0;
+        return schedule(GATEWAY_REFRESH_MS);
+      }
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      await options.providers.applyConnection(arkoGatewayConnection(credential, await response.json(), options.now?.() ?? Date.now()));
+      failures = 0;
+      schedule(GATEWAY_REFRESH_MS);
+    } catch (error) {
+      // Names only: never the token or what the gateway sent.
+      options.log?.(`[arkobot gateway] could not read the plan's models (${error instanceof Error ? error.name : "error"}); trying again`);
+      schedule(GATEWAY_RETRY_MS[Math.min(failures++, GATEWAY_RETRY_MS.length - 1)]!);
+    }
+  };
+  void ask();
+  return { stop() { stopped = true; clearTimeout(timer); } };
 }
