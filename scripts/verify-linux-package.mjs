@@ -395,6 +395,15 @@ function verifyCloudflaredResources(resources, label, { directoryMode = 0o755 } 
   return actualHash;
 }
 
+/** Whether an asar archive lists a non-empty file: its header is a pickled JSON tree after 16 bytes of sizes. */
+function asarHas(archive, relative) {
+  const buffer = readFileSync(archive);
+  const header = JSON.parse(buffer.toString("utf8", 16, 16 + buffer.readUInt32LE(12)));
+  let node = header;
+  for (const part of relative.split("/")) node = node?.files?.[part];
+  return Number(node?.size) > 0;
+}
+
 const appImage = exactlyOne(".AppImage");
 const deb = exactlyOne(".deb");
 const unpacked = path.join(releaseDir, "linux-unpacked");
@@ -406,6 +415,10 @@ requireExecutable(executable);
 requireDirectoryMode(unpacked, 0o755);
 for (const relative of ["app.asar", "ui/index.html", "server/index.js", "server/desktop-entry.mjs"]) {
   requireFile(path.join(resources, relative));
+}
+// The startup screen inlines its animation from inside app.asar (electron/startup-screen.mjs).
+for (const relative of ["electron/resources/startup-splash.webm", "electron/resources/startup-splash-poster.webp"]) {
+  if (!asarHas(path.join(resources, "app.asar"), relative)) fail(`app.asar is missing ${relative}`);
 }
 for (const forbidden of ["speech-helper", "cua-driver", "cua-sdk"]) {
   if (statSync(path.join(resources, forbidden), { throwIfNoEntry: false })) {
