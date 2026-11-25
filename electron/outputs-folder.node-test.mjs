@@ -97,7 +97,8 @@ test("Show in folder finds a file a conversation named in Documents/MausBot afte
 
 test("Files moves its own records with the folder, so syncing goes on in Documents/ArkoBot and never remakes Documents/MausBot", async (t) => {
   const dir = realpathSync(mkdtempSync(join(tmpdir(), "omb-outputs-service-")));
-  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  let service;
+  t.after(() => { service?.close(); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }); });
   const home = join(dir, "home"), docs = join(home, "Documents"), stateFile = join(dir, "user", "state.db");
   mkdirSync(join(docs, "MausBot", "Owl", "Plan"), { recursive: true });
   writeFileSync(join(docs, "MausBot", "Owl", "Plan", "plan.md"), "the plan");
@@ -106,12 +107,11 @@ test("Files moves its own records with the folder, so syncing goes on in Documen
   before.setPlace("bot-owl-t1", join(docs, "MausBot", "Owl", "Plan"));
   before.close();
   const cloud = fakeCloud();
-  const service = createCloudFilesService({
+  service = createCloudFilesService({
     settingsFile: join(dir, "user", "settings.json"), stateFile, documentsDir: docs, localDataDir: join(home, ".openmausbot"), homeDir: home,
     platform: process.platform, hostname: "Ana-PC", cloudOrigin: () => "https://omb-u-aaaaaaaaaaaa.fly.dev", fetch: async () => { throw new Error("offline"); },
     trashItem: async (file) => rmSync(file), markDownloaded: async () => {}, createClient: () => cloud.client, watch: () => () => {}, freeBytes: () => 100 * 1024 ** 3,
   });
-  t.after(() => service.close());
   assert.equal(service.state().outputs.dir, join(docs, "ArkoBot"));
   assert.equal(service.localFolder({ outputs: true }), join(docs, "ArkoBot"));
   const records = openSyncState(stateFile);
