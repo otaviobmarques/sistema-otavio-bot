@@ -2,8 +2,9 @@ import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
+import { readFileSync, statSync } from "node:fs";
 import nativeText from "./native-text.cjs";
-import { createStartupScreen, startupScreenHtml } from "./startup-screen.mjs";
+import { createStartupScreen, STARTUP_POSTER_PATH, STARTUP_VIDEO_PATH, startupScreenHtml } from "./startup-screen.mjs";
 import { createSystemTray } from "./system-tray.mjs";
 
 const iconPath = fileURLToPath(new URL("./resources/app-icon.png", import.meta.url));
@@ -154,10 +155,28 @@ test("the tray's menu and the startup screen speak the app's language, and the t
   tray.relabel();
   assert.deepEqual(trayInstance.menu.map(item => item.label), ["Abrir o ArkoBot", undefined, "Sair do ArkoBot"]);
   assert.equal(trayInstance.tooltip, "ArkoBot");
-  const html = startupScreenHtml(iconPath, { t: text.t, lang: text.intlTag() });
+  const html = startupScreenHtml({ t: text.t, lang: text.intlTag() });
   assert.match(html, /<html lang="pt-BR">/);
   assert.match(html, /<button aria-label="Fechar"/);
-  assert.match(startupScreenHtml(iconPath), /<html lang="en">.*<button aria-label="Close"/s);
+  assert.match(startupScreenHtml(), /<html lang="en">.*<button aria-label="Close"/s);
+});
+
+test("the startup screen is the ArkoBot animation, with a still frame first and for reduced motion", () => {
+  const html = startupScreenHtml();
+  // Only the inline video and poster are let in: no file, network or other origin.
+  assert.match(html, /content="default-src 'none'; img-src data:; media-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'"/);
+  const video = html.match(/<video [^>]*>/)?.[0] ?? "";
+  for (const attribute of ["autoplay", "muted", "loop", "playsinline"]) assert.match(video, new RegExp(` ${attribute}[ >]`));
+  assert.ok(video.includes(`src="data:video/webm;base64,${readFileSync(STARTUP_VIDEO_PATH).toString("base64")}"`));
+  const poster = `data:image/webp;base64,${readFileSync(STARTUP_POSTER_PATH).toString("base64")}`;
+  assert.ok(video.includes(`poster="${poster}"`), "the video shows its first frame until it plays");
+  assert.ok(html.includes(`url("${poster}")`), "the window behind the video is that frame, never empty");
+  assert.match(html, /@media\(prefers-reduced-motion:reduce\)\{video\{display:none\}\}/);
+  assert.ok(/matchMedia\("\(prefers-reduced-motion: reduce\)"\).*video\.pause\(\)/s.test(html), "reduced motion keeps the still frame");
+  // The video says what it is doing; no fixed English line, and the status line waits for a real message.
+  assert.doesNotMatch(html, /Opening your workspace/);
+  assert.match(html, /<div class="status" role="status" hidden><\/div>/);
+  assert.ok(statSync(STARTUP_VIDEO_PATH).size < 300_000, "small enough to inline in the page");
 });
 
 test("tray restores minimized windows, supports explicit quit, and disposes once", async () => {
@@ -211,7 +230,7 @@ test("the loading screen says what the app waits on, before its page has loaded 
   splash.status("Waking My Cloud…");
   splash.window.webContents.emit("did-finish-load");
   assert.equal(ran.length, 2);
-  for (const code of ran) { assert.match(code, /document\.querySelector\('\.status'\)/); assert.ok(code.includes(JSON.stringify("Waking My Cloud…"))); }
+  for (const code of ran) { assert.match(code, /document\.querySelector\('\.status'\)/); assert.match(code, /line\.hidden = /); assert.ok(code.includes(JSON.stringify("Waking My Cloud…"))); }
   splash.dispose();
   splash.status("Opening My Cloud…");
   assert.equal(ran.length, 2, "nothing after it is gone");

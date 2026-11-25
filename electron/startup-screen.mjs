@@ -3,20 +3,34 @@ import { fileURLToPath } from 'node:url';
 import nativeText from "./native-text.cjs";
 
 const attribute = (value) => String(value).replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;");
+const resource = (name) => fileURLToPath(new URL(`./resources/${name}`, import.meta.url));
+/** The ArkoBot loading animation (docs/arkobot/arkobot-loading-icone-protagonista-1920x1080.mp4) cut to this window:
+ * 880×600 (2× of 440×300), VP9 WebM with no audio (Chromium plays it without proprietary codecs), its last 0.4 s
+ * crossfaded into its first so the loop has no seam. The poster is its frame at 0.4 s, the loop's first. */
+export const STARTUP_VIDEO_PATH = resource("startup-splash.webm");
+export const STARTUP_POSTER_PATH = resource("startup-splash-poster.webp");
+const dataUrl = (file, type) => `data:${type};base64,${fs.readFileSync(file).toString("base64")}`;
 
-export function startupScreenHtml(iconPath, { t = nativeText.englishText.t, lang = "en" } = {}) {
-  const icon = fs.readFileSync(iconPath).toString('base64');
-  return `<!doctype html><html lang="${attribute(lang)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'"><title>ArkoBot</title><style>
+export function startupScreenHtml({ t = nativeText.englishText.t, lang = "en", videoPath = STARTUP_VIDEO_PATH, posterPath = STARTUP_POSTER_PATH } = {}) {
+  const poster = dataUrl(posterPath, "image/webp");
+  const video = dataUrl(videoPath, "video/webm");
+  // The video carries its own words (pt-BR); the status line only shows a real message from say(), in the app's language.
+  return `<!doctype html><html lang="${attribute(lang)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; media-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'"><title>ArkoBot</title><style>
   *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Segoe UI,system-ui,sans-serif;color:#f5f5f5;background:transparent}
-  main{height:100%;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid #ffffff16;border-radius:20px;background:radial-gradient(ellipse at 50% 22%,#242529 0,#161719 54%,#111214 100%);-webkit-app-region:drag}
-  img{width:74px;height:74px;object-fit:contain;margin-bottom:18px;user-select:none;-webkit-user-drag:none}
-  h1{font-size:25px;line-height:1.25;font-weight:600;letter-spacing:-.6px;margin:0 0 26px}
-  .status{display:flex;align-items:center;gap:9px;color:#999da5;font-size:12px;line-height:18px}
-  .spinner{width:13px;height:13px;border-radius:50%;border:1.5px solid #ffffff21;border-top-color:#a6c9ff;animation:spin .9s linear infinite}
-  button{position:absolute;right:13px;top:13px;width:30px;height:30px;display:grid;place-items:center;padding:0;color:#999da5;border:0;border-radius:7px;background:transparent;cursor:pointer;-webkit-app-region:no-drag}
-  button:hover{color:#fff;background:#ffffff10}button:focus-visible{outline:2px solid #1686ff;outline-offset:2px}button svg{pointer-events:none}
-  @keyframes spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.spinner{animation:none;border-color:#a6c9ff}}
-  </style></head><body><main><button aria-label="${attribute(t("native.common.close"))}" onclick="window.startupScreen.close()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button><img src="data:image/png;base64,${icon}" alt=""><h1>ArkoBot</h1><div class="status" role="status"><span class="spinner" aria-hidden="true"></span>Opening your workspace…</div></main></body></html>`;
+  main{height:100%;position:relative;overflow:hidden;border:1px solid #ffffff16;border-radius:20px;background:#02040f url("${poster}") center/cover no-repeat;-webkit-app-region:drag}
+  video{position:absolute;inset:0;z-index:0;width:100%;height:100%;object-fit:cover;pointer-events:none;user-select:none}
+  h1{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);margin:0;white-space:nowrap}
+  .status{position:absolute;z-index:1;left:50%;bottom:14px;transform:translateX(-50%);max-width:calc(100% - 48px);padding:3px 11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#c3ccdb;font-size:12px;line-height:18px;border-radius:999px;background:#02040fcc}
+  .status[hidden]{display:none}
+  button{position:absolute;z-index:2;right:13px;top:13px;width:30px;height:30px;display:grid;place-items:center;padding:0;color:#999da5;border:0;border-radius:7px;background:transparent;cursor:pointer;-webkit-app-region:no-drag}
+  button:hover{color:#fff;background:#ffffff14}button:focus-visible{outline:2px solid #1686ff;outline-offset:2px}button svg{pointer-events:none}
+  @media(prefers-reduced-motion:reduce){video{display:none}}
+  </style></head><body><main><video src="${video}" poster="${poster}" autoplay muted loop playsinline disablepictureinpicture disableremoteplayback preload="auto" aria-hidden="true"></video><script>(() => {
+    const video = document.querySelector("video"), still = matchMedia("(prefers-reduced-motion: reduce)");
+    const settle = () => { if (still.matches) { video.removeAttribute("autoplay"); video.pause(); } else void video.play().catch(() => {}); };
+    settle(); still.addEventListener("change", settle);
+    video.addEventListener("error", () => video.remove());
+  })()</script><h1>ArkoBot</h1><button aria-label="${attribute(t("native.common.close"))}" onclick="window.startupScreen.close()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button><div class="status" role="status" hidden></div></main></body></html>`;
 }
 
 export function createStartupScreen({
@@ -72,12 +86,12 @@ export function createStartupScreen({
   let said = null;
   const say = () => {
     if (said === null || disposed || splash.isDestroyed()) return;
-    void splash.webContents.executeJavaScript(`(() => { const line = document.querySelector('.status'); if (line?.lastChild) line.lastChild.textContent = ${JSON.stringify(said)}; })()`).catch(() => {});
+    void splash.webContents.executeJavaScript(`(() => { const line = document.querySelector('.status'); if (line) { line.textContent = ${JSON.stringify(said)}; line.hidden = !line.textContent.trim(); } })()`).catch(() => {});
   };
   splash.webContents.on("did-finish-load", say);
   const startupFallback = setTimeout(resolveReady, 10_000);
   startupFallback.unref?.();
-  void splash.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(startupScreenHtml(iconPath, { t, lang })))
+  void splash.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(startupScreenHtml({ t, lang })))
     .catch(resolveReady);
   const attach = (win, { maximized = false } = {}) => {
     const reveal = () => {
@@ -112,7 +126,7 @@ export function createStartupScreen({
     fallback = setTimeout(reveal, 10_000);
     fallback.unref?.();
   };
-  /** The line under the name, in place of "Opening your workspace…". */
+  /** A real progress line (already in the app's language) shown over the animation; empty hides it again. */
   const status = (text) => { said = String(text); say(); };
   return { ready, attach, dispose, status, window: splash };
 }
