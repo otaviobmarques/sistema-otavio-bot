@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { navegacao } from '@/config/site';
+import { contato } from '@/config/contato';
 import { Logo } from './Logo';
 import { BotaoContato } from './ui';
 
@@ -31,6 +32,9 @@ export function Cabecalho() {
           ))}
         </nav>
         <div className="ml-auto hidden items-center gap-2 lg:flex">
+          <a href={contato.urlEntrar} className="rounded-full px-3 py-2 text-[15px] font-medium text-tinta transition hover:text-azul">
+            Entrar
+          </a>
           <BotaoContato variante="secundario" className="!px-4 !py-2 !text-sm">
             Falar com um especialista
           </BotaoContato>
@@ -74,6 +78,9 @@ export function Cabecalho() {
                 Começar agora
               </BotaoContato>
               <BotaoContato variante="secundario">Falar com um especialista</BotaoContato>
+              <a href={contato.urlEntrar} className="mt-1 rounded-xl px-4 py-3 text-center text-base font-medium text-tinta hover:bg-cartao">
+                Já sou cliente: entrar
+              </a>
             </div>
           </motion.nav>
         )}

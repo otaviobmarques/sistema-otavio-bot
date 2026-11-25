@@ -4,6 +4,7 @@
  * - `urlAssinatura`: cadastro na Área do cliente ("Começar agora" e "Assinar"). Os botões de cada plano
  *   acrescentam `?plano=<id>` para o plano já vir escolhido. Vazia, esses botões usam o mesmo canal de
  *   "Falar com um especialista".
+ * - `urlEntrar`: login de quem já é cliente (botão "Entrar" do topo).
  * - `whatsapp`: só dígitos, com código do país e DDD (ex.: "5511912345678"). Tem prioridade sobre o e-mail.
  * - `whatsappVisivel`: o mesmo número, formatado para aparecer no site.
  * - `email`: endereço completo (ex.: "contato@seudominio.com.br"). Vazio, não aparece no site.
@@ -13,6 +14,7 @@
  */
 export const contato = {
   urlAssinatura: 'https://conta.arkobot.com.br/cadastro',
+  urlEntrar: 'https://conta.arkobot.com.br/entrar',
   whatsapp: '5519987822290',
   whatsappVisivel: '+55 (19) 98782-2290',
   email: 'contato@arkobot.com.br',
