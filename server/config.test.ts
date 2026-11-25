@@ -2391,10 +2391,10 @@ describe("X research's included relay token", () => {
 
 describe("DATA_DIR outside the suite's throwaway home", () => {
   function childDataDir(env: NodeJS.ProcessEnv): string {
-    const script = "const m = await import(process.env.OMB_CONFIG_URL); process.stdout.write(m.DATA_DIR);";
+    const script = "await import(process.env.OMB_ALIASES_URL); const m = await import(process.env.OMB_CONFIG_URL); process.stdout.write(m.DATA_DIR);";
     const { OMB_DATA_DIR: _dataDir, VITEST: _vitest, NODE_ENV: _nodeEnv, ...inherited } = process.env;
     return execFileSync(process.execPath, ["--experimental-strip-types", "--no-warnings", "--input-type=module", "-e", script], {
-      env: { ...inherited, OMB_CONFIG_URL: pathToFileURL(join(import.meta.dirname, "config.ts")).href, ...env }, encoding: "utf8",
+      env: { ...inherited, OMB_ALIASES_URL: pathToFileURL(join(import.meta.dirname, "env-aliases.ts")).href, OMB_CONFIG_URL: pathToFileURL(join(import.meta.dirname, "config.ts")).href, ...env }, encoding: "utf8",
     });
   }
 

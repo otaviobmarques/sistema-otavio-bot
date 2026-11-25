@@ -1,6 +1,5 @@
 #!/usr/bin/env node
-// Model Context Protocol (MCP) server for OpenMausBot over JSON-RPC 2.0 stdio,
-// for external agents (Hermes, Claude Desktop, Cursor, etc.).
+// Model Context Protocol (MCP) server over JSON-RPC 2.0 stdio, for external agents (Hermes, Claude Desktop, Cursor).
 import "../server/env-aliases.ts";
 import readline from "node:readline";
 import { allowedServerOrigin, EXAMPLE_ADDRESS } from "../electron/server-address.mjs";
