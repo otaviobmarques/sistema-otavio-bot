@@ -5,6 +5,9 @@ export const site = {
   descricao:
     'Bots de IA que atendem, vendem, cobram e pesquisam 24 horas, cada um com a sua função e computador próprio. ChatGPT, Claude, Gemini, Grok e outras IAs inclusas no plano, com aprovação pelo WhatsApp. A partir de R$ 159 por mês.',
   empresa: 'Domma Tecnologia',
+  razaoSocial: 'Domma Tecnologia e Desenvolvimento de Softwares Ltda',
+  cnpj: '70.075.405/0001-74',
+  endereco: 'Av. Paulista, 1636, Conj. 5, Pav. 11, Bela Vista, São Paulo/SP',
 };
 
 export const navegacao = [

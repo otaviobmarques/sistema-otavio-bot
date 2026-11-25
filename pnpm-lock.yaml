@@ -369,6 +369,9 @@ importers:
       lucide-react:
         specifier: ^1.71.0
         version: 1.79.0(@types/react@19.2.18)(react@19.2.8)
+      marked:
+        specifier: 18.2.0
+        version: 18.2.0
       motion:
         specifier: ^14.12.0
         version: 14.14.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -4439,6 +4442,11 @@ packages:
 
   marked@16.4.2:
     resolution: {integrity: sha512-TI3V8YYWvkVf3KJe1dRkpnjs68JUPyEa5vjKrp1XEEJUAOaQc+Qj+L1qWbPd0SJuAdQkFU0h73sXXqwDYxsiDA==}
+    engines: {node: '>= 20'}
+    hasBin: true
+
+  marked@18.2.0:
+    resolution: {integrity: sha512-KaeL+tAbtvI930q7HE2PN5lYXYdT8EiSmxHlN6F3rsfb57wd5mp5W5TLazpdj4inTQBJdgjYwbs40W/0VUGU+Q==}
     engines: {node: '>= 20'}
     hasBin: true
 
@@ -9803,6 +9811,8 @@ snapshots:
   markdown-table@3.0.4: {}
 
   marked@16.4.2: {}
+
+  marked@18.2.0: {}
 
   matcher@3.0.0:
     dependencies:

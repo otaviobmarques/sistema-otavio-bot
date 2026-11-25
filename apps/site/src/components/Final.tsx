@@ -17,7 +17,7 @@ function Canais() {
       {digitos && (
         <li>
           <a href={`https://wa.me/${digitos}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-white hover:border-white/50">
-            <MessageCircle className="h-4 w-4" aria-hidden /> WhatsApp
+            <MessageCircle className="h-4 w-4" aria-hidden /> WhatsApp {contato.whatsappVisivel}
           </a>
         </li>
       )}
@@ -75,14 +75,25 @@ export function Rodape() {
           <p className="mt-3 text-sm text-cinza">
             {site.nome} é um produto {site.empresa}.
           </p>
+          <address className="mt-3 text-xs not-italic leading-relaxed text-cinza">
+            {site.razaoSocial}
+            <br />
+            CNPJ {site.cnpj}
+            <br />
+            {site.endereco}
+            <br />
+            <a href={`https://wa.me/${contato.whatsapp}`} target="_blank" rel="noopener noreferrer" className="hover:text-tinta">
+              WhatsApp {contato.whatsappVisivel}
+            </a>
+          </address>
         </div>
         <nav aria-label="Produto" className="text-sm">
           <p className="font-semibold text-tinta">Produto</p>
           <ul className="mt-3 space-y-2 text-cinza">
-            <li><a href="#recursos" className="hover:text-tinta">Recursos</a></li>
-            <li><a href="#trabalhos" className="hover:text-tinta">Trabalhos</a></li>
-            <li><a href="#planos" className="hover:text-tinta">Planos</a></li>
-            <li><a href="#perguntas" className="hover:text-tinta">Perguntas</a></li>
+            <li><a href="/#recursos" className="hover:text-tinta">Recursos</a></li>
+            <li><a href="/#trabalhos" className="hover:text-tinta">Trabalhos</a></li>
+            <li><a href="/#planos" className="hover:text-tinta">Planos</a></li>
+            <li><a href="/#perguntas" className="hover:text-tinta">Perguntas</a></li>
           </ul>
         </nav>
         <nav aria-label="Legal" className="text-sm">
@@ -90,12 +101,13 @@ export function Rodape() {
           <ul className="mt-3 space-y-2 text-cinza">
             <li><a href="/termos/" className="hover:text-tinta">Termos de uso</a></li>
             <li><a href="/privacidade/" className="hover:text-tinta">Política de privacidade</a></li>
-            <li><a href="/privacidade/#arrependimento" className="hover:text-tinta">Direito de arrependimento</a></li>
+            <li><a href="/cookies/" className="hover:text-tinta">Política de cookies</a></li>
+            <li><a href="/termos/#8-cancelamento-direito-de-arrependimento-e-reembolsos" className="hover:text-tinta">Cancelamento e arrependimento</a></li>
           </ul>
         </nav>
       </div>
       <p className="mx-auto mt-10 max-w-6xl px-4 text-xs leading-relaxed text-cinza sm:px-6">
-        © {ano} {site.empresa}. OpenAI, ChatGPT, Claude, Gemini, Grok, Kimi, DeepSeek, NVIDIA, WhatsApp e os demais nomes e logos
+        © {ano} {site.razaoSocial}. OpenAI, ChatGPT, Claude, Gemini, Grok, Kimi, DeepSeek, NVIDIA, WhatsApp e os demais nomes e logos
         citados são marcas dos seus donos e aparecem só para indicar integração. O ArkoBot não é afiliado nem patrocinado por eles.
       </p>
     </footer>

@@ -18,7 +18,7 @@ pnpm --filter @arkobot/site build # gera apps/site/out
 | `src/config/planos.ts` | Planos, preços, créditos, computador adicional, créditos avulsos, a tabela "Comparar todos os recursos", a linha que explica os créditos e a garantia de 7 dias. `precosDefinidos = false` esconde os valores. |
 | `src/config/integracoes.json` | IAs da faixa de logos e do seletor de modelo (conferidas em `server/drivers/`; `soConta` marca as que só entram pela conta do cliente) e os apps (Composio e WhatsApp), com o arquivo de logo de cada um. |
 | `src/config/trabalhos.ts` | As abas de "Dê a cada bot um trabalho": descrição, horário, apps e a mini-conversa de cada uma. |
-| `src/app/termos/` e `src/app/privacidade/` | Páginas legais, por enquanto com aviso de "em elaboração". Substitua pelo texto revisado pelo jurídico. |
+| `conteudo/legal/*.md` | Termos de Uso, Política de Privacidade e Política de Cookies, publicados em `/termos/`, `/privacidade/` e `/cookies/` (o Markdown vira HTML no build). Vieram de `docs/legal/` do branch `legal-arkobot`, já com os dados da empresa. O e-mail de contato e o encarregado ainda não foram informados: os textos usam o WhatsApp como canal provisório, e cada ponto a trocar tem um comentário `<!-- TROCAR: ... -->`, que não aparece no site. |
 | `src/config/equipe.ts` | Os bots de exemplo (nome, função, cores e acessório do avatar) usados no site todo. |
 | `src/config/site.ts` | Título, descrição, endereço e menu. |
 
@@ -44,4 +44,4 @@ Para não gastar builds a cada mudança no app, em **Settings → Git → Ignore
 
 ## Licença do Remotion
 
-O `@remotion/player` é gratuito para pessoas físicas e empresas com até 3 funcionários. Acima disso, a Remotion exige uma licença de empresa (remotion.pro). Confira antes de publicar.
+O `@remotion/player` é gratuito para pessoas físicas e empresas com até 3 funcionários; acima disso, a Remotion exige uma licença de empresa (remotion.pro). Em novembro de 2026 a Domma Tecnologia tem 1 pessoa, então a licença gratuita se aplica. Se a equipe passar de 3 pessoas, contrate a licença de empresa.

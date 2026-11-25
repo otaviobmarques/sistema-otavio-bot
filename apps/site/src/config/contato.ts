@@ -4,16 +4,18 @@
  * - `urlAssinatura`: página de cadastro ou pagamento dos planos ("Começar agora" e "Assinar").
  *   Vazia, esses botões usam o mesmo canal de "Falar com um especialista".
  * - `whatsapp`: só dígitos, com código do país e DDD (ex.: "5511912345678"). Tem prioridade sobre o e-mail.
- * - `email`: endereço completo (ex.: "contato@seudominio.com.br").
+ * - `whatsappVisivel`: o mesmo número, formatado para aparecer no site.
+ * - `email`: endereço completo (ex.: "contato@seudominio.com.br"). Vazio, não aparece no site.
  * - `mensagemInicial`: texto que já vem escrito no WhatsApp ou no assunto do e-mail.
  *
  * Com tudo vazio, os botões levam à seção de contato do próprio site, que avisa que os canais saem em breve.
  */
 export const contato = {
   urlAssinatura: '',
-  whatsapp: '',
+  whatsapp: '5519987822290',
+  whatsappVisivel: '+55 (19) 98782-2290',
   email: '',
-  mensagemInicial: 'Olá! Quero colocar o ArkoBot para trabalhar na minha empresa.',
+  mensagemInicial: 'Olá! Quero conhecer o ArkoBot.',
 };
 
 export type Acao = 'assinar' | 'falar';
