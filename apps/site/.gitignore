@@ -1,0 +1,9 @@
+/node_modules
+/.next
+/out
+/public/gerado
+*.tsbuildinfo
+next-env.d.ts
+.vercel
+.env*
+/screenshots

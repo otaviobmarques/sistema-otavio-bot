@@ -1,0 +1,33 @@
+{
+  "name": "@arkobot/site",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/preparar.mjs && next dev",
+    "build": "node scripts/preparar.mjs && next build",
+    "typecheck": "next typegen && tsc --noEmit",
+    "og": "node scripts/gerar-og.mjs"
+  },
+  "dependencies": {
+    "@remotion/player": "4.0.542",
+    "lucide-react": "^1.71.0",
+    "marked": "18.2.0",
+    "motion": "^14.12.0",
+    "next": "16.4.6",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "remotion": "4.0.542"
+  },
+  "devDependencies": {
+    "@lobehub/icons-static-svg": "1.102.0",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.1.9",
+    "@types/react-dom": "^19.1.7",
+    "sharp": "^0.35.5",
+    "simple-icons": "16.37.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.9.3"
+  }
+}
