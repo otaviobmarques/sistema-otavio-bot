@@ -152,6 +152,20 @@ describe("figurinha", () => {
   });
 });
 
+describe("personagem", () => {
+  it.each(["gravata-robo", "escudo", "classico", null] as const)("accepts %j at both profile boundaries", (personagem) => {
+    for (const strict of [false, true]) {
+      expect(parseBotProfilePatch({ personagem }, strict)).toEqual({ ok: true, patch: { personagem } });
+    }
+  });
+
+  it.each(["duque", "", 1, {}])("rejects %j", (personagem) => {
+    const parsed = parseBotProfilePatch({ personagem } as never, true);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.ok ? "" : parsed.error).toMatch(/^personagem must be null or one of gravata-robo, .*classico$/);
+  });
+});
+
 describe("soul (standing instructions)", () => {
   it("accepts soul on both the strict and broad boundaries", () => {
     expect(parseBotProfilePatch({ soul: "Be brief." }, true)).toEqual({ ok: true, patch: { soul: "Be brief." } });

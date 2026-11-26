@@ -10,8 +10,10 @@ import {
   resolveFigurinha,
   type FigurinhaLook,
 } from "../../shared/figurinha";
+import { PERSONAGEM_CLASSICO } from "../../shared/personagens";
 import type { AvatarPatch } from "./avatar-editing";
 import { Figurinha } from "./Figurinha";
+import { botPersonagem } from "./PersonagemPicker";
 
 type Part = keyof FigurinhaLook;
 
@@ -35,6 +37,7 @@ export function FigurinhaPicker({ bot, disabled, selectable = true, size = 34, o
   onPatch: (patch: AvatarPatch) => void;
 }) {
   const look = botFigurinha(bot);
+  const classico = selectable && !botPersonagem(bot);
   return (
     <div data-figurinha-picker="">
       {PARTS.map(({ part, title, options, labels }) => (
@@ -42,7 +45,7 @@ export function FigurinhaPicker({ bot, disabled, selectable = true, size = 34, o
           <div className="mb-1.5 mt-3 text-[12px] font-medium uppercase tracking-[0.08em] text-ink-secondary">{t(title)}</div>
           <div className="grid grid-cols-5 gap-1.5">
             {options.map((option) => {
-              const selected = selectable && look[part] === option;
+              const selected = classico && look[part] === option;
               const name = t(labels[option]!);
               return (
                 <button
@@ -53,7 +56,7 @@ export function FigurinhaPicker({ bot, disabled, selectable = true, size = 34, o
                   aria-label={t("figurinha.use", { name })}
                   title={name}
                   data-figurinha-option={`${part}.${option}`}
-                  onClick={() => onPatch({ avatarCrop: "mascot", figurinha: { ...bot.figurinha, [part]: option } })}
+                  onClick={() => onPatch({ avatarCrop: "mascot", personagem: PERSONAGEM_CLASSICO, figurinha: { ...bot.figurinha, [part]: option } })}
                   className={cn(
                     "flex items-center justify-center rounded-lg py-1.5 disabled:opacity-50",
                     selected ? "bg-ink/[0.08] ring-[1.5px] ring-inset ring-ink/25" : "hover:bg-ink/[0.05]",

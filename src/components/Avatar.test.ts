@@ -53,7 +53,7 @@ describe("MausAvatar figurinha", () => {
   });
 
   it("derives a bot's character from its id, so a rename keeps its look", () => {
-    expect(lookOf(renderBot({ id: "bot-7", name: "Ana" }))).toBe(lookOf(renderBot({ id: "bot-7", name: "Bia" })));
+    expect(lookOf(renderBot({ id: "bot-7", name: "Ana", personagem: "classico" }))).toBe(lookOf(renderBot({ id: "bot-7", name: "Bia", personagem: "classico" })));
   });
 
   it("does not draw a figurinha over an uploaded image", () => {
@@ -92,13 +92,13 @@ describe("BotAvatar's two avatar outcomes", () => {
   });
 
   it("renders the figurinha when the crop is mascot, image or not", () => {
-    const markup = renderBot({ avatarUrl: "/api/attachments/cat.webp", avatarCrop: "mascot" });
+    const markup = renderBot({ avatarUrl: "/api/attachments/cat.webp", avatarCrop: "mascot", personagem: "classico" });
     expect(markup).not.toContain("<img");
     expect(markup).toContain("<svg");
   });
 
   it("falls back to the figurinha when a flat crop has no valid image", () => {
-    const markup = renderBot({ avatarUrl: undefined, avatarCrop: "circle" });
+    const markup = renderBot({ avatarUrl: undefined, avatarCrop: "circle", personagem: "classico" });
     expect(markup).not.toContain("<img");
     expect(markup).toContain("<svg");
   });

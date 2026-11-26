@@ -124,6 +124,7 @@ const backupSchema = z.object({
     mascotBody: z.string().max(40).optional(),
     mascotFaceColor: mascotFaceColorSchema.optional(),
     figurinha: figurinhaSchema.optional(),
+    personagem: z.string().max(40).optional(),
     chiefOfStaff: z.boolean(),
     hidden: z.boolean(),
     playbooks: z.array(playbook).max(200),

@@ -7,6 +7,8 @@ import { resolveFigurinha, type FigurinhaChoice } from "../../shared/figurinha";
 import { useFestivalDress, wornBody } from "@/lib/festival-dress";
 import { t } from "@/lib/i18n";
 import { Figurinha } from "./Figurinha";
+import { PersonagemAvatar } from "./PersonagemAvatar";
+import { resolvePersonagem } from "../../shared/personagens";
 
 const MOTION_STATE: Partial<Record<Exclude<MausMotion, "none">, MausState>> = {
   arrive: "spawning",
@@ -74,6 +76,7 @@ export type BotAvatarProps = Omit<MausAvatarProps, "color" | "seed" | "figurinha
     mascotBody?: BotBodyId | null;
     mascotFaceColor?: MascotFaceColor | null;
     figurinha?: FigurinhaChoice | null;
+    personagem?: string | null;
   };
 };
 
@@ -105,6 +108,10 @@ export function BotAvatar({ bot, size = 44, label, ...mascotProps }: BotAvatarPr
     imageFailed,
   });
 
+  const personagem = outcome === "flatImage" ? null : resolvePersonagem({ seed: bot.id ?? bot.name ?? "", choice: bot.personagem, figurinha: bot.figurinha });
+  if (personagem) {
+    return <PersonagemAvatar personagem={personagem} size={size} state={mascotProps.state} animated={mascotProps.animated} label={label ?? bot.name} />;
+  }
   if (outcome !== "flatImage") {
     return (
       <MausAvatar

@@ -105,6 +105,19 @@ describe("additive portable team backups", () => {
     expect(restored.bots.find((bot) => bot.name === "MausBot 2")?.color).toBe("silver");
   });
 
+  it("carries a picked character through backup and import, and drops one this version does not know", () => {
+    const { store, routines } = fixture();
+    const picked = store.createBot({ name: "Duda", personagem: "escudo" }, { seedMessages: false });
+    const backup = createTeamBackup(store, routines.listRoutines(), "With a character");
+    expect(backup.bots.find((bot) => bot.key === picked.id)?.personagem).toBe("escudo");
+    const restored = importTeamBackup(store, routines, JSON.parse(JSON.stringify(backup)), selection());
+    expect(restored.bots.find((bot) => bot.name === "Duda 2")?.personagem).toBe("escudo");
+    const file = JSON.parse(JSON.stringify(backup));
+    file.bots.find((bot: { key: string }) => bot.key === picked.id).personagem = "from-the-future";
+    const unknown = importTeamBackup(store, routines, file, selection());
+    expect(unknown.bots.find((bot) => bot.name === "Duda 3")?.personagem).toBeUndefined();
+  });
+
   it("carries a bot's never-use-the-helper switch through backup and import, so its restored notes and chats stay off the helper", () => {
     const { store, routines, chief, scout } = fixture();
     store.patchBot(chief.id, { helperModel: false });

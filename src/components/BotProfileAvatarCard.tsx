@@ -17,6 +17,7 @@ import { AvatarFraming, OrganizationAvatarIcons, RESET_MASCOT_PATCH, useAvatarIm
 import { t } from "@/lib/i18n";
 import { colorName, expressionName } from "@/lib/mascot-names";
 import { FigurinhaPicker } from "./FigurinhaPicker";
+import { ClassicoTitulo, PersonagemPicker } from "./PersonagemPicker";
 
 export function BotProfileAvatarCard({
   bot,
@@ -116,6 +117,8 @@ export function BotProfileAvatarCard({
 
         {crop === "mascot" && (
           <>
+            <PersonagemPicker bot={bot} disabled={busy} onPatch={onPatch} />
+            <ClassicoTitulo />
             <FigurinhaPicker bot={bot} disabled={busy} onPatch={onPatch} />
             <div className="mb-2 mt-4 text-[12px] font-medium uppercase tracking-[0.08em] text-ink-secondary">
               {t("botIdentity.expression")}

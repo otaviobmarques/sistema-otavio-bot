@@ -249,8 +249,9 @@ describe("header name", () => {
       const idleMarkup = renderToStaticMarkup(createElement(ChatView, { bot: { ...bot, busy: false } }));
       const pillOf = (markup: string) => {
         const start = markup.indexOf("data-chathead-pill");
-        // The figurinha itself shows the work with its face; the pill around it must not change.
-        return markup.slice(start, markup.indexOf("data-chathead-status", start)).replace(/<svg viewBox="0 0 48 48"[\s\S]*?<\/svg>/, "<figurinha/>");
+        // The avatar itself shows the work; the pill around it must not change.
+        return markup.slice(start, markup.indexOf("data-chathead-status", start))
+          .replace(/<svg viewBox="0 0 48 48"[\s\S]*?<\/svg>/, "<avatar/>").replace(/<span[^>]*data-personagem=[\s\S]*?<\/span>/, "<avatar/>");
       };
       expect(pillOf(busyMarkup)).not.toContain("animate-status-pulse");
       expect(pillOf(busyMarkup)).toBe(pillOf(idleMarkup));

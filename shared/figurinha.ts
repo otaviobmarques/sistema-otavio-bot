@@ -36,7 +36,7 @@ export interface FigurinhaLook {
 }
 
 /** FNV-1a, so the same id gives the same character in every client and every run. */
-function seedHash(seed: string): number {
+export function seedHash(seed: string): number {
   let hash = 0x811c9dc5;
   for (let index = 0; index < seed.length; index++) {
     hash ^= seed.charCodeAt(index);

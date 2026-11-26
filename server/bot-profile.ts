@@ -12,6 +12,7 @@ import { BOT_PROFILE_LIMITS, fitsOnOneLine } from "../shared/bot-profile.ts";
 import { REPLY_STYLES } from "../shared/reply-style.ts";
 import { BOT_BODY_IDS, botBodySchema } from "../shared/bot-body.ts";
 import { figurinhaSchema } from "../shared/figurinha.ts";
+import { personagemSchema } from "../shared/personagens.ts";
 
 import type { BotRecord } from "./store.ts";
 
@@ -31,6 +32,7 @@ export const BOT_PROFILE_PATCH_FIELDS = [
   "mascotBody",
   "mascotFaceColor",
   "figurinha",
+  "personagem",
   "voice",
   "speakReplies",
   "replyStyle",
@@ -71,6 +73,7 @@ export const profilePatchSchema = z.object({
   mascotBody: botBodySchema.optional(),
   mascotFaceColor: mascotFaceColorSchema.nullable().optional(),
   figurinha: figurinhaSchema.nullable().optional(),
+  personagem: personagemSchema.nullable().optional(),
   voice: z
     .string({ error: "voice must be a string" })
     .max(BOT_PROFILE_LIMITS.voice, { error: "voice must be at most 200 characters" })
@@ -97,6 +100,7 @@ export type BotProfilePatch = Partial<
     | "mascotBody"
     | "mascotFaceColor"
     | "figurinha"
+    | "personagem"
     | "voice"
     | "speakReplies"
     | "replyStyle"
@@ -130,6 +134,9 @@ export function parseBotProfilePatch(input: BotProfilePatchInput, strict = false
     }
     if (issue?.path[0] === "figurinha") {
       return { ok: false, error: "figurinha must be null or an object of head, eyes and accessory" };
+    }
+    if (issue?.path[0] === "personagem") {
+      return { ok: false, error: `personagem must be null or one of ${personagemSchema.options.join(", ")}` };
     }
     return { ok: false, error: issue?.message ?? "invalid profile patch" };
   }
