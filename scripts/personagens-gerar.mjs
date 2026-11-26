@@ -43,7 +43,7 @@ for (const personagem of PERSONAGENS) {
       const destino = join(SAIDA, `${personagem.id}-${recorte}-${tamanho}.webp`);
       execFileSync("convert", [
         original, "-crop", crop, "+repage", "-filter", "Lanczos", "-resize", `${tamanho}x${tamanho}`,
-        "-strip", "-quality", QUALIDADE, "-define", "webp:method=6", destino,
+        "-strip", "-quality", QUALIDADE, "-define", "webp:alpha-quality=100", "-define", "webp:method=6", destino,
       ]);
       if (!existsSync(destino)) throw new Error(`convert wrote nothing for ${destino}`);
       console.log(destino.slice(ROOT.length));
