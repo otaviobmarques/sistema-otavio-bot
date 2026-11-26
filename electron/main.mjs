@@ -2311,7 +2311,7 @@ ipcMain.handle("desktop:skin", (event, skin) => {
 for (const [channel, act] of [
   ["window:minimize", (win) => win.minimize()],
   ["window:toggle-maximize", (win) => (win.isMaximized() ? win.unmaximize() : win.maximize())],
-  ["window:close", (win) => win.close()],
+  ["window:close", (win) => win.close()], ["app:quit", () => app.quit()],
 ]) {
   ipcMain.handle(channel, (event) => {
     const win = BrowserWindow.fromWebContents(event.sender) ?? mainWindow;

@@ -94,12 +94,20 @@ function mainRule() {
   return { context, window, show, offered, launching, signedIn, pageAllowed: vm.runInContext("updaterPageAllowed", context) };
 }
 
-async function load(pageAllowed) {
+// `atLaunch`: the release is already out when the app opens. Otherwise the launch check finds nothing and the
+// release appears for a later check, so these tests see the updates that arrive while the app is open.
+async function load(pageAllowed, { atLaunch = false } = {}) {
   vi.resetModules();
   fixture.handlers.clear();
   const autoUpdater = new EventEmitter();
+  let checks = 0;
   autoUpdater.checkForUpdates = vi.fn(async () => {
+    checks += 1;
     autoUpdater.emit("checking-for-update");
+    if (checks === 1 && !atLaunch) {
+      autoUpdater.emit("update-not-available", { version: "1.0.0" });
+      return { isUpdateAvailable: false };
+    }
     autoUpdater.emit("update-available", { version: "2.0.0" });
     return { isUpdateAvailable: true };
   });
@@ -115,6 +123,7 @@ async function load(pageAllowed) {
   return { updater, autoUpdater, handlers: fixture.handlers };
 }
 
+const HOUR = 60 * 60 * 1000;
 const settle = async () => {
   for (let index = 0; index < 10; index += 1) await Promise.resolve();
 };
@@ -272,7 +281,7 @@ it("a downloaded update installs by itself at a quiet moment on macOS and Window
       else delete process.env.APPIMAGE;
       const { updater, autoUpdater, handlers } = await load(() => true);
       updater.startUpdater(quiet);
-      await vi.advanceTimersByTimeAsync(15_000);
+      await vi.advanceTimersByTimeAsync(HOUR);
       await settle();
       expect(autoUpdater.quitAndInstall, `${os} ${marker ?? image ?? ""} waits for a quiet moment`).not.toHaveBeenCalled();
       expect((await handlers.get("update:get-state")({})).installsByItself, os).toBe(installs ? true : undefined);
@@ -299,15 +308,15 @@ it("My Cloud's page hears \"Restart to update\" once the sign-in it loaded befor
   updater.attachUpdaterWindow(rule.window);
   updater.startUpdater();
 
-  await vi.advanceTimersByTimeAsync(15_000);
+  await vi.advanceTimersByTimeAsync(HOUR);
   await settle();
   expect(autoUpdater.downloadUpdate).toHaveBeenCalledTimes(1);
   expect(() => handlers.get("update:get-state")(cloud.event)).toThrow(/only available/);
   expect(cloud.webContents.send).not.toHaveBeenCalled();
-  await vi.advanceTimersByTimeAsync(60 * 60 * 1000);
+  await vi.advanceTimersByTimeAsync(HOUR);
   // The staged 2.0.0 is still offered, so the hourly check looks again (quietly) for something newer; macOS stages
-  // natively and is not re-checked.
-  expect(autoUpdater.checkForUpdates).toHaveBeenCalledTimes(process.platform === "darwin" ? 1 : 2);
+  // natively and is not re-checked. The first call is the launch check, which found nothing.
+  expect(autoUpdater.checkForUpdates).toHaveBeenCalledTimes(process.platform === "darwin" ? 2 : 3);
   expect(cloud.webContents.send).not.toHaveBeenCalled();
 
   rule.signedIn({ status: "connected", account: { id: "a1" }, machine: { origin: CLOUD, status: "ready" } });
@@ -319,7 +328,7 @@ it("My Cloud's page hears \"Restart to update\" once the sign-in it loaded befor
   expect(other.webContents.send).not.toHaveBeenCalled();
 });
 
-it("downloads an update by itself: the first check after launch starts it, and nothing restarts", async () => {
+it("downloads an update released while the app is open by itself at the next check, and nothing restarts", async () => {
   const rule = mainRule();
   const local = page(LOCAL);
   rule.show(local);
@@ -327,10 +336,10 @@ it("downloads an update by itself: the first check after launch starts it, and n
   updater.attachUpdaterWindow(rule.window);
   updater.startUpdater();
 
-  await vi.advanceTimersByTimeAsync(15_000);
+  await vi.advanceTimersByTimeAsync(HOUR);
   await settle();
 
-  expect(autoUpdater.checkForUpdates).toHaveBeenCalledTimes(1);
+  expect(autoUpdater.checkForUpdates).toHaveBeenCalledTimes(2);
   expect(autoUpdater.downloadUpdate).toHaveBeenCalledTimes(1);
   expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
   const statuses = local.webContents.send.mock.calls.map(([, state]) => state.status);
@@ -383,7 +392,7 @@ it("sends update news only to a page allowed to read it", async () => {
 
   const other = page(OTHER);
   rule.show(other, "vps");
-  await vi.advanceTimersByTimeAsync(15_000);
+  await vi.advanceTimersByTimeAsync(HOUR);
   await settle();
   expect(autoUpdater.downloadUpdate).toHaveBeenCalledTimes(1);
   expect(other.webContents.send).not.toHaveBeenCalled();
@@ -405,6 +414,7 @@ it("sends updater progress to a reopened window without restarting the updater",
   const { updater, autoUpdater, handlers } = await load(rule.pageAllowed);
   updater.attachUpdaterWindow({ webContents: first.webContents });
   updater.startUpdater();
+  await settle();
   const listenerCount = autoUpdater.eventNames().reduce((count, name) => count + autoUpdater.listenerCount(name), 0);
   const timerCount = vi.getTimerCount();
 
@@ -422,4 +432,59 @@ it("sends updater progress to a reopened window without restarting the updater",
     .toEqual(["checking", "downloading", "downloading", ...(process.platform === "darwin" ? ["preparing"] : []), "downloaded"]);
   expect(autoUpdater.eventNames().reduce((count, name) => count + autoUpdater.listenerCount(name), 0)).toBe(listenerCount);
   expect(vi.getTimerCount()).toBe(timerCount);
+});
+
+it("an update already out when the app opens is required: it downloads and installs at once; a system package keeps its later check", async () => {
+  const platform = Object.getOwnPropertyDescriptor(process, "platform");
+  const resourcesPath = process.resourcesPath;
+  const resources = mkdtempSync(join(tmpdir(), "omb-updater-required-"));
+  try {
+    for (const [os, marker, required] of [["win32", null, true], ["darwin", null, true], ["linux", "rpm", false]]) {
+      Object.defineProperty(process, "platform", { ...platform, value: os });
+      process.resourcesPath = resources;
+      rmSync(join(resources, "package-type"), { force: true });
+      if (marker) writeFileSync(join(resources, "package-type"), marker);
+      const rule = mainRule();
+      const local = page(LOCAL);
+      rule.show(local);
+      const { updater, autoUpdater, handlers } = await load(rule.pageAllowed, { atLaunch: true });
+      updater.attachUpdaterWindow(rule.window);
+      updater.startUpdater();
+      await settle();
+      expect(autoUpdater.checkForUpdates, os).toHaveBeenCalledTimes(required ? 1 : 0);
+      expect(autoUpdater.quitAndInstall.mock.calls, os).toEqual(required ? [[true, true]] : []);
+      const sent = local.webContents.send.mock.calls.map(([, state]) => state);
+      if (required) {
+        expect(sent.find((state) => state.status === "downloading")).toMatchObject({ mandatory: true, version: "2.0.0" });
+        expect(handlers.get("update:get-state")(local.event)).toMatchObject({ status: "installing", mandatory: true });
+      } else {
+        expect(sent.some((state) => state.mandatory)).toBe(false);
+        await vi.advanceTimersByTimeAsync(15_000);
+        expect(autoUpdater.checkForUpdates, os).toHaveBeenCalledTimes(1);
+      }
+    }
+  } finally {
+    Object.defineProperty(process, "platform", platform);
+    process.resourcesPath = resourcesPath;
+    rmSync(resources, { recursive: true, force: true });
+  }
+});
+
+it("a required update whose Try again finds no release any more leaves the window usable", async () => {
+  const rule = mainRule();
+  const local = page(LOCAL);
+  rule.show(local);
+  const { updater, autoUpdater, handlers } = await load(rule.pageAllowed, { atLaunch: true });
+  autoUpdater.downloadUpdate = vi.fn(async () => { throw new Error("socket hang up"); });
+  updater.attachUpdaterWindow(rule.window);
+  updater.startUpdater();
+  await settle();
+  expect(handlers.get("update:get-state")(local.event)).toMatchObject({ status: "error", mandatory: true });
+  autoUpdater.checkForUpdates = vi.fn(async () => { autoUpdater.emit("update-not-available", { version: "1.0.0" }); });
+  await handlers.get("update:check")(local.event);
+  await settle();
+  const state = handlers.get("update:get-state")(local.event);
+  expect(state.status).toBe("idle");
+  expect(state.mandatory).toBeUndefined();
+  expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
 });

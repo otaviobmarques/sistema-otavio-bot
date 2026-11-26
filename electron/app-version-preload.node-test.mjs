@@ -7,15 +7,22 @@ const PRELOAD = readFileSync(new URL("./preload.cjs", import.meta.url), "utf8");
 const MAIN = readFileSync(new URL("./main.mjs", import.meta.url), "utf8").replace(/\r\n/g, "\n");
 const LOCAL = "http://127.0.0.1:8799";
 
-function app(origin, argv = [`--omb-local-origin=${LOCAL}`, "--omb-company-desktop=1", "--omb-app-version=0.1.127"]) {
+function bridgeFor(origin, argv = [`--omb-local-origin=${LOCAL}`, "--omb-company-desktop=1", "--omb-app-version=0.1.127"], { clicked = false, invoked = [] } = {}) {
   let bridge;
   vm.runInNewContext(PRELOAD, {
     process: { platform: "darwin", argv },
-    location: { origin }, navigator: { userActivation: { isActive: false } }, TextEncoder, localStorage: { getItem: () => null },
+    location: { origin }, navigator: { userActivation: { isActive: clicked } }, TextEncoder, localStorage: { getItem: () => null },
     require: () => ({ webUtils: {}, contextBridge: { exposeInMainWorld: (_name, value) => { bridge = value; } },
-      ipcRenderer: { on() {}, removeListener() {}, send() {}, sendSync: () => undefined, invoke: () => Promise.resolve() } }),
+      ipcRenderer: { on() {}, removeListener() {}, send() {}, sendSync: () => undefined, invoke: (...args) => { invoked.push(args); return Promise.resolve(true); } } }),
   });
-  return bridge.app ? { ...bridge.app } : undefined;
+  return bridge;
+}
+
+function app(origin, argv) {
+  const found = bridgeFor(origin, argv).app;
+  if (!found) return undefined;
+  const { quit: _quit, ...rest } = found;
+  return rest;
 }
 
 test("every page in the window learns this app's own version, and only this computer's page counts as this app's own", () => {
@@ -29,4 +36,16 @@ test("main passes the app's version to the window it opens", () => {
   const start = MAIN.indexOf("additionalArguments: [");
   assert.ok(start >= 0);
   assert.ok(MAIN.slice(start, MAIN.indexOf("],\n", start)).includes("`--omb-app-version=${app.getVersion()}`"));
+});
+
+test("the profile menu's Quit quits the whole app: this computer's page at once, a Cloud or server page only from a click", async () => {
+  const invoked = [];
+  await bridgeFor(LOCAL, undefined, { invoked }).app.quit();
+  assert.deepEqual(invoked, [["app:quit"]]);
+  const remote = [];
+  await assert.rejects(bridgeFor("https://bots.example.test", undefined, { invoked: remote }).app.quit());
+  assert.deepEqual(remote, []);
+  await bridgeFor("https://bots.example.test", undefined, { clicked: true, invoked: remote }).app.quit();
+  assert.deepEqual(remote, [["app:quit"]]);
+  assert.match(MAIN, /\["app:quit", \(\) => app\.quit\(\)\]/);
 });

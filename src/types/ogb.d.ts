@@ -119,7 +119,8 @@ const __APP_VERSION__: string;
       platform: NodeJS.Platform;
       /** This app's own version, and whether this page is this app's own: false on a server added in the Server menu,
        * whose page carries that server's version. Absent in desktop builds before it. */
-      app?: { version: string; ownPage: boolean };
+      /** `quit`: quits the whole app (every window), as the tray's Quit does; absent in an app too old to have it. */
+      app?: { version: string; ownPage: boolean; quit?(): Promise<boolean> };
       organization?: import("../../electron/managed-desktop.mjs").ManagedDesktopBridge;
       cloudAccount?: import("../../electron/cloud-account.mjs").CloudAccountBridge;
       accounts?: import("../../electron/cloud-account.mjs").AccountsBridge;
@@ -537,6 +538,8 @@ export interface UpdaterState {
   installsByItself?: boolean;
   /** the version the app updated itself to while the person was away, until they have seen it said */
   updated?: string;
+  /** found at launch: the app downloads and installs it before it can be used, so the window covers itself */
+  mandatory?: boolean;
 }
 
 export interface CompanionAccountState {

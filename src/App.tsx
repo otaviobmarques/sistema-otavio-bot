@@ -28,6 +28,7 @@ import { WorkspaceBackupRecovery } from "@/components/WorkspaceBackupSettings";
 import { NotificationRail, NotificationsPanel } from "@/components/NotificationsPanel";
 import { useNotificationFeed } from "@/lib/notification-preferences";
 import { UpdateBanner } from "@/components/UpdateBanner";
+import { RequiredUpdateScreen } from "@/components/RequiredUpdateScreen";
 import { AppNotices } from "@/components/AppNotices";
 import { BotLimitPopup } from "@/components/BotLimitPopup";
 import { CloudAsleepStrip } from "@/components/CloudAsleepStrip";
@@ -455,6 +456,7 @@ function Shell({ viewer }: { viewer: WelcomeViewer | null }) {
         className="pointer-events-none absolute left-3 top-3 size-[30px] md:hidden"
       />}
       </div>
+      <RequiredUpdateScreen />
       {/* Last child on purpose: Blink resolves -webkit-app-region in DOM order, so no-drag buttons must follow every drag region. */}
       <WindowCaptionButtons
         visible={capabilities.windowChrome === "win-caption" && Boolean(window.ogb?.windowControls)}
