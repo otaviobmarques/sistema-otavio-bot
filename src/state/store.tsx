@@ -37,7 +37,7 @@ import { approvalModeFor, type ApprovalMode } from "../../shared/approval-mode";
 import { askResetBridge, desktopCapabilitiesNow } from "@/lib/desktop"; import { isBotLimitRefusal, stoppedAtBotLimit } from "@/lib/bot-limit";
 import { sameModelSelection } from "../../shared/thread-model";
 import type { BotBodyId } from "../../shared/bot-body";
-import { StoreRefContext } from "./store-ref-context";
+import { StoreRefContext } from "./store-ref-context"; import { InstancesContext } from "./instances-context";
 import type { QuestionRequestCardData } from "../../shared/ask-question";
 import type { ProfileRequestCardData } from "../../shared/profile-request";
 import type { ModelRequestCardData } from "../../shared/model-request";
@@ -3335,7 +3335,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [state, dispatch, flushBotPatches, refreshInstances, refreshModels],
   );
   const ref = useMemo(() => ({ dispatch, state: () => stateRef.current }), [dispatch]);
-  return <StoreRefContext value={ref}><StoreContext.Provider value={value}>{children}</StoreContext.Provider></StoreRefContext>;
+  return <StoreRefContext value={ref}><StoreContext.Provider value={value}><InstancesContext value={state.instances}>{children}</InstancesContext></StoreContext.Provider></StoreRefContext>;
 }
 
 export function useStore() {
@@ -3345,5 +3345,5 @@ export function useStore() {
 }
 
 export function BotEditorStore({ value, children }: { value: ReturnType<typeof useStore>; children: ReactNode }) {
-  return <StoreRefContext value={null}><StoreContext.Provider value={value}>{children}</StoreContext.Provider></StoreRefContext>;
+  return <StoreRefContext value={null}><StoreContext.Provider value={value}><InstancesContext value={value.state.instances}>{children}</InstancesContext></StoreContext.Provider></StoreRefContext>;
 }

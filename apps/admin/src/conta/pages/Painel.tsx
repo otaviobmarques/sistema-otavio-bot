@@ -1,7 +1,7 @@
-import { Coins, Download, ExternalLink, Monitor, ReceiptText, ShieldAlert, Trash2, XCircle } from "lucide-react";
+import { ArrowUpRight, Coins, Download, ExternalLink, KeyRound, Monitor, ReceiptText, ShieldAlert, Sparkles, Trash2, XCircle } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Link } from "react-router";
-import { type CustomerBillingType } from "../../customer/catalog.ts";
+import { trialNotice, whatsappLink, type CustomerBillingType } from "../../customer/catalog.ts";
 import { api, useApi } from "../../web/api.ts";
 import { brl, date, dateTime, int, LEDGER_KIND, PAYMENT_STATUS } from "../../web/format.ts";
 import { Badge, Button, Card, Empty, ErrorNote, Field, Loading, Modal, StatusBadge, Table, td, Textarea, useToast, cx } from "../../web/ui.tsx";
@@ -19,7 +19,7 @@ interface Panel {
   subscription: null | {
     id: string; status: string; billing_type: string | null; price_cents: number; total_cents: number; credits_per_month: number; plan_code: string; plan_name: string;
     included_vps: number; next_due_date: string | null; current_period_end: string | null; past_due_since: string | null; canceled_at: string | null; created_at: string;
-    courtesy: boolean; courtesy_until: string | null;
+    courtesy: boolean; courtesy_until: string | null; trial_ends_at: string | null; free_requests_per_day: number;
   };
   addons: { code: string; name: string; quantity: number; unit_price_cents: number }[];
   payments: Payment[];
@@ -29,6 +29,8 @@ interface Panel {
   extraComputer: { id: string; name: string; price_cents: number } | null;
   creditPackages: { id: string; credits: number; priceCents: number }[];
   paymentsAvailable: boolean;
+  freeRequestsToday: number;
+  upgrade: null | { code: string; name: string; unlocks: string };
 }
 
 interface ChargeResult { valueCents: number; credits: number; invoiceUrl: string | null; pix: { encodedImage: string; payload: string } | null }
@@ -55,11 +57,15 @@ function statusCopy(panel: Panel): { title: string; text: ReactNode; tone: strin
   switch (sub.status) {
     case "pending":
       return { title: "Aguardando o primeiro pagamento", tone: "bg-cyan-soft text-cyan-ink",
-        text: <>Assim que o pagamento for confirmado, a assinatura fica em dia e os {int(sub.credits_per_month)} créditos do plano entram na sua conta. Pix e cartão confirmam em minutos; boleto em até 3 dias úteis.</> };
+        text: <>Assim que o pagamento for confirmado, a assinatura fica em dia{sub.credits_per_month > 0 ? <> e os {int(sub.credits_per_month)} créditos do plano entram na sua conta</> : null}. Pix e cartão confirmam em minutos; boleto em até 3 dias úteis.</> };
     case "active":
       if (sub.courtesy) {
         return { title: `Plano ${sub.plan_name} — cortesia (sem cobrança)`, tone: "bg-violet-50 text-violet-900",
           text: <>{sub.courtesy_until ? <>Válida até <b>{date(sub.courtesy_until)}</b>. </> : null}Os {int(sub.credits_per_month)} créditos do plano renovam todo mês, sem cobrança. Para mudar de plano ou encerrar a cortesia, fale com a gente.</> };
+      }
+      if (sub.trial_ends_at && new Date(sub.trial_ends_at).getTime() > Date.now()) {
+        return { title: trialNotice(sub.trial_ends_at, sub.next_due_date), tone: "bg-cyan-soft text-navy-900",
+          text: <>Aproveite tudo do plano {sub.plan_name} agora. Se não quiser continuar, cancele antes dessa data: nada é cobrado.</> };
       }
       return { title: "Tudo em dia", tone: "bg-emerald-50 text-emerald-800",
         text: <>Sua equipe está funcionando. {sub.next_due_date ? <>A próxima cobrança vence em <b>{date(sub.next_due_date)}</b>.</> : null}</> };
@@ -127,6 +133,19 @@ export function PainelPage({ state, onChanged }: { state: CustomerState; onChang
             <div><dt className="text-xs uppercase tracking-wide text-slate-500">Créditos do plano</dt><dd className="mt-1 font-semibold tabular">{int(sub.credits_per_month)}/mês</dd></div>
           </dl>
         </Card>
+      ) : null}
+
+      {live && live.free_requests_per_day > 0 ? <FreeAiCard used={data.freeRequestsToday} perDay={live.free_requests_per_day} /> : null}
+
+      {data.upgrade && live ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-white p-4 text-sm">
+          <span className="flex items-start gap-2.5">
+            <ArrowUpRight className="mt-0.5 h-4 w-4 shrink-0 text-cyan-ink" />
+            <span><b>Faça upgrade para o {data.upgrade.name}:</b> {data.upgrade.unlocks}.</span>
+          </span>
+          <a href={whatsappLink(`Olá! Quero mudar do plano ${live.plan_name} para o ${data.upgrade.name} do ArkoBot.`)} target="_blank" rel="noopener noreferrer"
+            className="text-sm font-semibold text-cyan-ink hover:underline">Falar com a gente para mudar</a>
+        </div>
       ) : null}
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -203,7 +222,7 @@ export function PainelPage({ state, onChanged }: { state: CustomerState; onChang
 
       <CreditsDialog open={dialog === "credits"} packages={data.creditPackages} onClose={() => setDialog(null)} onCreated={reload} />
       <ComputersDialog open={dialog === "computers"} current={computers} panel={data} onClose={() => setDialog(null)} onDone={done} />
-      <CancelDialog open={dialog === "cancel"} createdAt={sub?.created_at ?? null} onClose={() => setDialog(null)} onDone={done} />
+      <CancelDialog open={dialog === "cancel"} createdAt={sub?.created_at ?? null} trialEndsAt={live?.trial_ends_at ?? null} onClose={() => setDialog(null)} onDone={done} />
       <DeleteDialog open={dialog === "delete"} hasLiveSubscription={live !== null} onClose={() => setDialog(null)} onDone={done} />
     </div>
   );
@@ -334,12 +353,32 @@ function ComputersDialog({ open, current, panel, onClose, onDone }: { open: bool
   );
 }
 
-function CancelDialog({ open, createdAt, onClose, onDone }: { open: boolean; createdAt: string | null; onClose: () => void; onDone: () => void }) {
+function FreeAiCard({ used, perDay }: { used: number; perDay: number }) {
+  return (
+    <Card title={<span className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-cyan-ink" /> IA gratuita já incluída (com limite diário)</span>}>
+      <p className="text-sm text-slate-600">Seus bots já funcionam com a IA gratuita do ArkoBot: não precisa configurar nada. O limite é de <b className="tabular">{int(perDay)}</b> pedidos por dia e volta à meia-noite.</p>
+      <div className="mt-3 text-sm">Hoje: <b className="tabular">{int(Math.min(used, perDay))}</b> de {int(perDay)}</div>
+      <details className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-700">
+        <summary className="flex cursor-pointer items-center gap-2 font-semibold text-ink"><KeyRound className="h-4 w-4 text-cyan-ink" /> Quer mais? Conecte sua própria conta ou chave de IA (opcional)</summary>
+        <p className="mt-3">O uso com a sua própria chave não tem o limite diário do ArkoBot e não gasta créditos. A chave fica no seu app ArkoBot; não pedimos chaves aqui.</p>
+        <ol className="mt-3 list-decimal space-y-1.5 pl-5">
+          <li>Chave gratuita do Google Gemini: entre em <a className="font-medium text-cyan-ink hover:underline" href="https://aistudio.google.com/api-keys" target="_blank" rel="noopener noreferrer">aistudio.google.com</a> com a sua conta Google e clique em <b>Get API key</b> (Criar chave de API). O plano gratuito do Google tem limites por dia.</li>
+          <li>No app ArkoBot, abra <b>Configurações → Chaves de API</b> e, em <b>Seus próprios servidores de modelos</b>, cole a chave em <b>Chave de API compatível com a OpenAI</b>.</li>
+          <li>Em <b>URL base compatível com a OpenAI</b>, informe <code className="rounded bg-white px-1 font-mono text-xs">https://generativelanguage.googleapis.com/v1beta/openai</code>.</li>
+          <li>Prefere Claude ou ChatGPT? Na mesma tela, em <b>Provedores de IA</b>, cole a chave da Anthropic ou da OpenAI.</li>
+        </ol>
+      </details>
+    </Card>
+  );
+}
+
+function CancelDialog({ open, createdAt, trialEndsAt, onClose, onDone }: { open: boolean; createdAt: string | null; trialEndsAt: string | null; onClose: () => void; onDone: () => void }) {
   const toast = useToast();
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const recent = createdAt !== null && Date.now() - new Date(createdAt).getTime() <= 7 * 86_400_000;
+  const duringTrial = trialEndsAt !== null && new Date(trialEndsAt).getTime() > Date.now();
+  const recent = !duringTrial && createdAt !== null && Date.now() - new Date(createdAt).getTime() <= 7 * 86_400_000;
   const cancel = async () => {
     setBusy(true);
     setError(null);
@@ -359,6 +398,7 @@ function CancelDialog({ open, createdAt, onClose, onDone }: { open: boolean; cre
       <Button variant="danger" busy={busy} disabled={reason.trim().length < 3} onClick={cancel}>Cancelar assinatura</Button>
     </>}>
       <p className="text-sm text-slate-600">As cobranças futuras param na hora e os seus bots são pausados. Seus créditos e dados continuam guardados se você voltar.</p>
+      {duringTrial ? <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">Você está no teste grátis: cancelando agora, nada é cobrado.</p> : null}
       {recent ? (
         <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">Você assinou há menos de 7 dias: tem direito ao reembolso integral. Nossa equipe entra em contato para devolver o valor.</p>
       ) : null}

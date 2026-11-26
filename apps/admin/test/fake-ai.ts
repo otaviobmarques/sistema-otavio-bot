@@ -73,7 +73,14 @@ export function fakeAi() {
     const host = new URL(url).host;
     const script = queues.get(host)?.shift();
     if (!script) return json(500, { error: { message: `nada roteirizado para ${host}` } });
-    return script(call);
+    const signal = init?.signal;
+    if (!signal) return script(call);
+    return new Promise<Response>((resolve, reject) => {
+      const abort = () => reject(signal.reason ?? new DOMException("aborted", "AbortError"));
+      if (signal.aborted) return abort();
+      signal.addEventListener("abort", abort, { once: true });
+      Promise.resolve(script(call)).then(resolve, reject);
+    });
   }) as typeof globalThis.fetch;
   return {
     fetch: fetcher,

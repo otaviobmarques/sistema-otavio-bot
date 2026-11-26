@@ -78,7 +78,7 @@ export function AvatarFraming({
         onPointerCancel={endDrag}
         onWheel={onWheel}
       >
-        <BotAvatar bot={bot} size={FRAME_SIZE} animated={false} label={t("botIdentity.framing.preview", { name: bot.name })} />
+        <BotAvatar bot={bot} size={FRAME_SIZE} animated={false} label={t("botIdentity.framing.preview", { name: bot.name })} aiBadge={false} />
       </div>
       <div className="mb-1.5 mt-4 flex items-baseline justify-between">
         <span className="text-[12px] font-medium uppercase tracking-[0.08em] text-ink-secondary">{t("settings.profile.avatar.zoom")}</span>

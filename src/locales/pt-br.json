@@ -8198,6 +8198,8 @@
   "mascot.useColor": "Usar a cor {color}",
   "avatar.alt": "Avatar de {name}",
   "avatar.altFallback": "Avatar do bot",
+  "avatar.aiBadge": "IA: {vendor}",
+  "avatar.aiVendor.local": "servidor local",
   "botIdentity.framing.preview": "Prévia do avatar de {name}",
   "botIdentity.framing.zoom": "Zoom do avatar",
   "botIdentity.framing.hint": "Arraste a imagem para reposicioná-la. Role para dar zoom.",

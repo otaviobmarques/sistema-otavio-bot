@@ -7,6 +7,7 @@ import { createPgDb, sslFor } from "../db/db.ts";
 import { SecretBox } from "../security/crypto.ts";
 import { LogUsageAlertNotifier } from "./alerts.ts";
 import { createGatewayApp } from "./app.ts";
+import { loadFreeAiConfig } from "./free-ai.ts";
 
 loadDotEnv();
 const required = (name: string): string => {
@@ -23,6 +24,7 @@ const gateway = createGatewayApp({
   now: () => new Date(),
   fetch: globalThis.fetch.bind(globalThis),
   notifier: new LogUsageAlertNotifier(),
+  freeAi: loadFreeAiConfig(process.env),
 });
 
 const port = Number(process.env.GATEWAY_PORT) || 8791;

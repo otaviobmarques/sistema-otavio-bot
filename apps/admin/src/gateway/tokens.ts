@@ -2,6 +2,7 @@ import { audit, type Actor } from "../audit.ts";
 import type { Db, Queryable } from "../db/db.ts";
 import { DomainError } from "../domain/lifecycle.ts";
 import { randomToken, sha256Hex } from "../security/crypto.ts";
+import type { ModelPrice } from "./pricing.ts";
 
 export const GATEWAY_TOKEN_PATTERN = /^arko_ai_[A-Za-z0-9_-]{43}$/;
 
@@ -60,12 +61,15 @@ export interface GatewayCaller {
   dailyCap: number | null;
   monthlyCap: number | null;
   perRequestCap: number | null;
+  /** Requests per Brasília day to the free models; 0 = the plan has no free AI. */
+  freeRequestsPerDay: number;
 }
 
 type CallerRow = {
   token_id: string; organization_id: string; instance_id: string | null; revoked_at: Date | null; expires_at: Date | null;
   org_name: string; org_status: string; sub_status: string | null; current_period_start: Date | null; credits_per_month: number | null; plan_code: string | null;
   allowed_models: string[] | null; daily_credit_cap: number | null; monthly_credit_cap: number | null; per_request_credit_cap: number | null;
+  free_requests_per_day: number | null;
 };
 
 /** The caller behind a bearer token, or null for an unknown, revoked or expired one. */
@@ -74,7 +78,7 @@ export async function resolveGatewayToken(q: Queryable, token: string, now: Date
   const { rows } = await q.query<CallerRow>(
     `SELECT t.id AS token_id, t.organization_id, t.instance_id, t.revoked_at, t.expires_at, o.name AS org_name, o.status AS org_status,
        s.status AS sub_status, s.current_period_start, s.credits_per_month, p.code AS plan_code, p.allowed_models,
-       p.daily_credit_cap, p.monthly_credit_cap, p.per_request_credit_cap
+       p.daily_credit_cap, p.monthly_credit_cap, p.per_request_credit_cap, p.free_requests_per_day
      FROM gateway_tokens t
      JOIN organizations o ON o.id = t.organization_id
      LEFT JOIN subscriptions s ON s.organization_id = o.id AND s.status <> 'canceled'
@@ -97,10 +101,12 @@ export async function resolveGatewayToken(q: Queryable, token: string, now: Date
     dailyCap: row.daily_credit_cap === null ? null : Number(row.daily_credit_cap),
     monthlyCap: row.monthly_credit_cap === null ? null : Number(row.monthly_credit_cap),
     perRequestCap: row.per_request_credit_cap === null ? null : Number(row.per_request_credit_cap),
+    freeRequestsPerDay: Number(row.free_requests_per_day ?? 0),
   };
 }
 
-/** An empty list on the plan means every model in the price table. */
-export function planAllows(caller: GatewayCaller, model: string): boolean {
-  return caller.allowedModels.length === 0 || caller.allowedModels.includes(model);
+/** An empty list on the plan means every model in the price table; a free model also needs the plan's daily free requests. */
+export function planAllows(caller: GatewayCaller, price: Pick<ModelPrice, "model" | "free">): boolean {
+  if (price.free && caller.freeRequestsPerDay <= 0) return false;
+  return caller.allowedModels.length === 0 || caller.allowedModels.includes(price.model);
 }

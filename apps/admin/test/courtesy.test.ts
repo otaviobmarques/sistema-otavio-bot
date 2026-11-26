@@ -144,10 +144,10 @@ describe("cortesia: plano liberado sem cobrança", () => {
     expect(grants.rows.map((row) => row.external_reference.split(":")[2])).toEqual(["2026-11-25", "2026-12-25", "2027-02-25"]);
 
     await f.ctx.db.query("UPDATE subscriptions SET status = 'past_due', past_due_since = $2 WHERE id = $1", [sub!.id, new Date("2026-01-01T00:00:00Z")]);
-    expect(await runDunning(f.ctx)).toEqual({ suspended: 0, canceled: 0, freeRenewed: 0 });
+    expect(await runDunning(f.ctx)).toEqual({ suspended: 0, canceled: 0, freeRenewed: 0, trialsOverdue: 0 });
     await f.ctx.db.query("UPDATE subscriptions SET status = 'suspended' WHERE id = $1", [sub!.id]);
     await f.ctx.db.query("UPDATE organizations SET status = 'suspended', status_reason_code = 'billing', status_reason = 'teste' WHERE id = $1", [org]);
-    expect(await runDunning(f.ctx)).toEqual({ suspended: 0, canceled: 0, freeRenewed: 0 });
+    expect(await runDunning(f.ctx)).toEqual({ suspended: 0, canceled: 0, freeRenewed: 0, trialsOverdue: 0 });
     expect((await subscriptionsOf(f.ctx, org))[0]!.status).toBe("suspended");
   });
 

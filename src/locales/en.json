@@ -8215,6 +8215,8 @@
   "mascot.useColor": "Use the {color} color",
   "avatar.alt": "{name} avatar",
   "avatar.altFallback": "Bot avatar",
+  "avatar.aiBadge": "AI: {vendor}",
+  "avatar.aiVendor.local": "local server",
   "botIdentity.framing.preview": "{name} avatar preview",
   "botIdentity.framing.zoom": "Zoom avatar",
   "botIdentity.framing.hint": "Drag the picture to reposition it. Scroll to zoom.",

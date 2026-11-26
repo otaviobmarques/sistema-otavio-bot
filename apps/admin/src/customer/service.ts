@@ -2,9 +2,11 @@ import { audit, type Actor } from "../audit.ts";
 import { hit } from "../auth/rate-limit.ts";
 import { activeBillingAccount, defaultProviderFactory, type ProviderFactory } from "../billing/accounts.ts";
 import {
-  cancelSubscription, CENTS_PER_CREDIT, createCreditCharge, setSubscriptionAddon, startSubscription, syncSubscriptionPayments, type CreditChargeResult,
+  cancelSubscription, CENTS_PER_CREDIT, createCreditCharge, inTrial, setSubscriptionAddon, startSubscription, syncSubscriptionPayments, type CreditChargeResult,
 } from "../billing/service.ts";
 import { isoDate } from "../billing/subscription-machine.ts";
+import { trialAvailable } from "../billing/trial.ts";
+import { freeRequestsToday } from "../gateway/accounting.ts";
 import type { AppContext } from "../context.ts";
 import { isUniqueViolation, type Queryable } from "../db/db.ts";
 import { digitsOnly, parseDocument, type DocumentType } from "../domain/documents.ts";
@@ -12,7 +14,7 @@ import { DomainError, type OrganizationRow, type SubscriptionRow } from "../doma
 import { DUPLICATE_DOCUMENT, insertOrganization } from "../domain/organizations.ts";
 import type { SessionCustomer } from "./auth.ts";
 import {
-  CREDIT_PACKAGES, EXTRA_COMPUTER_ADDON, LEGAL_DOCUMENTS, MAX_EXTRA_COMPUTERS, type CreditPackageId, type CustomerBillingType,
+  CREDIT_PACKAGES, EXTRA_COMPUTER_ADDON, LEGAL_DOCUMENTS, MAX_EXTRA_COMPUTERS, PLAN_UPGRADES, type CreditPackageId, type CustomerBillingType,
 } from "./catalog.ts";
 
 export type MemberRole = "owner" | "admin" | "member";
@@ -86,6 +88,7 @@ export async function customerState(ctx: AppContext, session: SessionCustomer) {
     subscriptionStatus,
     needsOnboarding: !membership || pending.length > 0 || !session.name.trim(),
     pendingDocuments: pending.map((doc) => doc.document),
+    trialAvailable: organization ? await trialAvailable(ctx.db, organization) : true,
   };
 }
 
@@ -150,7 +153,8 @@ export async function completeOnboarding(ctx: AppContext, req: CustomerRequest, 
 export async function planCatalog(ctx: AppContext) {
   const [plans, addon, account] = await Promise.all([
     ctx.db.query(
-      `SELECT id, code, name, description, price_cents, billing_cycle, credits_per_month, max_bots, max_companies, included_vps
+      `SELECT id, code, name, description, price_cents, billing_cycle, credits_per_month, max_bots, max_companies, included_vps,
+         trial_days, free_requests_per_day, computer_enabled
        FROM plans WHERE active AND visible AND NOT free ORDER BY sort_order, price_cents`),
     ctx.db.query<{ id: string; code: string; name: string; description: string; price_cents: number }>(
       "SELECT id, code, name, description, price_cents FROM addons WHERE code = $1 AND active", [EXTRA_COMPUTER_ADDON]),
@@ -214,7 +218,7 @@ export async function subscribe(ctx: AppContext, req: CustomerRequest, input: Su
   const sub = await startSubscription(ctx, actor, { organizationId: membership.organization_id, planId: plan.id, billingType: input.billingType, firstDueDate }, factory);
   if (addonId) await setSubscriptionAddon(ctx, actor, sub.id, addonId, input.extraComputers, factory);
   await syncSubscriptionPayments(ctx, sub.id, factory).catch((error) => console.error("[conta] fatura inicial", (error as Error).message));
-  return { subscriptionId: sub.id, status: sub.status, invoiceUrl: await openInvoiceUrl(ctx.db, sub.id) };
+  return { subscriptionId: sub.id, status: sub.status, trialEndsAt: sub.trial_ends_at, invoiceUrl: await openInvoiceUrl(ctx.db, sub.id) };
 }
 
 const PAYMENT_FIELDS = `p.id, p.kind, p.status, p.billing_type, p.value_cents, p.credits, p.due_date, p.paid_at, p.invoice_url,
@@ -229,11 +233,12 @@ export async function dashboard(ctx: AppContext, req: CustomerRequest, factory: 
     const known = await ctx.db.query("SELECT 1 FROM payments WHERE subscription_id = $1 LIMIT 1", [sub.id]);
     if (!known.rows.length) await syncSubscriptionPayments(ctx, sub.id, factory).catch(() => undefined);
   }
-  const [org, subscription, addons, payments, wallet, ledger, deletion, catalog] = await Promise.all([
+  const [org, subscription, addons, payments, wallet, ledger, deletion, catalog, freeToday] = await Promise.all([
     ctx.db.query("SELECT id, name, document_type, document, status, status_reason_code, created_at FROM organizations WHERE id = $1", [orgId]),
     ctx.db.query(
       `SELECT s.id, s.status, s.billing_type, s.price_cents, s.credits_per_month, s.current_period_start, s.current_period_end, s.next_due_date,
-         s.past_due_since, s.canceled_at, s.created_at, s.courtesy, s.courtesy_until, p.code AS plan_code, p.name AS plan_name, p.included_vps,
+         s.past_due_since, s.canceled_at, s.created_at, s.courtesy, s.courtesy_until, s.trial_ends_at, p.code AS plan_code, p.name AS plan_name, p.included_vps,
+         p.free_requests_per_day,
          (s.price_cents + COALESCE((SELECT SUM(a.quantity * a.unit_price_cents) FROM subscription_addons a WHERE a.subscription_id = s.id), 0))::int AS total_cents
        FROM subscriptions s JOIN plans p ON p.id = s.plan_id
        WHERE s.organization_id = $1 ORDER BY (s.status = 'canceled'), s.created_at DESC LIMIT 1`, [orgId]),
@@ -246,11 +251,15 @@ export async function dashboard(ctx: AppContext, req: CustomerRequest, factory: 
     ctx.db.query(`SELECT id, created_at, bucket, kind, amount, balance_after FROM credit_ledger WHERE organization_id = $1 ORDER BY id DESC LIMIT 100`, [orgId]),
     ctx.db.query("SELECT id, status, created_at, resolved_at FROM account_deletion_requests WHERE account_id = $1 ORDER BY created_at DESC LIMIT 1", [req.session.accountId]),
     planCatalog(ctx),
+    freeRequestsToday(ctx.db, orgId, ctx.now()),
   ]);
+  const current = subscription.rows[0] ?? null;
   return {
     organization: org.rows[0],
     role: membership.role,
-    subscription: subscription.rows[0] ?? null,
+    subscription: current,
+    freeRequestsToday: freeToday,
+    upgrade: current && current.status !== "canceled" ? PLAN_UPGRADES[String(current.plan_code)] ?? null : null,
     addons: addons.rows,
     payments: payments.rows,
     wallet: { plan: Number(wallet.rows[0]?.plan_balance ?? 0), extra: Number(wallet.rows[0]?.extra_balance ?? 0) },
@@ -293,14 +302,15 @@ export async function cancelOwnSubscription(ctx: AppContext, req: CustomerReques
   if (!sub) throw new DomainError("Você não tem uma assinatura em andamento", 404);
   if (sub.courtesy) throw new DomainError(COURTESY_SUPPORT, 409);
   const created = (await ctx.db.query<{ created_at: Date }>("SELECT created_at FROM subscriptions WHERE id = $1", [sub.id])).rows[0]!.created_at;
-  const withinWithdrawal = ctx.now().getTime() - created.getTime() <= WITHDRAWAL_DAYS * 86_400_000;
-  const text = `Cancelado pelo cliente: ${reason.trim()}`.slice(0, 500);
+  const duringTrial = inTrial(sub, ctx.now());
+  const withinWithdrawal = !duringTrial && ctx.now().getTime() - created.getTime() <= WITHDRAWAL_DAYS * 86_400_000;
+  const text = `Cancelado pelo cliente${duringTrial ? " durante o teste grátis" : ""}: ${reason.trim()}`.slice(0, 500);
   await cancelSubscription(ctx, customerActor(req), sub.id, text, factory);
   await audit(ctx.db, customerActor(req), {
     action: "subscription.canceled_by_customer", targetType: "subscription", targetId: sub.id, organizationId: membership.organization_id,
-    reason: reason.trim().slice(0, 500), data: { withinWithdrawalPeriod: withinWithdrawal },
+    reason: reason.trim().slice(0, 500), data: { withinWithdrawalPeriod: withinWithdrawal, duringTrial },
   });
-  return { withinWithdrawalPeriod: withinWithdrawal };
+  return { withinWithdrawalPeriod: withinWithdrawal, duringTrial };
 }
 
 /** LGPD art. 18 (access and portability): what the platform holds about the account and its organisation. */

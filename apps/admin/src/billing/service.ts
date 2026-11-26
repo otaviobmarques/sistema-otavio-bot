@@ -1,16 +1,19 @@
 import { randomUUID } from "node:crypto";
 import { audit, type Actor } from "../audit.ts";
 import type { AppContext } from "../context.ts";
-import type { Queryable } from "../db/db.ts";
+import { isUniqueViolation, type Queryable } from "../db/db.ts";
 import { grantPlanPeriod } from "../credits/ledger.ts";
 import { applySubscriptionSignal, DomainError, lockOrganization, type OrganizationRow, type SubscriptionRow } from "../domain/lifecycle.ts";
 import { enqueue } from "../jobs/queue.ts";
 import { activeBillingAccount, billingAccount, defaultProviderFactory, type BillingAccountRow, type ProviderFactory } from "./accounts.ts";
 import type { BillingType, PixQrCode } from "./provider.ts";
 import { ProviderError } from "./provider.ts";
-import { addMonths, isoDate } from "./subscription-machine.ts";
+import { addMonths, brasiliaDate, isoDate } from "./subscription-machine.ts";
+import { trialAvailable, trialCredits, trialEnd } from "./trial.ts";
 
 export const CANCEL_PROVIDER_SUBSCRIPTION_JOB = "billing.cancel_provider_subscription";
+/** Days after a trial's end (its first due date) before an unpaid trial counts as overdue without the provider's notice. */
+export const TRIAL_GRACE_DAYS = 2;
 /** 1 crédito ArkoBot = R$ 0,01. */
 export const CENTS_PER_CREDIT = 1;
 
@@ -23,6 +26,28 @@ export interface PlanRow {
   credits_per_month: number;
   free: boolean;
   active: boolean;
+  trial_days: number;
+}
+
+/**
+ * A paid plan's free trial: usable at once (active until the first due date, which Asaas was given
+ * as the trial's end) with the plan's credits for those days. If that first charge is not paid,
+ * the usual overdue ladder takes over from Asaas's overdue notice.
+ */
+async function startTrial(
+  q: Queryable, actor: Actor, sub: SubscriptionRow, org: OrganizationRow, plan: PlanRow, now: Date, endsAt: Date,
+): Promise<SubscriptionRow> {
+  await q.query(
+    "INSERT INTO subscription_trials (document, organization_id, subscription_id, plan_id, started_at, ends_at) VALUES ($1, $2, $3, $4, $5, $6)",
+    [org.document, org.id, sub.id, plan.id, now, endsAt]);
+  const { rows } = await q.query<SubscriptionRow>(
+    `UPDATE subscriptions SET status = 'active', current_period_start = $2, current_period_end = $3, trial_ends_at = $3 WHERE id = $1 RETURNING *`,
+    [sub.id, now, endsAt]);
+  await grantPlanPeriod(q, { organizationId: org.id, quota: trialCredits(Number(plan.credits_per_month), plan.trial_days), reference: `trial:${sub.id}`,
+    billingAccountId: sub.billing_account_id, metadata: { subscriptionId: sub.id } });
+  await audit(q, actor, { action: "subscription.trial_started", targetType: "subscription", targetId: sub.id, organizationId: org.id,
+    data: { plan: plan.code, days: plan.trial_days, endsAt: endsAt.toISOString() } });
+  return rows[0]!;
 }
 
 function providerMessage(error: unknown): never {
@@ -93,8 +118,10 @@ export async function startSubscription(ctx: AppContext, actor: Actor, input: St
 
   const account = await activeBillingAccount(ctx.db);
   if (!account) throw new DomainError("Cadastre e ative uma conta Asaas em Cobrança antes de criar assinaturas pagas", 409);
+  const trialDays = Number(plan.trial_days ?? 0);
+  const trialEndsAt = trialDays > 0 && (await trialAvailable(ctx.db, org)) ? trialEnd(now, trialDays) : null;
   const customerId = await ensureCustomer(ctx, factory, org, account);
-  const dueDate = input.firstDueDate ?? isoDate(now);
+  const dueDate = trialEndsAt ? brasiliaDate(trialEndsAt) : input.firstDueDate ?? isoDate(now);
   const pending = await ctx.db.tx(async (q) => {
     const { rows } = await q.query<SubscriptionRow>(
       `INSERT INTO subscriptions (organization_id, plan_id, billing_account_id, status, billing_type, price_cents, credits_per_month, next_due_date)
@@ -102,25 +129,29 @@ export async function startSubscription(ctx: AppContext, actor: Actor, input: St
       [org.id, plan.id, account.id, input.billingType, plan.price_cents, plan.credits_per_month, dueDate]);
     return rows[0]!;
   });
+  let providerSubscriptionId: string | null = null;
   try {
     const created = await factory(ctx, account).createSubscription({
       customerId, billingType: input.billingType, valueCents: plan.price_cents, nextDueDate: dueDate,
       cycle: plan.billing_cycle === "yearly" ? "YEARLY" : "MONTHLY", description: `ArkoBot – plano ${plan.name}`,
       externalReference: `sub:${pending.id}`,
     });
+    providerSubscriptionId = created.id;
     return await ctx.db.tx(async (q) => {
       const { rows } = await q.query<SubscriptionRow>(
         "UPDATE subscriptions SET provider_subscription_id = $2, next_due_date = COALESCE($3::date, next_due_date) WHERE id = $1 RETURNING *",
         [pending.id, created.id, created.nextDueDate]);
       await audit(q, actor, {
         action: "subscription.created", targetType: "subscription", targetId: pending.id, organizationId: org.id,
-        data: { plan: plan.code, billingType: input.billingType, billingAccountId: account.id, providerSubscriptionId: created.id },
+        data: { plan: plan.code, billingType: input.billingType, billingAccountId: account.id, providerSubscriptionId: created.id, trialEndsAt },
       });
-      return rows[0]!;
+      return trialEndsAt ? startTrial(q, actor, rows[0]!, org, plan, now, trialEndsAt) : rows[0]!;
     });
   } catch (error) {
     await ctx.db.query("UPDATE subscriptions SET status = 'canceled', canceled_at = now(), cancel_reason = $2 WHERE id = $1",
       [pending.id, `falha ao criar no Asaas: ${(error as Error).message}`.slice(0, 500)]);
+    if (providerSubscriptionId) await factory(ctx, account).cancelSubscription(providerSubscriptionId).catch(() => undefined);
+    if (isUniqueViolation(error)) throw new DomainError("O teste grátis já foi usado por este CPF/CNPJ", 409);
     return providerMessage(error);
   }
 }
@@ -161,7 +192,17 @@ export async function cancelSubscription(ctx: AppContext, actor: Actor, subscrip
       });
     }
   }
-  await ctx.db.tx((q) => applySubscriptionSignal(q, actor, sub.id, "admin_cancel", ctx.now(), reason));
+  await ctx.db.tx(async (q) => {
+    await applySubscriptionSignal(q, actor, sub.id, "admin_cancel", ctx.now(), reason);
+    if (inTrial(sub, ctx.now())) {
+      await q.query("UPDATE payments SET status = 'canceled' WHERE subscription_id = $1 AND status = 'pending'", [sub.id]);
+    }
+  });
+}
+
+/** Still inside the free trial: nothing has been charged yet. */
+export function inTrial(sub: Pick<SubscriptionRow, "trial_ends_at">, now: Date): boolean {
+  return sub.trial_ends_at !== null && new Date(sub.trial_ends_at) > now;
 }
 
 export async function cancelProviderSubscriptionJob(ctx: AppContext, payload: Record<string, unknown>): Promise<void> {
@@ -252,6 +293,7 @@ export interface DunningSummary {
   suspended: number;
   canceled: number;
   freeRenewed: number;
+  trialsOverdue: number;
 }
 
 /**
@@ -264,8 +306,18 @@ export interface DunningSummary {
 export async function runDunning(ctx: AppContext): Promise<DunningSummary> {
   const now = ctx.now();
   const day = 24 * 60 * 60_000;
-  const summary: DunningSummary = { suspended: 0, canceled: 0, freeRenewed: 0 };
+  const summary: DunningSummary = { suspended: 0, canceled: 0, freeRenewed: 0, trialsOverdue: 0 };
   const system: Actor = { type: "system", label: "régua de inadimplência" };
+
+  // Asaas sends PAYMENT_OVERDUE the day after the due date; this catches a trial whose notice never arrived.
+  const unpaidTrials = await ctx.db.query<{ id: string }>(
+    `SELECT s.id FROM subscriptions s WHERE s.status = 'active' AND NOT s.courtesy AND s.trial_ends_at <= $1
+       AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.subscription_id = s.id AND p.status IN ('confirmed', 'received'))`,
+    [new Date(now.getTime() - TRIAL_GRACE_DAYS * day)]);
+  for (const { id } of unpaidTrials.rows) {
+    const next = await ctx.db.tx((q) => applySubscriptionSignal(q, system, id, "payment_overdue", now, "primeira cobrança depois do teste grátis não foi paga"));
+    if (next) summary.trialsOverdue++;
+  }
 
   const toSuspend = await ctx.db.query<{ id: string }>(
     "SELECT id FROM subscriptions WHERE status = 'past_due' AND NOT courtesy AND past_due_since <= $1",

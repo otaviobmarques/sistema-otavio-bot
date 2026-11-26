@@ -61,7 +61,7 @@ export function ContaApp() {
     <Shell state={state}>
       <KeepPlan />
       <Routes>
-        <Route path="/assinar" element={<AssinarPage onSubscribed={refresh} />} />
+        <Route path="/assinar" element={<AssinarPage trialAvailable={state.trialAvailable} onSubscribed={refresh} />} />
         <Route path="/" element={neverSubscribed ? <Navigate to="/assinar" replace /> : <PainelPage state={state} onChanged={refresh} />} />
         <Route path="*" element={<Navigate to={neverSubscribed ? `/assinar${location.search}` : "/"} replace />} />
       </Routes>

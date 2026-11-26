@@ -1,4 +1,4 @@
-import { Bot, Building, Cpu, HardDrive, Globe, KeyRound, MonitorCog, Pencil, Plus, Server } from "lucide-react";
+import { Bot, Building, Cpu, Gift, HardDrive, Globe, KeyRound, MonitorCog, Pencil, Plus, Server, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { api, useApi } from "../api.ts";
 import { canWrite, useMe } from "../App.tsx";
@@ -11,6 +11,7 @@ export interface PlanRow {
   default_model: string | null; free: boolean; cloud_mode: string; browser_enabled: boolean; computer_enabled: boolean; allow_byo_ai: boolean;
   idle_sleep_minutes: number | null; inactive_delete_days: number | null; daily_credit_cap: number | null; monthly_credit_cap: number | null;
   per_request_credit_cap: number | null; active: boolean; visible: boolean; sort_order: number; subscribers: number;
+  trial_days: number; free_requests_per_day: number;
 }
 
 interface AddonRow { id: string; code: string; name: string; description: string; price_cents: number; unit: string; paid_plans_only: boolean; active: boolean }
@@ -61,6 +62,8 @@ export function PlansPage() {
               <li className="flex items-center gap-2"><Globe className="h-4 w-4 text-slate-400" />{plan.browser_enabled ? "Com navegador" : "Sem navegador"}</li>
               <li className="col-span-2 flex items-center gap-2"><MonitorCog className="h-4 w-4 text-slate-400" />{CLOUD_MODE[plan.cloud_mode]}{plan.idle_sleep_minutes ? ` · dorme após ${plan.idle_sleep_minutes} min` : ""}</li>
               <li className="col-span-2 flex items-center gap-2"><KeyRound className="h-4 w-4 text-slate-400" />{plan.allow_byo_ai ? "Aceita a própria conta/chave de IA do cliente" : "Só os créditos inclusos"}</li>
+              {plan.free_requests_per_day > 0 ? <li className="col-span-2 flex items-center gap-2"><Sparkles className="h-4 w-4 text-slate-400" />IA gratuita: {int(plan.free_requests_per_day)} requisições/dia</li> : null}
+              {plan.trial_days > 0 ? <li className="col-span-2 flex items-center gap-2"><Gift className="h-4 w-4 text-slate-400" />{plan.trial_days} dias grátis na primeira assinatura</li> : null}
             </ul>
             <div className="mt-4 border-t border-line pt-4 text-xs text-slate-600">
               <div className="mb-1 font-semibold uppercase tracking-wide text-slate-500">Tetos de créditos</div>
@@ -112,7 +115,8 @@ function PlanEditor({ plan, onClose, onSaved }: { plan: PlanRow | null; onClose:
     free: plan?.free ?? false, cloudMode: plan?.cloud_mode ?? "dedicated", browser: plan?.browser_enabled ?? true, computer: plan?.computer_enabled ?? true, byoAi: plan?.allow_byo_ai ?? true,
     idle: String(plan?.idle_sleep_minutes ?? ""), deleteDays: String(plan?.inactive_delete_days ?? ""), daily: String(plan?.daily_credit_cap ?? ""),
     monthly: String(plan?.monthly_credit_cap ?? ""), perRequest: String(plan?.per_request_credit_cap ?? ""), active: plan?.active ?? true,
-    visible: plan?.visible ?? true, sortOrder: String(plan?.sort_order ?? 0),
+    visible: plan?.visible ?? true, sortOrder: String(plan?.sort_order ?? 0), trialDays: String(plan?.trial_days ?? 0),
+    freeRequests: String(plan?.free_requests_per_day ?? 0),
   }));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -128,6 +132,7 @@ function PlanEditor({ plan, onClose, onSaved }: { plan: PlanRow | null; onClose:
       cloudMode: f.cloudMode, browserEnabled: f.browser, computerEnabled: f.computer, allowByoAi: f.byoAi, idleSleepMinutes: optional(f.idle),
       inactiveDeleteDays: optional(f.deleteDays), dailyCreditCap: optional(f.daily), monthlyCreditCap: optional(f.monthly),
       perRequestCreditCap: optional(f.perRequest), active: f.active, visible: f.visible, sortOrder: Number(f.sortOrder || 0),
+      trialDays: Number(f.trialDays || 0), freeRequestsPerDay: Number(f.freeRequests || 0),
     };
     try {
       await api(plan ? `/api/plans/${plan.id}` : "/api/plans", { method: plan ? "PUT" : "POST", body });
@@ -164,6 +169,10 @@ function PlanEditor({ plan, onClose, onSaved }: { plan: PlanRow | null; onClose:
         <Field label="Teto diário" hint="créditos/dia"><Input inputMode="numeric" value={f.daily} onChange={set("daily")} /></Field>
         <Field label="Teto mensal" hint="vazio = a própria cota"><Input inputMode="numeric" value={f.monthly} onChange={set("monthly")} /></Field>
         <Field label="Teto por requisição"><Input inputMode="numeric" value={f.perRequest} onChange={set("perRequest")} /></Field>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Dias de teste grátis" hint="0 = sem teste; um por CPF/CNPJ"><Input inputMode="numeric" value={f.trialDays} onChange={set("trialDays")} /></Field>
+        <Field label="IA gratuita: requisições/dia" hint="Modelos grátis da tabela de preços; 0 = sem IA gratuita"><Input inputMode="numeric" value={f.freeRequests} onChange={set("freeRequests")} /></Field>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Modelos permitidos" hint="Um por linha. Vazio = todos."><Textarea value={f.models} onChange={set("models")} className="min-h-28 font-mono text-xs" /></Field>

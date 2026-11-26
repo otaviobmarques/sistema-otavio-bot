@@ -18,6 +18,7 @@ interface Detail {
     credits_per_month: number; provider_subscription_id: string | null; next_due_date: string | null; current_period_start: string | null;
     current_period_end: string | null; past_due_since: string | null; canceled_at: string | null; cancel_reason: string | null;
     courtesy: boolean; courtesy_reason: string | null; courtesy_until: string | null; courtesy_granted_by_email: string | null;
+    trial_ends_at: string | null; free_requests_per_day: number;
   };
   addons: { addon_id: string; quantity: number; unit_price_cents: number; name: string; code: string }[];
   wallet: { plan_balance: number; extra_balance: number };
@@ -28,6 +29,7 @@ interface Detail {
   terms: { document: string; version: string; accepted_at: string; ip: string; email: string }[];
   gatewayTokens: GatewayToken[];
   usage30d: { requests: number; credits: number; cost_brl_cents: number };
+  freeRequestsToday: number;
   deletionRequests: DeletionRequest[];
 }
 
@@ -141,6 +143,7 @@ export function ClientDetailPage() {
               ]} />
               <KeyValue items={[
                 ["Próximo vencimento", date(subscription.next_due_date)],
+                ...(subscription.trial_ends_at ? [["Teste grátis até", dateTime(subscription.trial_ends_at)] as [string, ReactNode]] : []),
                 ["Período atual", subscription.current_period_start ? `${date(subscription.current_period_start)} a ${date(subscription.current_period_end)}` : "—"],
                 ["Em atraso desde", subscription.past_due_since ? dateTime(subscription.past_due_since) : "—"],
                 ["Asaas", subscription.provider_subscription_id ? <Mono>{subscription.provider_subscription_id}</Mono> : "—"],
@@ -590,9 +593,10 @@ function GatewayCard({ detail, writable, onChanged }: { detail: Detail; writable
       <Link to={`/consumo?cliente=${detail.client.id}`} className="text-xs font-medium text-cyan-ink hover:underline">Consumo detalhado</Link>
       {writable ? <Button size="sm" onClick={() => setIssuing(true)} disabled={detail.client.status === "canceled"}><KeyRound className="h-3.5 w-3.5" /> Emitir token</Button> : null}
     </>}>
-      <div className="grid grid-cols-3 gap-3 border-b border-line px-5 py-4 text-sm">
+      <div className="grid grid-cols-2 gap-3 border-b border-line px-5 py-4 text-sm md:grid-cols-4">
         <div><div className="text-xs text-slate-500">Requisições (30 dias)</div><div className="mt-0.5 font-semibold tabular">{int(usage.requests)}</div></div>
         <div><div className="text-xs text-slate-500">Créditos cobrados</div><div className="mt-0.5 font-semibold tabular">{int(usage.credits)} <span className="font-normal text-slate-500">= {brl(usage.credits)}</span></div></div>
+        <div><div className="text-xs text-slate-500">IA gratuita hoje</div><div className="mt-0.5 font-semibold tabular">{int(detail.freeRequestsToday)}{detail.subscription?.free_requests_per_day ? <span className="font-normal text-slate-500"> de {int(detail.subscription.free_requests_per_day)}/dia</span> : null}</div></div>
         <div><div className="text-xs text-slate-500">Custo real · margem</div><div className="mt-0.5 font-semibold tabular">{brl(usage.cost_brl_cents)} · <span className={Number(usage.credits) - Number(usage.cost_brl_cents) < 0 ? "text-red-600" : "text-emerald-700"}>{brl(Number(usage.credits) - Number(usage.cost_brl_cents))}</span></div></div>
       </div>
       <Table head={["Token", "Instância", "Emitido", "Último uso", "Situação", ""]}

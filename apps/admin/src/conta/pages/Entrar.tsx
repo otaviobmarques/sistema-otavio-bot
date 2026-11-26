@@ -5,7 +5,7 @@ import { api } from "../../web/api.ts";
 import { Button, ErrorNote, Field, Input } from "../../web/ui.tsx";
 import { Logo } from "../shared.tsx";
 
-const PLAN_NAMES: Record<string, string> = { essencial: "Essencial", profissional: "Profissional", empresa: "Empresa" };
+const PLAN_NAMES: Record<string, string> = { inicial: "Inicial", essencial: "Essencial", profissional: "Profissional", empresa: "Empresa" };
 
 export function EntrarPage({ mode, onSignedIn }: { mode: "entrar" | "cadastro"; onSignedIn: () => void }) {
   const [params] = useSearchParams();
