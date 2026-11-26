@@ -33,6 +33,23 @@ export const MAX_EXTRA_COMPUTERS = 50;
 export const CUSTOMER_BILLING_TYPES = ["PIX", "BOLETO", "CREDIT_CARD"] as const;
 export type CustomerBillingType = (typeof CUSTOMER_BILLING_TYPES)[number];
 
+const dayMonth = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", timeZone: "America/Sao_Paulo" });
+const dueDayMonth = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", timeZone: "UTC" });
+
+/** The trial line on the customer's panel; `nextDueDate` is a YYYY-MM-DD date. */
+export function trialNotice(trialEndsAt: string | Date, nextDueDate: string | null): string {
+  const end = dayMonth.format(new Date(trialEndsAt));
+  const due = nextDueDate ? dueDayMonth.format(new Date(`${nextDueDate.slice(0, 10)}T00:00:00Z`)) : end;
+  return `Teste grátis até ${end} — a primeira cobrança vem em ${due}`;
+}
+
+/** The plan ladder: what the next plan up unlocks, by plan code. Changing plans goes through support for now. */
+export const PLAN_UPGRADES: Record<string, { code: string; name: string; unlocks: string }> = {
+  inicial: { code: "essencial", name: "Essencial", unlocks: "bots que trabalham sozinhos + créditos de IA inclusos" },
+  essencial: { code: "profissional", name: "Profissional", unlocks: "computador próprio" },
+  profissional: { code: "empresa", name: "Empresa", unlocks: "várias empresas" },
+};
+
 /** Same number as apps/site/src/config/contato.ts (checked by a test). */
 export const SUPPORT_WHATSAPP = "5519987822290";
 export const SUPPORT_WHATSAPP_DISPLAY = "+55 (19) 98782-2290";

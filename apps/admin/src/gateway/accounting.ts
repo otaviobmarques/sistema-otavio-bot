@@ -7,7 +7,8 @@ import type { GatewayCaller } from "./tokens.ts";
 
 export type RefusalCode =
   | "invalid_token" | "plan_suspended" | "credits_used_up" | "daily_cap_reached" | "monthly_cap_reached" | "request_over_plan_limit"
-  | "model_not_in_plan" | "model_unavailable" | "rate_limited" | "duplicate_request" | "invalid_request" | "not_found" | "upstream_unavailable";
+  | "model_not_in_plan" | "model_unavailable" | "rate_limited" | "duplicate_request" | "invalid_request" | "not_found" | "upstream_unavailable"
+  | "free_daily_limit_reached" | "free_ai_unavailable";
 
 const REFUSALS: Record<RefusalCode, [number, string]> = {
   invalid_token: [401, "Token do gateway ArkoBot inválido, revogado ou expirado."],
@@ -23,6 +24,8 @@ const REFUSALS: Record<RefusalCode, [number, string]> = {
   invalid_request: [400, "Requisição inválida para o gateway ArkoBot."],
   not_found: [404, "Rota inexistente no gateway ArkoBot."],
   upstream_unavailable: [503, "O provedor de IA não respondeu. Tente de novo em instantes."],
+  free_daily_limit_reached: [429, "Limite diário da IA gratuita atingido — volta amanhã, ou faça upgrade / conecte sua própria IA."],
+  free_ai_unavailable: [503, "A IA gratuita está sobrecarregada agora (os provedores gratuitos estão no limite). Tente de novo em alguns minutos, ou conecte sua própria IA."],
 };
 
 /** A refusal the gateway answers with `{ code, message }` (pt-BR) and the matching HTTP status. */
@@ -67,6 +70,11 @@ async function spentSince(q: Queryable, organizationId: string, since: Date): Pr
   return Number(rows[0]?.n ?? 0);
 }
 
+/** A plan with no monthly credits (Inicial) never runs on credit: it spends only what was bought. */
+export function overdraftFor(caller: GatewayCaller, settings: GatewaySettings): number {
+  return caller.creditsPerMonth > 0 ? settings.overdraftCredits : 0;
+}
+
 export interface ReserveInput {
   caller: GatewayCaller;
   requestId: string;
@@ -96,7 +104,7 @@ export async function reserveCredits(db: Db, input: ReserveInput): Promise<numbe
       const heldCredits = Number(held.rows[0]?.n ?? 0);
       const balance = wallet.plan + wallet.extra;
       if (balance <= 0) throw new GatewayRefusal("credits_used_up");
-      let room = balance - heldCredits + settings.overdraftCredits;
+      let room = balance - heldCredits + overdraftFor(caller, settings);
       if (room < input.minimum) throw new GatewayRefusal("credits_used_up");
       if (caller.dailyCap !== null) {
         const left = caller.dailyCap - (await spentSince(q, caller.organizationId, brasiliaDayStart(now))) - heldCredits;
@@ -133,6 +141,8 @@ export interface UsageRecord {
   company: string | null;
   bot: string | null;
   providerKeyId: string | null;
+  /** The id the provider was called with, when it differs from `model` or came from the environment. */
+  upstreamModel: string | null;
   httpStatus: number | null;
   durationMs: number;
 }
@@ -152,13 +162,13 @@ async function insertEvent(q: Queryable, record: UsageRecord, fields: {
   const inserted = await q.query(
     `INSERT INTO usage_events (organization_id, instance_id, gateway_token_id, ai_provider_key_id, request_id, provider, model, input_tokens, output_tokens,
        cache_read_tokens, cache_write_tokens, cost_usd_micros, credits, status, endpoint, company, bot, reserved_credits, cost_brl_cents, usd_brl_rate,
-       markup_percent, usage_estimated, http_status, error_code, duration_ms, created_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)
+       markup_percent, usage_estimated, http_status, error_code, duration_ms, created_at, upstream_model)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27)
      ON CONFLICT (request_id) DO NOTHING`,
     [record.caller.organizationId, record.caller.instanceId, record.caller.tokenId, record.providerKeyId, record.requestId, record.provider, record.model,
       fields.usage.input, fields.usage.output, fields.usage.cacheRead, fields.usage.cacheWrite, Math.round(fields.costUsd * 1_000_000), fields.credits,
       fields.status, record.endpoint, record.company, record.bot, fields.reserved, fields.brlCents, fields.settings?.usdBrlRate ?? null, fields.markup,
-      fields.estimated, record.httpStatus, fields.errorCode, record.durationMs, now]);
+      fields.estimated, record.httpStatus, fields.errorCode, record.durationMs, now, record.upstreamModel]);
   return inserted.rowCount > 0;
 }
 
@@ -247,4 +257,12 @@ export async function expireReservations(q: Queryable, now: Date): Promise<numbe
 /** A refusal before any reservation, for the panel's counts. Not written for bad tokens or rate limits. */
 export async function recordRefusal(db: Db, record: UsageRecord, code: RefusalCode, now: Date): Promise<void> {
   await releaseRequest(db, { record, status: "refused", errorCode: code, now });
+}
+
+/** Requests sent upstream today (Brasília) on the free models, whether or not the provider answered. */
+export async function freeRequestsToday(q: Queryable, organizationId: string, now: Date): Promise<number> {
+  const { rows } = await q.query<{ n: number }>(
+    `SELECT count(*)::int AS n FROM usage_events e JOIN model_prices m ON m.model = e.model
+     WHERE e.organization_id = $1 AND m.free AND e.status <> 'refused' AND e.created_at >= $2`, [organizationId, brasiliaDayStart(now)]);
+  return Number(rows[0]?.n ?? 0);
 }

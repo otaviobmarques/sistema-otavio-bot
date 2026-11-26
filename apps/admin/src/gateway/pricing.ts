@@ -1,5 +1,16 @@
-export type GatewayProvider = "anthropic" | "openai" | "openrouter";
-export const GATEWAY_PROVIDERS: readonly GatewayProvider[] = ["anthropic", "openai", "openrouter"];
+export const GATEWAY_PROVIDERS = ["anthropic", "openai", "openrouter", "google", "nvidia", "groq", "cerebras"] as const;
+export type GatewayProvider = (typeof GATEWAY_PROVIDERS)[number];
+
+/** Providers spoken to in the OpenAI Chat Completions format besides OpenAI itself. */
+export const OPENAI_COMPATIBLE_PROVIDERS = ["openrouter", "google", "nvidia", "groq", "cerebras"] as const satisfies readonly GatewayProvider[];
+
+export function isOpenAiCompatible(provider: string): boolean {
+  return (OPENAI_COMPATIBLE_PROVIDERS as readonly string[]).includes(provider);
+}
+
+export function isGatewayProvider(provider: string): provider is GatewayProvider {
+  return (GATEWAY_PROVIDERS as readonly string[]).includes(provider);
+}
 
 export interface ModelPrice {
   model: string;
@@ -13,6 +24,10 @@ export interface ModelPrice {
   markupPercent: number | null;
   defaultMaxOutput: number;
   enabled: boolean;
+  /** Served on the operator's free-tier keys: costs no credits and counts against the plan's daily free requests. */
+  free: boolean;
+  /** The id sent to the provider; the ArkoBot id when null. */
+  upstreamModel: string | null;
 }
 
 export interface GatewaySettings {
@@ -46,6 +61,8 @@ export interface PriceRow {
   markup_percent: string | number | null;
   default_max_output: number;
   enabled: boolean;
+  free?: boolean;
+  upstream_model?: string | null;
 }
 
 export function priceFromRow(row: PriceRow): ModelPrice {
@@ -60,6 +77,8 @@ export function priceFromRow(row: PriceRow): ModelPrice {
     markupPercent: row.markup_percent === null ? null : Number(row.markup_percent),
     defaultMaxOutput: Number(row.default_max_output),
     enabled: row.enabled,
+    free: row.free === true,
+    upstreamModel: row.upstream_model ?? null,
   };
 }
 
@@ -74,7 +93,7 @@ export function markupFor(price: ModelPrice, settings: GatewaySettings): number 
 
 /** 1 crédito = R$ 0,01. Rounded up: a call that cost anything costs at least one credit. */
 export function creditsFor(usd: number, price: ModelPrice, settings: GatewaySettings): number {
-  if (usd <= 0) return 0;
+  if (usd <= 0 || price.free) return 0;
   const cents = usd * settings.usdBrlRate * 100 * (1 + markupFor(price, settings) / 100);
   return Math.max(1, Math.ceil(cents - 1e-9));
 }

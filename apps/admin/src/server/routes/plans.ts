@@ -34,6 +34,8 @@ const planSchema = z.object({
   active: z.boolean(),
   visible: z.boolean(),
   sortOrder: z.number().int().min(0).max(10_000).default(0),
+  trialDays: z.number().int().min(0).max(90).default(0),
+  freeRequestsPerDay: z.number().int().min(0).max(1_000_000).default(0),
 }).superRefine((plan, issue) => {
   if (plan.free && plan.priceCents !== 0) issue.addIssue({ code: "custom", path: ["priceCents"], message: "plano gratuito tem preço zero" });
   if (!plan.free && plan.priceCents === 0) issue.addIssue({ code: "custom", path: ["priceCents"], message: "plano pago precisa de preço" });
@@ -50,12 +52,13 @@ function columns(plan: PlanInput): unknown[] {
     plan.ramMb, plan.diskGb, plan.includedVps, plan.allowedModels, plan.defaultModel || null, plan.free, plan.cloudMode,
     plan.browserEnabled, plan.computerEnabled, plan.allowByoAi, plan.idleSleepMinutes ?? null, plan.inactiveDeleteDays ?? null,
     plan.dailyCreditCap ?? null, plan.monthlyCreditCap ?? null, plan.perRequestCreditCap ?? null, plan.active, plan.visible, plan.sortOrder,
+    plan.trialDays, plan.freeRequestsPerDay,
   ];
 }
 
 const COLUMN_NAMES = `code, name, description, price_cents, billing_cycle, credits_per_month, max_bots, max_companies, ram_mb, disk_gb,
   included_vps, allowed_models, default_model, free, cloud_mode, browser_enabled, computer_enabled, allow_byo_ai, idle_sleep_minutes,
-  inactive_delete_days, daily_credit_cap, monthly_credit_cap, per_request_credit_cap, active, visible, sort_order`;
+  inactive_delete_days, daily_credit_cap, monthly_credit_cap, per_request_credit_cap, active, visible, sort_order, trial_days, free_requests_per_day`;
 
 function conflict(error: unknown): never {
   if (isUniqueViolation(error)) throw new DomainError("Já existe um plano com este código", 409);

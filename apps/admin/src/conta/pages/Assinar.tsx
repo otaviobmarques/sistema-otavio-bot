@@ -1,14 +1,17 @@
 import { Check, CreditCard, ExternalLink, FileText, Minus, Plus, QrCode, ShieldCheck } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router";
-import { CUSTOMER_BILLING_TYPES, MAX_EXTRA_COMPUTERS, type CustomerBillingType } from "../../customer/catalog.ts";
+import { CUSTOMER_BILLING_TYPES, MAX_EXTRA_COMPUTERS, trialNotice, type CustomerBillingType } from "../../customer/catalog.ts";
 import { api, useApi } from "../../web/api.ts";
 import { brl, int } from "../../web/format.ts";
 import { Button, Card, ErrorNote, Loading, cx } from "../../web/ui.tsx";
 import { rememberedPlan, WhatsAppButton } from "../shared.tsx";
 
 export interface Catalog {
-  plans: { id: string; code: string; name: string; description: string; price_cents: number; credits_per_month: number; max_bots: number | null; max_companies: number | null; included_vps: number }[];
+  plans: {
+    id: string; code: string; name: string; description: string; price_cents: number; credits_per_month: number; max_bots: number | null; max_companies: number | null;
+    included_vps: number; trial_days: number; free_requests_per_day: number; computer_enabled: boolean;
+  }[];
   extraComputer: { id: string; name: string; description: string; price_cents: number } | null;
   creditPackages: { id: string; credits: number; priceCents: number }[];
   paymentsAvailable: boolean;
@@ -51,7 +54,18 @@ export function Stepper({ value, onChange, max = MAX_EXTRA_COMPUTERS }: { value:
 const bots = (max: number | null) => (max === null ? "Bots ilimitados (uso justo)" : `Até ${max} bots`);
 const companies = (max: number | null) => (max === null ? "Empresas ilimitadas" : max === 1 ? "1 empresa" : `Até ${max} empresas`);
 
-export function AssinarPage({ onSubscribed }: { onSubscribed: () => void }) {
+function planItems(p: Catalog["plans"][number]): string[] {
+  const items = [
+    p.credits_per_month > 0 ? `${int(p.credits_per_month)} créditos de IA por mês` : "IA gratuita já inclusa (com limite diário)",
+    p.max_bots === 1 ? "1 bot" : bots(p.max_bots),
+    companies(p.max_companies),
+  ];
+  if (p.included_vps > 0) items.push(p.included_vps === 1 ? "1 computador próprio na nuvem incluído" : `${p.included_vps} computadores próprios na nuvem incluídos`);
+  items.push("Use também a sua própria conta de IA");
+  return items;
+}
+
+export function AssinarPage({ trialAvailable, onSubscribed }: { trialAvailable: boolean; onSubscribed: () => void }) {
   const [params] = useSearchParams();
   const { data, error, loading } = useApi<Catalog>("/api/conta/planos");
   const [plan, setPlan] = useState<string | null>(null);
@@ -59,7 +73,7 @@ export function AssinarPage({ onSubscribed }: { onSubscribed: () => void }) {
   const [billingType, setBillingType] = useState<CustomerBillingType>("PIX");
   const [busy, setBusy] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [result, setResult] = useState<{ invoiceUrl: string | null } | null>(null);
+  const [result, setResult] = useState<{ invoiceUrl: string | null; trialEndsAt: string | null } | null>(null);
 
   useEffect(() => {
     if (!data || plan) return;
@@ -69,6 +83,19 @@ export function AssinarPage({ onSubscribed }: { onSubscribed: () => void }) {
 
   if (loading && !data) return <Loading />;
   if (!data) return <ErrorNote message={error} />;
+
+  if (result?.trialEndsAt) {
+    return (
+      <div className="mx-auto max-w-xl text-center">
+        <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-50 text-emerald-600"><Check className="h-7 w-7" /></div>
+        <h1 className="mt-4 font-display text-2xl font-bold">Pronto! Seu teste grátis começou.</h1>
+        <p className="mt-2 text-sm text-slate-600">
+          {trialNotice(result.trialEndsAt, null)}. Pode usar tudo agora mesmo. Se não quiser continuar, cancele no painel antes dessa data e nada é cobrado.
+        </p>
+        <div className="mt-6"><Link to="/" className="inline-flex h-11 items-center rounded-lg bg-cyan-brand px-5 text-sm font-semibold text-navy-950 shadow-sm hover:brightness-95">Ir para o meu painel</Link></div>
+      </div>
+    );
+  }
 
   if (result) {
     return (
@@ -103,7 +130,7 @@ export function AssinarPage({ onSubscribed }: { onSubscribed: () => void }) {
     setBusy(true);
     setSubmitError(null);
     try {
-      const created = await api<{ invoiceUrl: string | null }>("/api/conta/assinatura", { body: { plan: selected.code, extraComputers: computers, billingType } });
+      const created = await api<{ invoiceUrl: string | null; trialEndsAt: string | null }>("/api/conta/assinatura", { body: { plan: selected.code, extraComputers: computers, billingType } });
       setResult(created);
       onSubscribed();
     } catch (reason) {
@@ -118,27 +145,29 @@ export function AssinarPage({ onSubscribed }: { onSubscribed: () => void }) {
       <h1 className="font-display text-2xl font-bold tracking-tight">Escolha o seu plano</h1>
       <p className="mt-1 text-sm text-slate-500">Planos mensais, sem fidelidade. Cancele quando quiser, aqui mesmo.</p>
 
-      <div className="mt-6 grid gap-4 md:grid-cols-3">
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {data.plans.map((p) => (
           <button key={p.code} type="button" onClick={() => setPlan(p.code)}
             className={cx("flex flex-col rounded-2xl border bg-white p-5 text-left transition",
               plan === p.code ? "border-cyan-ink shadow-[0_20px_40px_-25px_rgba(7,134,160,0.7)] ring-2 ring-cyan-brand/40" : "border-line hover:border-slate-300")}>
-            <span className="flex items-center justify-between">
-              <span className="font-display text-lg font-semibold">{p.name}</span>
-              <span className={cx("grid h-5 w-5 place-items-center rounded-full border", plan === p.code ? "border-cyan-ink bg-cyan-ink text-white" : "border-slate-300")}>
+            <span className="flex items-center justify-between gap-2">
+              <span className="flex flex-wrap items-center gap-2">
+                <span className="font-display text-lg font-semibold">{p.name}</span>
+                {trialAvailable && p.trial_days > 0 ? <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">{p.trial_days} dias grátis</span> : null}
+              </span>
+              <span className={cx("grid h-5 w-5 shrink-0 place-items-center rounded-full border", plan === p.code ? "border-cyan-ink bg-cyan-ink text-white" : "border-slate-300")}>
                 {plan === p.code ? <Check className="h-3 w-3" /> : null}
               </span>
             </span>
+            <span className="mt-2 text-sm font-semibold leading-snug text-ink">{p.description}</span>
             <span className="mt-3"><span className="font-display text-3xl font-bold tabular">{brl(p.price_cents)}</span><span className="text-sm text-slate-500"> /mês</span></span>
             <ul className="mt-4 space-y-1.5 text-sm text-slate-600">
-              <li className="flex gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-cyan-ink" />{int(p.credits_per_month)} créditos de IA por mês</li>
-              <li className="flex gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-cyan-ink" />{bots(p.max_bots)}</li>
-              <li className="flex gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-cyan-ink" />{companies(p.max_companies)}</li>
-              {p.included_vps > 0 ? <li className="flex gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-cyan-ink" />{p.included_vps === 1 ? "1 computador individual incluído" : `${p.included_vps} computadores individuais incluídos`}</li> : null}
+              {planItems(p).map((item) => <li key={item} className="flex gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-cyan-ink" />{item}</li>)}
             </ul>
           </button>
         ))}
       </div>
+      {trialAvailable && selected && selected.trial_days > 0 ? <p className="mt-3 text-xs text-slate-500">O teste grátis vale para a primeira assinatura de cada CPF/CNPJ. A primeira cobrança vem no fim do teste; cancele antes e nada é cobrado.</p> : null}
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
@@ -169,7 +198,7 @@ export function AssinarPage({ onSubscribed }: { onSubscribed: () => void }) {
             {data.paymentsAvailable ? (
               <>
                 <ErrorNote message={submitError} />
-                <Button variant="accent" className="w-full" busy={busy} disabled={!selected} onClick={subscribe}>Assinar e pagar</Button>
+                <Button variant="accent" className="w-full" busy={busy} disabled={!selected} onClick={subscribe}>{trialAvailable && selected && selected.trial_days > 0 ? `Começar ${selected.trial_days} dias grátis` : "Assinar e pagar"}</Button>
                 <p className="text-xs text-slate-500">Arrependeu-se? Cancele em até 7 dias e devolvemos o valor, como garante o Código de Defesa do Consumidor.</p>
               </>
             ) : (

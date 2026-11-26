@@ -30,39 +30,49 @@ export function Planos() {
         texto={
           <>
             Uma equipe de IA que trabalha enquanto você dorme. Planos mensais, <strong className="text-tinta">sem fidelidade</strong>.
-            IAs inclusas no plano, ou conecte a sua própria conta de IA.
+            Do Inicial com IA gratuita ao Empresa com várias empresas: cada degrau acrescenta uma coisa. Ou conecte a sua própria conta de IA.
           </>
         }
       />
 
-      <div className="mt-12 grid gap-5 lg:grid-cols-3">
+      <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         {planos.map((plano, i) => (
           <Revelar key={plano.id} atraso={i * 0.08} as="article">
             <div
-              className={`flex h-full flex-col rounded-3xl border p-7 ${
+              className={`flex h-full flex-col rounded-3xl border p-6 ${
                 plano.destaque ? 'border-ciano-forte bg-white shadow-[0_30px_60px_-35px_rgba(8,145,178,0.6)]' : 'border-linha bg-cartao'
               }`}
             >
-              <div className="flex items-center gap-2">
-                <span className="rounded-full bg-white px-2.5 py-1 text-sm font-medium text-tinta ring-1 ring-linha">{plano.nome}</span>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-tinta ring-1 ring-linha">{plano.nome}</span>
                 {plano.destaque && (
-                  <span className="rounded-full bg-cyan-50 px-2.5 py-1 text-sm font-medium text-ciano-texto">Recomendado</span>
+                  <span className="rounded-full bg-cyan-50 px-2 py-1 text-xs font-medium text-ciano-texto">Recomendado</span>
                 )}
+                {plano.diasGratis ? (
+                  <span className="rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">{plano.diasGratis} dias grátis</span>
+                ) : null}
               </div>
-              <div className="mt-6 flex items-baseline gap-2">
-                <span className="text-5xl font-semibold tracking-tight text-tinta">
+              <h3 className="mt-5 text-xl font-semibold leading-snug tracking-tight text-tinta">{plano.diferencial}</h3>
+              <div className="mt-4 flex items-baseline gap-2">
+                <span className="text-4xl font-semibold tracking-tight text-tinta">
                   {precosDefinidos ? formatarReais(plano.precoMensal) : 'Em breve'}
                 </span>
                 {precosDefinidos && <span className="text-cinza">por mês</span>}
               </div>
               {precosDefinidos && <p className="mt-1 text-sm text-cinza">cerca de {precoPorDia(plano.precoMensal)} por dia</p>}
-              <p className="mt-4 min-h-12 leading-relaxed text-cinza">{plano.resumo}</p>
+              <p className="mt-4 leading-relaxed text-cinza xl:min-h-[4.5rem]">{plano.resumo}</p>
               <ul className="mt-6 flex-1 space-y-3 text-[15px]">
                 <li className="flex gap-3 text-tinta">
                   <Check className="mt-1 h-4 w-4 shrink-0 text-ciano-forte" aria-hidden />
-                  <span>
-                    <strong className="font-semibold">{formatarCreditos(plano.creditosIA)} créditos de IA</strong> por mês
-                  </span>
+                  {plano.creditosIA > 0 ? (
+                    <span>
+                      <strong className="font-semibold">{formatarCreditos(plano.creditosIA)} créditos de IA</strong> por mês
+                    </span>
+                  ) : (
+                    <span>
+                      <strong className="font-semibold">IA gratuita já inclusa</strong> (com limite diário), ou use a sua própria conta de IA
+                    </span>
+                  )}
                 </li>
                 <li className="flex gap-3 text-tinta">
                   <Check className="mt-1 h-4 w-4 shrink-0 text-ciano-forte" aria-hidden />
@@ -76,7 +86,7 @@ export function Planos() {
                 ))}
               </ul>
               <BotaoContato acao="assinar" plano={plano.id} variante={plano.destaque ? 'primario' : 'secundario'} className="mt-8 w-full">
-                Assinar o {plano.nome}
+                {plano.diasGratis ? `Testar ${plano.diasGratis} dias grátis` : 'Assinar'}
               </BotaoContato>
               {temCanalConfigurado() && (
                 <a
@@ -127,7 +137,7 @@ export function Planos() {
           </span>
         </summary>
         <div className="-mx-4 overflow-x-auto px-4 pb-8 sm:mx-0 sm:px-0">
-          <table className="w-full min-w-[36rem] text-left text-[15px]">
+          <table className="w-full min-w-[44rem] text-left text-[15px]">
             <thead>
               <tr className="border-b border-linha">
                 <th scope="col" className="py-3 pr-4 font-medium text-cinza">
@@ -144,7 +154,7 @@ export function Planos() {
             {comparativo.map((grupo) => (
               <tbody key={grupo.grupo}>
                 <tr>
-                  <th colSpan={4} scope="colgroup" className="pt-6 pb-2 text-xs font-semibold uppercase tracking-[0.14em] text-ciano-texto">
+                  <th colSpan={planos.length + 1} scope="colgroup" className="pt-6 pb-2 text-xs font-semibold uppercase tracking-[0.14em] text-ciano-texto">
                     {grupo.grupo}
                   </th>
                 </tr>
