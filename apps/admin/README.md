@@ -22,7 +22,7 @@ Por que não Next.js: daria certo, mas o painel não ganha nada com SSR, e com H
 
 ```
 apps/admin
-├── migrations/            0001_init.sql (todas as tabelas), 0002_planos_iniciais.sql, … 0006_cortesia.sql
+├── migrations/            0001_init.sql (todas as tabelas), 0002_planos_iniciais.sql, … 0007_relatorios.sql
 ├── src/
 │   ├── auth/              login por e-mail + código, sessões, TOTP, limites de taxa
 │   ├── billing/           BillingProvider, Asaas (asaas.ts), webhooks, régua, máquina de estados
@@ -214,6 +214,15 @@ Para liberar um plano **sem cobrança** (parceiro, teste estendido, compensaçã
 - Computadores adicionais não entram na cortesia: os adicionais entram no valor da assinatura e no MRR, e a cortesia não tem cobrança. Os incluídos no plano valem normalmente.
 - **Área do cliente**: conta como assinatura em dia (painel, créditos e gateway funcionam) e mostra "Plano X — cortesia (sem cobrança)" e a data final, sem valor, faturas nem forma de pagamento. Cancelar e mudar computadores mandam falar com a equipe pelo WhatsApp; comprar créditos avulsos segue a regra de sempre (precisa de conta Asaas ativa).
 - Na Visão geral a cortesia não conta como pagante; as listas de clientes e de assinaturas mostram o selo *cortesia*.
+
+## Relatórios (@devs)
+
+Quando alguém escreve `@devs` numa conversa do app ArkoBot (desktop ou servidor), o app manda um relatório de problema para esta Central. Precisa da migração `0007_relatorios.sql`.
+
+- **Entrada pública** (sem login, como os webhooks; só no host do painel): `POST /webhooks/bug-reports` com `{ installId, source: "bot", description, appVersion, platform, diagnostics, contactEmail?, contact? }` responde `201 { id }`; `400 { error }` para dados inválidos (um e-mail ruim cita o campo `contact`, e o app reenvia sem ele); `413` acima de 600 KB; `429 { error, retryAfter }` (e `Retry-After`) depois de 20 relatórios por IP por hora. `POST /webhooks/bug-reports/status` com `{ installId, ids }` responde se cada relatório desta instalação chegou (`received`) ou não (`unknown`), com `notify: false`.
+- Nada que chega é confiável: o esquema é validado, campos desconhecidos são descartados, `NUL` é removido, o tamanho é limitado na API e no banco. O painel mostra o texto sem interpretá-lo.
+- **Painel → Relatórios**: lista por situação (novo, visto, fechado), abre o relato e o diagnóstico, e `owner`/`operator` mudam a situação; cada mudança vai para a Auditoria (`bug_report.status_changed`).
+- No app: sem `OMB_BUG_REPORT_URL` os relatórios vêm para `https://admin.arkobot.com.br/webhooks/bug-reports`; `OMB_BUG_REPORT_URL=off` guarda só na pasta de dados; outro endereço https manda para lá.
 
 ## Gateway de IA (Parte 2)
 

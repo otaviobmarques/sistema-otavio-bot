@@ -71,6 +71,12 @@ export const EVENT_STATUS: Record<string, [string, Tone]> = {
   failed: ["Falhou", "red"],
 };
 
+export const REPORT_STATUS: Record<string, [string, Tone]> = {
+  new: ["Novo", "amber"],
+  seen: ["Visto", "cyan"],
+  closed: ["Fechado", "slate"],
+};
+
 export const BILLING_TYPE: Record<string, string> = {
   PIX: "Pix",
   BOLETO: "Boleto",
@@ -152,6 +158,7 @@ const ACTIONS: Record<string, string> = {
   "account.deletion_rejected": "Exclusão da conta recusada",
   "terms.accepted": "Termos aceitos",
   "subscription.canceled_by_customer": "Cliente cancelou a assinatura",
+  "bug_report.status_changed": "Situação de relatório alterada",
 };
 
 export const actionLabel = (action: string) => ACTIONS[action] ?? action;
