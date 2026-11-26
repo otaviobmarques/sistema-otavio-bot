@@ -7,6 +7,7 @@ import { brl, date, dateTime, int, LEDGER_KIND, PAYMENT_STATUS } from "../../web
 import { Badge, Button, Card, Empty, ErrorNote, Field, Loading, Modal, StatusBadge, Table, td, Textarea, useToast, cx } from "../../web/ui.tsx";
 import { CUSTOMER_BILLING_LABEL, CUSTOMER_SUB_STATUS, WhatsAppButton, type CustomerState } from "../shared.tsx";
 import { PaymentChoice, Stepper } from "./Assinar.tsx";
+import { MeuArkoBotCard } from "./MeuArkoBot.tsx";
 
 interface Payment {
   id: string; kind: "subscription" | "credit_purchase"; status: string; billing_type: string | null; value_cents: number; credits: number;
@@ -134,6 +135,8 @@ export function PainelPage({ state, onChanged }: { state: CustomerState; onChang
           </dl>
         </Card>
       ) : null}
+
+      {sub ? <MeuArkoBotCard /> : null}
 
       {live && live.free_requests_per_day > 0 ? <FreeAiCard used={data.freeRequestsToday} perDay={live.free_requests_per_day} /> : null}
 

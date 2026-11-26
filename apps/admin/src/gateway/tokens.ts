@@ -16,24 +16,29 @@ export interface IssuedToken {
 export async function issueGatewayToken(
   db: Db, actor: Actor, input: { organizationId: string; instanceId?: string | null; label: string; expiresAt?: Date | null },
 ): Promise<IssuedToken> {
+  return db.tx((q) => insertGatewayToken(q, actor, input));
+}
+
+/** issueGatewayToken inside a caller's transaction (provisioning issues the instance's token with its row). */
+export async function insertGatewayToken(
+  q: Queryable, actor: Actor, input: { organizationId: string; instanceId?: string | null; label: string; expiresAt?: Date | null },
+): Promise<IssuedToken> {
   const token = `arko_ai_${randomToken(32)}`;
   const prefix = token.slice(0, 14);
-  return db.tx(async (q) => {
-    const org = await q.query("SELECT 1 FROM organizations WHERE id = $1", [input.organizationId]);
-    if (!org.rows.length) throw new DomainError("Cliente não encontrado", 404);
-    if (input.instanceId) {
-      const instance = await q.query("SELECT 1 FROM instances WHERE id = $1 AND organization_id = $2", [input.instanceId, input.organizationId]);
-      if (!instance.rows.length) throw new DomainError("Instância não encontrada neste cliente", 404);
-    }
-    const { rows } = await q.query<{ id: string }>(
-      `INSERT INTO gateway_tokens (organization_id, instance_id, token_hash, token_prefix, label, expires_at)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-      [input.organizationId, input.instanceId ?? null, sha256Hex(token), prefix, input.label, input.expiresAt ?? null]);
-    const id = rows[0]!.id;
-    await audit(q, actor, { action: "gateway_token.issued", targetType: "gateway_token", targetId: id, organizationId: input.organizationId,
-      data: { prefix, label: input.label, instanceId: input.instanceId ?? null } });
-    return { id, token, prefix };
-  });
+  const org = await q.query("SELECT 1 FROM organizations WHERE id = $1", [input.organizationId]);
+  if (!org.rows.length) throw new DomainError("Cliente não encontrado", 404);
+  if (input.instanceId) {
+    const instance = await q.query("SELECT 1 FROM instances WHERE id = $1 AND organization_id = $2", [input.instanceId, input.organizationId]);
+    if (!instance.rows.length) throw new DomainError("Instância não encontrada neste cliente", 404);
+  }
+  const { rows } = await q.query<{ id: string }>(
+    `INSERT INTO gateway_tokens (organization_id, instance_id, token_hash, token_prefix, label, expires_at)
+     VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+    [input.organizationId, input.instanceId ?? null, sha256Hex(token), prefix, input.label, input.expiresAt ?? null]);
+  const id = rows[0]!.id;
+  await audit(q, actor, { action: "gateway_token.issued", targetType: "gateway_token", targetId: id, organizationId: input.organizationId,
+    data: { prefix, label: input.label, instanceId: input.instanceId ?? null } });
+  return { id, token, prefix };
 }
 
 export async function revokeGatewayToken(db: Db, actor: Actor, organizationId: string, tokenId: string, reason: string): Promise<void> {

@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { BOT_LIMIT_CODE, botsTowardLimit } from "../../shared/bot-limit.ts";
-import { createBotLimit, STARTER_BOT_LIMIT } from "./starter-bot-limit.ts";
+import { createBotLimit, PLAN_BOT_LIMITS, STARTER_BOT_LIMIT } from "./starter-bot-limit.ts";
 
 const SERVER = fileURLToPath(new URL("..", import.meta.url));
 const made = (count: number) => Array.from({ length: count }, () => ({}));
@@ -73,6 +73,29 @@ describe("a Starter Cloud's bots", () => {
     starter = false;
     expect(limit.refusal()).toBeNull();
     expect(limit.limit()).toBeUndefined();
+  });
+});
+
+describe("an ArkoBot plan's bots", () => {
+  const onTier = (tier: string | undefined, bots: Parameters<typeof botsTowardLimit>[0]) =>
+    createBotLimit({ starter: () => tier === "starter" || tier === "inicial", tier: () => tier, bots: () => bots });
+
+  it("follows the plan code the Admin names: Inicial 1, Essencial 3, Profissional 10, Empresa none", () => {
+    expect(PLAN_BOT_LIMITS).toMatchObject({ starter: 5, inicial: 1, essencial: 3, profissional: 10 });
+    expect(onTier("inicial", made(0)).refusal()).toBeNull();
+    expect(onTier("inicial", made(1)).refusal()?.error).toBe("You've reached the 1 bots Inicial includes. To create more, upgrade this Cloud.");
+    expect(onTier("inicial", [{ defaultBot: {} }]).refusal(), "the MausBot is free").toBeNull();
+    expect(onTier("essencial", made(2)).refusal()).toBeNull();
+    expect(onTier("essencial", made(3)).refusal()).toMatchObject({ code: BOT_LIMIT_CODE });
+    expect(onTier("profissional", made(9)).refusal()).toBeNull();
+    expect(onTier("profissional", made(10)).limit()).toBe(10);
+    expect(onTier("empresa", made(500)).refusal(10)).toBeNull();
+    expect(onTier("empresa", made(500)).limit()).toBeUndefined();
+  });
+
+  it("keeps Starter's words and number when the tier is Starter or unknown", () => {
+    expect(onTier("starter", made(5)).refusal()?.error).toBe("You've reached the 5 bots Starter includes. To create more, upgrade this Cloud.");
+    expect(onTier(undefined, made(50)).limit()).toBeUndefined();
   });
 });
 

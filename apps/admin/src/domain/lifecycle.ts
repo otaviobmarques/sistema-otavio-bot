@@ -1,6 +1,7 @@
 import { audit, type Actor } from "../audit.ts";
 import { nextSubscriptionStatus, type BillingSignal, type SubscriptionStatus } from "../billing/subscription-machine.ts";
 import type { Queryable } from "../db/db.ts";
+import { queueProvisioning } from "../provisioning/queue.ts";
 
 export type OrgStatus = "active" | "suspended" | "canceled";
 export type OrgReasonCode = "manual" | "billing" | "chargeback" | "subscription_ended";
@@ -58,16 +59,19 @@ export async function lockOrganization(q: Queryable, id: string): Promise<Organi
   return rows[0];
 }
 
-/** Instance states that follow the organisation's billing. Provisioning (next part) acts on these states. */
+/**
+ * Instance states that follow the organisation's billing. The node agents act on them (src/provisioning): stopped stops
+ * the container, the others keep it running. A decommissioned instance is left alone.
+ */
 async function setInstancesForBilling(q: Queryable, organizationId: string, mode: "payment_problem" | "recovered" | "stopped" | "restart", reason: string) {
   if (mode === "payment_problem") {
-    await q.query("UPDATE instances SET state = 'payment_problem', state_reason = $2 WHERE organization_id = $1 AND state IN ('ready', 'setting_up')", [organizationId, reason]);
+    await q.query("UPDATE instances SET state = 'payment_problem', state_reason = $2 WHERE organization_id = $1 AND state IN ('ready', 'setting_up') AND decommissioned_at IS NULL", [organizationId, reason]);
   } else if (mode === "recovered") {
-    await q.query("UPDATE instances SET state = 'ready', state_reason = NULL WHERE organization_id = $1 AND state = 'payment_problem'", [organizationId]);
+    await q.query("UPDATE instances SET state = 'ready', state_reason = NULL WHERE organization_id = $1 AND state = 'payment_problem' AND decommissioned_at IS NULL", [organizationId]);
   } else if (mode === "stopped") {
-    await q.query("UPDATE instances SET state = 'stopped', state_reason = $2 WHERE organization_id = $1 AND state <> 'failed'", [organizationId, reason]);
+    await q.query("UPDATE instances SET state = 'stopped', state_reason = $2 WHERE organization_id = $1 AND state <> 'failed' AND decommissioned_at IS NULL", [organizationId, reason]);
   } else {
-    await q.query("UPDATE instances SET state = 'setting_up', state_reason = $2 WHERE organization_id = $1 AND state IN ('stopped', 'payment_problem')", [organizationId, reason]);
+    await q.query("UPDATE instances SET state = 'setting_up', state_reason = $2 WHERE organization_id = $1 AND state IN ('stopped', 'payment_problem') AND decommissioned_at IS NULL", [organizationId, reason]);
   }
 }
 
@@ -86,7 +90,10 @@ export async function setOrganizationStatus(
     "UPDATE organizations SET status = $2, status_reason_code = $3, status_reason = $4, status_changed_at = now() WHERE id = $1",
     [organizationId, status, status === "active" ? null : reasonCode, status === "active" ? null : reason],
   );
-  if (status === "active") await setInstancesForBilling(q, organizationId, "restart", "cliente reativado");
+  if (status === "active") {
+    await setInstancesForBilling(q, organizationId, "restart", "cliente reativado");
+    await queueProvisioning(q, organizationId);
+  }
   else await setInstancesForBilling(q, organizationId, "stopped", status === "canceled" ? "cliente cancelado" : `cliente suspenso: ${reason ?? ""}`.trim());
   await audit(q, actor, {
     action: `organization.${status === "active" ? "reactivated" : status}`,
@@ -129,6 +136,7 @@ export async function applySubscriptionSignal(
   const org = await lockOrganization(q, sub.organization_id);
   if (next === "active") {
     await setInstancesForBilling(q, sub.organization_id, "recovered", "");
+    await queueProvisioning(q, sub.organization_id, now);
     if (org.status === "suspended" && (org.status_reason_code === "billing" || org.status_reason_code === "subscription_ended")) {
       await setOrganizationStatus(q, actor, org.id, "active", null, "pagamento regularizado");
     }

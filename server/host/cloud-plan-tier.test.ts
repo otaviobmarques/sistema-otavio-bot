@@ -27,6 +27,14 @@ describe("which plan this Cloud is on", () => {
     expect(JSON.parse(readFileSync(join(dataDir, CLOUD_PLAN_TIER_FILE), "utf8"))).toEqual({ v: 1, tier: "pro" });
   });
 
+  it("treats ArkoBot's Inicial plan as Starter", () => {
+    const plan = createCloudPlanTier({ dataDir: dir(), cloudHome: true });
+    plan.set("inicial");
+    expect(plan.starter()).toBe(true);
+    plan.set("essencial");
+    expect(plan.starter()).toBe(false);
+  });
+
   it("treats Personal, a damaged file, a malformed tier and a server that is no Cloud as not Starter", () => {
     const dataDir = dir();
     const plan = createCloudPlanTier({ dataDir, cloudHome: true });

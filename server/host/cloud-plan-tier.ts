@@ -30,7 +30,8 @@ export function createCloudPlanTier(deps: { dataDir: string; cloudHome: boolean;
   }
   return {
     tier: () => tier,
-    starter: () => tier === "starter",
+    // ArkoBot's Inicial plan is this Cloud's Starter: two turns at once, one thread per bot, its own bot limit.
+    starter: () => tier === "starter" || tier === "inicial",
     set(next) {
       if (!deps.cloudHome || !CLOUD_TIER.test(next) || next === tier) return;
       tier = next;

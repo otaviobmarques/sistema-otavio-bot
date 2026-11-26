@@ -24,7 +24,7 @@ interface Detail {
   wallet: { plan_balance: number; extra_balance: number };
   ledger: { id: number; created_at: string; bucket: string; kind: string; amount: number; balance_after: number; reason: string | null; admin_email: string | null }[];
   payments: { id: string; kind: string; status: string; billing_type: string | null; value_cents: number; credits: number; due_date: string | null; paid_at: string | null; invoice_url: string | null; billing_account_label: string }[];
-  instances: { id: string; slug: string; machine_id: string; mode: string; state: string; state_reason: string | null }[];
+  instances: { id: string; slug: string; machine_id: string; mode: string; state: string; state_reason: string | null; public_url: string | null }[];
   audit: { id: number; created_at: string; actor_type: string; actor_label: string | null; action: string; reason: string | null }[];
   terms: { document: string; version: string; accepted_at: string; ip: string; email: string }[];
   gatewayTokens: GatewayToken[];
@@ -188,14 +188,14 @@ export function ClientDetailPage() {
           </ul>
         </Card>
 
-        <Card title="Instâncias" className="lg:col-span-2" padded={false}>
+        <Card title="Instâncias" className="lg:col-span-2" padded={false} actions={<Link to="/instancias" className="text-sm font-medium text-cyan-ink hover:underline">Gerenciar</Link>}>
           {data.instances.length === 0 ? (
-            <Empty icon={<Boxes className="h-6 w-6" />} title="Nenhuma instância ainda">O provisionamento automático chega na próxima parte. Os estados (preparando, pronta, parada, problema de pagamento) já seguem a cobrança.</Empty>
+            <Empty icon={<Boxes className="h-6 w-6" />} title="Nenhuma instância ainda">A instância nasce sozinha quando a assinatura fica ativa (ou começa o teste grátis) e segue a cobrança: para quando o cliente é suspenso e volta quando ele paga.</Empty>
           ) : (
             <Table head={["Instância", "Modo", "Estado"]}>
               {data.instances.map((instance) => (
                 <tr key={instance.id}>
-                  <td className={td}><div className="font-medium">{instance.slug}</div><div className="text-xs text-slate-500"><Mono>{instance.machine_id}</Mono></div></td>
+                  <td className={td}><div className="font-medium">{instance.public_url ? <a href={instance.public_url} target="_blank" rel="noopener noreferrer" className="text-cyan-ink hover:underline">{instance.slug}</a> : instance.slug}</div><div className="text-xs text-slate-500"><Mono>{instance.machine_id}</Mono></div></td>
                   <td className={td}>{MODE[instance.mode] ?? instance.mode}</td>
                   <td className={td}><StatusBadge map={INSTANCE_STATE} value={instance.state} />{instance.state_reason ? <span className="ml-2 text-xs text-slate-500">{instance.state_reason}</span> : null}</td>
                 </tr>
