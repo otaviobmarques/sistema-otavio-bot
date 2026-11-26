@@ -15,6 +15,8 @@ export class FakeDocker implements DockerApi {
   containers = new Map<string, FakeContainer>();
   volumes = new Map<string, Record<string, string>>();
   networks = new Map<string, NetworkDetails>();
+  /** Containers outside the agent's reach that it may attach to a network (the node's Traefik). */
+  proxies = new Set<string>();
   images = new Set<string>();
   calls: string[] = [];
   pullFails = false;
@@ -71,6 +73,14 @@ export class FakeDocker implements DockerApi {
   async createNetwork(name: string) {
     this.calls.push(`network ${name}`);
     this.networks.set(name, { Name: name, IPAM: { Config: [{ Subnet: "172.30.0.0/16" }] } });
+  }
+
+  async connectNetwork(network: string, container: string) {
+    const target = this.networks.get(network);
+    if (!target || !this.proxies.has(container)) return false;
+    this.calls.push(`connect ${container} ${network}`);
+    target.Containers = { ...target.Containers, [randomBytes(6).toString("hex")]: { Name: container } };
+    return true;
   }
 
   async createContainer(name: string, body: Record<string, unknown>) {
