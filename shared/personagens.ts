@@ -14,31 +14,33 @@ export interface PersonagemRecorte {
 /** Neutral ids only: each customer names their own bot, so a character never carries a name of its own. */
 export interface Personagem {
   id: string;
-  /** The tile behind the image: the original's own background, so the crop's edges disappear into it. */
+  /** The tile behind the image. The originals are cut out on a transparent background, so it stays transparent. */
   tile: string;
-  /** Head and chest, for avatars smaller than {@link PERSONAGEM_ROSTO_ABAIXO_DE} pixels. */
+  /** A slightly tighter framing, for avatars smaller than {@link PERSONAGEM_ROSTO_ABAIXO_DE} pixels. */
   rosto: PersonagemRecorte;
   /** The whole character, for larger avatars. */
   corpo: PersonagemRecorte;
 }
 
-const FELTRO = "#F2EEEA";
-const FELTRO_CORPO = { x: 0.04, y: 0.04, lado: 0.92 };
+// Originals are square, trimmed to the character and centred with a small transparent margin (docs/arkobot/personagens).
+const SEM_FUNDO = "transparent";
+const ROSTO = { x: 0.03, y: 0.03, lado: 0.94 };
+const CORPO = { x: 0, y: 0, lado: 1 };
 
 export const PERSONAGENS = [
-  { id: "gravata-robo", tile: "#EEEBE4", rosto: { x: 0.28, y: 0.2, lado: 0.44 }, corpo: { x: 0.17, y: 0.2, lado: 0.66 } },
-  { id: "fone", tile: FELTRO, rosto: { x: 0.27, y: 0.36, lado: 0.5 }, corpo: FELTRO_CORPO },
-  { id: "estrela", tile: FELTRO, rosto: { x: 0.26, y: 0.32, lado: 0.5 }, corpo: FELTRO_CORPO },
-  { id: "carretel", tile: FELTRO, rosto: { x: 0.23, y: 0.26, lado: 0.5 }, corpo: FELTRO_CORPO },
-  { id: "nuvem", tile: FELTRO, rosto: { x: 0.23, y: 0.32, lado: 0.5 }, corpo: FELTRO_CORPO },
-  { id: "relogio", tile: FELTRO, rosto: { x: 0.2, y: 0.24, lado: 0.5 }, corpo: FELTRO_CORPO },
-  { id: "atendente", tile: FELTRO, rosto: { x: 0.25, y: 0.32, lado: 0.5 }, corpo: FELTRO_CORPO },
-  { id: "monoculo", tile: FELTRO, rosto: { x: 0.27, y: 0.3, lado: 0.5 }, corpo: FELTRO_CORPO },
-  { id: "escudo", tile: FELTRO, rosto: { x: 0.28, y: 0.21, lado: 0.5 }, corpo: FELTRO_CORPO },
-  { id: "coracao", tile: FELTRO, rosto: { x: 0.25, y: 0.3, lado: 0.5 }, corpo: FELTRO_CORPO },
-  { id: "capacete", tile: FELTRO, rosto: { x: 0.25, y: 0.28, lado: 0.5 }, corpo: FELTRO_CORPO },
-  { id: "conversa", tile: FELTRO, rosto: { x: 0.22, y: 0.24, lado: 0.5 }, corpo: FELTRO_CORPO },
-  { id: "gravata-triangulo", tile: FELTRO, rosto: { x: 0.24, y: 0.22, lado: 0.5 }, corpo: FELTRO_CORPO },
+  { id: "gravata-robo", tile: SEM_FUNDO, rosto: ROSTO, corpo: CORPO },
+  { id: "fone", tile: SEM_FUNDO, rosto: ROSTO, corpo: CORPO },
+  { id: "estrela", tile: SEM_FUNDO, rosto: ROSTO, corpo: CORPO },
+  { id: "carretel", tile: SEM_FUNDO, rosto: ROSTO, corpo: CORPO },
+  { id: "nuvem", tile: SEM_FUNDO, rosto: ROSTO, corpo: CORPO },
+  { id: "relogio", tile: SEM_FUNDO, rosto: ROSTO, corpo: CORPO },
+  { id: "atendente", tile: SEM_FUNDO, rosto: ROSTO, corpo: CORPO },
+  { id: "monoculo", tile: SEM_FUNDO, rosto: ROSTO, corpo: CORPO },
+  { id: "escudo", tile: SEM_FUNDO, rosto: ROSTO, corpo: CORPO },
+  { id: "coracao", tile: SEM_FUNDO, rosto: ROSTO, corpo: CORPO },
+  { id: "capacete", tile: SEM_FUNDO, rosto: ROSTO, corpo: CORPO },
+  { id: "conversa", tile: SEM_FUNDO, rosto: ROSTO, corpo: CORPO },
+  { id: "gravata-triangulo", tile: SEM_FUNDO, rosto: ROSTO, corpo: CORPO },
 ] as const satisfies readonly Personagem[];
 
 export type PersonagemId = (typeof PERSONAGENS)[number]["id"];
