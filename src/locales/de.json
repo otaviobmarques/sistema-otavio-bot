@@ -207,6 +207,7 @@
   "server.planTurns.wait": "Wartet auf einen Platz: Starter führt auf dieser Cloud {limit} Aufgaben gleichzeitig aus. Davor in der Reihe: {ahead}. Es startet von selbst, sobald eine fertig ist, und ein größerer Plan führt mehr gleichzeitig aus.",
   "server.planTurns.still": "Wartet noch: Starter führt {limit} Aufgaben gleichzeitig aus. Davor in der Reihe: {ahead}.",
   "server.botPaused": "Pausiert: Starter hält {limit} Bots wach. Führe ein Upgrade durch, um ihn zu wecken, oder tausche, welche Bots wach sind.",
+  "server.storageFull": "Dein Speicherplatz ist aufgebraucht: Lösche Dateien oder wechsle den Tarif.",
   "server.teammates.queued.thread": "{bot} hat damit noch nicht begonnen: Ein früherer Durchlauf in diesem Thread läuft noch.",
   "server.teammates.queued.slots": "{bot} hat damit noch nicht begonnen: Es laufen bereits {busy} von {limit} Threads gleichzeitig.",
   "server.teammates.queued.room": "{bot} hat damit noch nicht begonnen: Es beendet gerade einen Durchlauf in einem Raum.",

@@ -3455,7 +3455,8 @@
       "pair.install.android": "f273395b105469d2870bbe661de2bcc251de0ef2780c2e358eedaea2fbf8a87c",
       "pair.install.iphone": "c967689cec5b5d396972ee9c87259d5061384546c51c4bb606357d3e25b4a1c6",
       "about.tagline": "d179f57cc2f78fdd3b2e7e1ef03b201410e550fe4b633de4e1236415deaaac30",
-      "pair.install.intro": "ae2c9f6ed3fea8c6b59b58e07e519e3602773437668706ea5a5ea2dff1c506d6"
+      "pair.install.intro": "ae2c9f6ed3fea8c6b59b58e07e519e3602773437668706ea5a5ea2dff1c506d6",
+      "server.storageFull": "d51bfa77ff6d1965772c7ac56588a415a222f7c306d05fda7568557b739a9e74"
     },
     "es": {
       "whop.description": "1a07cf04ef17029448d3781415cbac16d54e66b821907a40d94e0e6349710e70",
@@ -33867,7 +33868,10 @@
       "about.thirdParty": "0c4ee87a5d799fb7d10b63f6ebb03cbc66dde159d14d861b59ec41f7e80f6784",
       "pair.install.android": "f273395b105469d2870bbe661de2bcc251de0ef2780c2e358eedaea2fbf8a87c",
       "pair.install.iphone": "c967689cec5b5d396972ee9c87259d5061384546c51c4bb606357d3e25b4a1c6",
-      "pair.install.intro": "ae2c9f6ed3fea8c6b59b58e07e519e3602773437668706ea5a5ea2dff1c506d6"
+      "pair.install.intro": "ae2c9f6ed3fea8c6b59b58e07e519e3602773437668706ea5a5ea2dff1c506d6",
+      "server.storageFull": "d51bfa77ff6d1965772c7ac56588a415a222f7c306d05fda7568557b739a9e74",
+      "cloudStorage.banner.full": "98afd251b439d43eba19530e4058b3bb6242df58cd8afbca8e1aa36e46f7475a",
+      "cloudStorage.banner.over": "1a585c9dd89997b802896163dafd33541cce19e95bd2b8431bdf3ca3f5819d81"
     },
     "zh": {
       "pro.fromPrice": "c0dc349bb513592ecca1d6199daabebb8a7a92d279bc3538bf92c673caec903c",

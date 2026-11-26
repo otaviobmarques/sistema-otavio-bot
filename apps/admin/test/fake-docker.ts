@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import type { ContainerDetails, ContainerSummary, DockerApi, NetworkDetails } from "../src/node-agent/docker.ts";
+import type { ContainerDetails, ContainerSummary, DockerApi, NetworkDetails, VolumeUsage } from "../src/node-agent/docker.ts";
 
 interface FakeContainer {
   id: string;
@@ -18,6 +18,11 @@ export class FakeDocker implements DockerApi {
   images = new Set<string>();
   calls: string[] = [];
   pullFails = false;
+  /** What each volume holds, in bytes, for GET /system/df (unset: -1, as Docker says for a size it does not know). */
+  volumeBytes = new Map<string, number>();
+  /** How many times the agent asked for volume sizes (a read, so not in `calls`). */
+  dfCalls = 0;
+  dfFails = false;
   /** What a started container's health check says. */
   healthOnStart: string | null = "healthy";
 
@@ -94,6 +99,12 @@ export class FakeDocker implements DockerApi {
     const c = this.#get(id);
     this.containers.delete(id);
     this.calls.push(`remove ${c.name}`);
+  }
+
+  async volumeUsage(): Promise<VolumeUsage[]> {
+    this.dfCalls++;
+    if (this.dfFails) throw new Error("df timed out");
+    return [...this.volumes.entries()].map(([name, labels]) => ({ Name: name, Labels: { ...labels }, UsageData: { Size: this.volumeBytes.get(name) ?? -1, RefCount: 1 } }));
   }
 
   byName(name: string): FakeContainer | undefined {

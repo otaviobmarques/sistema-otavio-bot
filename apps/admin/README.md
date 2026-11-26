@@ -374,16 +374,24 @@ Cliente ── conta.arkobot.com.br ── "Abrir" ──► Admin assina POST /
 5. **Agente na VPS**: projeto Docker `arkobot-node-agent` com `apps/admin/deploy/node-agent.vps.compose.yml` e um `.env` com `ARKO_ADMIN_URL=https://admin.arkobot.com.br` e `ARKO_NODE_TOKEN=…` (mais `ARKO_REGISTRY_USER`/`ARKO_REGISTRY_TOKEN` se a imagem do ArkoBot no GHCR for privada). `docker compose up -d`. Em até 15 s o servidor aparece **online** no painel.
 6. **Admin (Vercel)**: nada obrigatório. Opcionais: `INSTANCES_BASE_DOMAIN`, `INSTANCE_IMAGE` (fixe por digest para controlar as atualizações) e `AI_GATEWAY_PUBLIC_URL`.
 
-**Recursos por instância na VPS**: o teto é o `ram_mb` do plano (Inicial 1 GB, Essencial 2 GB, Profissional 4 GB, Empresa 8 GB) e 0,5/1/2/4 CPUs. Uma instância sem bot trabalhando fica em torno de 300–500 MB (servidor + Caddy); com um bot trabalhando (Claude Code/Codex + Chrome) chega perto do teto. Disco: a imagem é compartilhada (alguns GB, uma vez só); cada volume começa com poucos MB e cresce com o uso. O `disk_gb` do plano ainda **não** é imposto (o driver `local` do Docker não tem cota).
+**Recursos por instância na VPS**: o teto é o `ram_mb` do plano (Inicial 1 GB, Essencial 2 GB, Profissional 4 GB, Empresa 8 GB) e 0,5/1/2/4 CPUs. Uma instância sem bot trabalhando fica em torno de 300–500 MB (servidor + Caddy); com um bot trabalhando (Claude Code/Codex + Chrome) chega perto do teto. Disco: a imagem é compartilhada (alguns GB, uma vez só); cada volume começa com poucos MB e cresce com o uso. O `disk_gb` do plano é um limite **medido**, não imposto pelo disco (o driver `local` do Docker não tem cota e o disco da VPS é compartilhado): veja "Limite de espaço" abaixo.
+
+### Limite de espaço
+
+- O agente mede o volume `/data` de cada instância (`GET /system/df?type=volume`, só os volumes com as etiquetas do ArkoBot deste nó) no máximo a cada 10 min e manda o número no relatório de sempre (`src/node-agent/disk.ts`). Uma medição lenta não segura o relatório; uma que falha repete a última.
+- O Admin compara com o `disk_gb` do plano (GB binários) e guarda em `instances.disk_*` (migração `0010`): `ok` abaixo de 80%, `warning` a partir de 80%, `full` a partir de 100%, `over` a partir de 110% (`src/provisioning/storage.ts`).
+- E-mail ao dono da conta uma vez ao passar de 80% e uma vez ao chegar a 100% (`disk_notified_percent`); só volta a avisar depois que o uso cai abaixo de 70%.
+- A instância recebe o estado por `POST /api/cloud/storage` assinado (job `instance.sync_storage`). Em `over` ela recusa uploads novos (anexos e arquivos no chat) com "Seu espaço acabou: apague arquivos ou mude de plano"; a partir de `full` mostra uma faixa. Ler, apagar e conversar nunca são bloqueados e nada é apagado.
+- O cartão "Meu ArkoBot" mostra "X GB de Y GB usados" com barra e aviso a partir de 80%; o painel mostra o uso na coluna **Disco** de Instâncias.
 
 ### Ainda não feito
 
 - **Dormir depois de 30 min parado (Inicial)**: a instância já sabe dizer se está ociosa e aceitar dormir (`GET /api/cloud/power`, `POST /api/cloud/power/sleep`, em `docs/cloud-pro.md`), mas acordar sozinha depende de algo que segure o primeiro pedido e ligue o contêiner (no Fly é nativo; aqui seria um plugin como o Sablier no Traefik, ou o agente ligando no "Abrir"). Por ora as instâncias do Inicial ficam ligadas (TODO em `desiredOf`, `src/provisioning/instances.ts`).
-- Cota de disco por instância, troca de plano aplicada sem reprovisionar à mão (o limite de bots já muda no próximo "Abrir"), nós dedicados e equipes (`role=team`), backup dos volumes, alerta quando um servidor fica sem contato, e apagar o volume de uma instância desativada (hoje só à mão: `docker volume rm arkoinst-<id>-data`).
+- Cota de disco imposta pelo sistema de arquivos (hoje é medida e só recusa uploads novos), troca de plano aplicada sem reprovisionar à mão (o limite de bots já muda no próximo "Abrir"), nós dedicados e equipes (`role=team`), backup dos volumes, alerta quando um servidor fica sem contato, e apagar o volume de uma instância desativada (hoje só à mão: `docker volume rm arkoinst-<id>-data`).
 
 ## Próximas partes
 
-- **Instâncias**: dormir quando ociosa (Inicial), cota de disco, nós dedicados por cliente e backup dos volumes (veja [Provisionamento automático](#provisionamento-automático-instâncias-dos-clientes)).
+- **Instâncias**: dormir quando ociosa (Inicial), nós dedicados por cliente e backup dos volumes (veja [Provisionamento automático](#provisionamento-automático-instâncias-dos-clientes)).
 - **Gateway**: e-mail dos avisos de 50/80/100% (`UsageAlertNotifier`), preços por faixa de contexto longo.
 - **Computadores (VPS)**: interface `VpsProvider` com a Hostinger primeiro (`vps_machines`, `vps_provider_accounts`).
 - Troca de plano com pró-rata (também na Área do cliente), emissão de NFS-e quando a conta PJ estiver ativa, convites de membros para a organização.

@@ -29,6 +29,10 @@ export const CLOUD_TEAM_MEMBER_LEFT_PATH = "/api/cloud/team/member-left";
  * or both. While it is cancelled the home's routines wait (host/routine-holds-host.ts); the tier is kept by host/cloud-plan-tier.ts. */
 export const CLOUD_PLAN_PATH = "/api/cloud/plan";
 
+/** The Admin's word on this Cloud's disk against its plan, signed with the body: `{"v":1,"state":"ok"|"warning"|"full"|"over",
+ * "usedBytes":n,"quotaBytes":n|null}`. Kept by host/cloud-storage-quota.ts; at `over` new uploads are refused. */
+export const CLOUD_STORAGE_PATH = "/api/cloud/storage";
+
 export function createCloudSignedRoutes(deps: {
   secret: string;
   sessions: Pick<SessionRegistry, "openPairing" | "revokeMember" | "attemptAllowed" | "noteFailure" | "clearFailures">;
@@ -49,6 +53,8 @@ export function createCloudSignedRoutes(deps: {
   plan?: ((cancelled: boolean) => void) | null;
   /** Which plan this Cloud is on now; absent on a server that is not a Cloud home. */
   planTier?: ((tier: string) => void) | null;
+  /** How full this Cloud's disk is (the body without `v`); false when that is not a storage state. Absent on a server that is not a Cloud home. */
+  storage?: ((status: unknown) => boolean) | null;
   now?: () => number;
 }) {
   const pairing = createCloudPairing({ secret: deps.secret, sessions: deps.sessions, team: deps.team ?? null, now: deps.now });
@@ -60,6 +66,7 @@ export function createCloudSignedRoutes(deps: {
   const memberLeftRequests = createCloudRequestVerifier({ secret: deps.secret, now: deps.now });
   const planRequests = createCloudRequestVerifier({ secret: deps.secret, now: deps.now });
   const policyNudges = createCloudRequestVerifier({ secret: deps.secret, now: deps.now });
+  const storageRequests = createCloudRequestVerifier({ secret: deps.secret, now: deps.now });
   /** True when the request was one of these and has been answered. */
   return async ({ req, res, url, path, method }: CloudSignedRequest): Promise<boolean> => {
     const power = path === CLOUD_POWER_PATH || path === CLOUD_POWER_SLEEP_PATH ? deps.power?.() ?? null : null;
@@ -67,7 +74,8 @@ export function createCloudSignedRoutes(deps: {
     const memberLeft = path === CLOUD_TEAM_MEMBER_LEFT_PATH && deps.team ? deps.memberLeft ?? null : null;
     const plan = path === CLOUD_PLAN_PATH && (deps.plan || deps.planTier) ? true : null;
     const policyChanged = path === CLOUD_TEAM_POLICY_CHANGED_PATH && deps.team ? deps.policyChanged ?? null : null;
-    if (path !== CLOUD_PAIRING_PATH && path !== CLOUD_HEALTH_PATH && path !== CLOUD_BOX_PATH && !power && !teamAdmin && !memberLeft && !plan && !policyChanged) return false;
+    const storage = path === CLOUD_STORAGE_PATH ? deps.storage ?? null : null;
+    if (path !== CLOUD_PAIRING_PATH && path !== CLOUD_HEALTH_PATH && path !== CLOUD_BOX_PATH && !power && !teamAdmin && !memberLeft && !plan && !policyChanged && !storage) return false;
     res.setHeader("cache-control", "no-store");
     const source = requestSource(req);
     const header = (name: string) => { const value = req.headers[name]; return typeof value === "string" ? value : undefined; };
@@ -136,6 +144,19 @@ export function createCloudSignedRoutes(deps: {
       if ((cancelled !== undefined && !saysCancelled) || (tier !== undefined && !saysTier) || (!saysCancelled && !saysTier)) { json(res, 400, { error: "invalid_plan" }); return true; }
       if (saysCancelled) deps.plan?.(cancelled);
       if (saysTier) deps.planTier?.(tier);
+      json(res, 200, { ok: true });
+      return true;
+    }
+    if (storage) {
+      if (method !== "POST") { json(res, 405, { error: "method_not_allowed" }); return true; }
+      if (!/^application\/json\b/i.test(String(req.headers["content-type"] ?? ""))) { json(res, 415, { error: "send the request as JSON (content-type: application/json)" }); return true; }
+      const body = await readSignedBody(req);
+      const verdict = storageRequests.verify({ ...signed, method, target: `${path}${url.search}`, body });
+      if (!verdict.ok) { console.warn(`cloud storage request refused from ${source}: ${verdict.error}`); json(res, verdict.status, { error: verdict.error }); return true; }
+      let parsed: unknown;
+      try { parsed = JSON.parse(body.toString("utf8")); } catch { json(res, 400, { error: "invalid_body" }); return true; }
+      const { v, ...status } = (parsed ?? {}) as Record<string, unknown>;
+      if (v !== 1 || !storage(status)) { json(res, 400, { error: "invalid_storage" }); return true; }
       json(res, 200, { ok: true });
       return true;
     }

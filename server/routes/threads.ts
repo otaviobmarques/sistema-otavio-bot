@@ -21,6 +21,7 @@ import {
 import { resolveRequestAuth, type RequestAuth, type ResolveOptions } from "../request-auth.ts";
 import type { queuedSteerSnapshot } from "../steer-queue.ts";
 import type { BotRecord, GroupRecord, Message, Store } from "../store.ts";
+import { STORAGE_FULL_CODE } from "../host/cloud-storage-quota.ts";
 import { createJobRoutes } from "./jobs.ts";
 import { PASS, type RouteContext, type RouteHandler } from "./table.ts";
 
@@ -66,6 +67,8 @@ export interface ThreadRouteDeps {
   attachmentInUse(name: string): boolean;
   /** The stored files a Settings clear must leave (pictures, banner, routine and calendar-call files), null until those load; absent on a Team Cloud, which has no clear. */
   keptAttachments?(): ReadonlySet<string> | null;
+  /** Why a new upload is refused right now (a Cloud whose space ran out, host/cloud-storage-quota.ts); null when it is not. */
+  uploadRefusal?(): string | null;
 }
 
 export function createThreadRoutes(deps: ThreadRouteDeps): RouteHandler {
@@ -289,6 +292,11 @@ export function createThreadRoutes(deps: ThreadRouteDeps): RouteHandler {
 
     // Raw bytes, not base64 JSON; retrying a UUID uploadId returns the same committed path.
     if (method === "POST" && path === "/api/attachments") {
+      const refused = deps.uploadRefusal?.();
+      if (refused) {
+        req.resume();
+        return json(res, 507, { error: refused, code: STORAGE_FULL_CODE });
+      }
       let uploadId: string | undefined;
       try {
         uploadId = validateAttachmentUploadId(url.searchParams.get("uploadId") ?? undefined);
@@ -345,6 +353,11 @@ export function createThreadRoutes(deps: ThreadRouteDeps): RouteHandler {
 
     // Raw bytes; a UUID uploadId is stable across retries, and the quota rejects rather than delete files old prompts reference.
     if (method === "POST" && path === "/api/files") {
+      const refused = deps.uploadRefusal?.();
+      if (refused) {
+        req.resume();
+        return json(res, 507, { error: refused, code: STORAGE_FULL_CODE });
+      }
       let uploadId: string | undefined;
       try {
         uploadId = validateAttachmentUploadId(url.searchParams.get("uploadId") ?? undefined);

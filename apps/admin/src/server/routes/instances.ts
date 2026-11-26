@@ -29,7 +29,8 @@ export function instanceRoutes(ctx: AppContext) {
       ctx.db.query(
         `SELECT i.id, i.organization_id, o.name AS organization_name, i.slug, i.public_url, i.mode, i.state, i.state_reason, i.node_id, n.name AS node_name,
            i.operator_stopped, i.decommissioned_at, i.observed_state, i.observed_health, i.observed_error, i.observed_at, i.ready_at, i.generation,
-           i.plan_tier_synced, i.created_at, p.code AS plan_code, p.name AS plan_name
+           i.plan_tier_synced, i.created_at, p.code AS plan_code, p.name AS plan_name,
+           i.disk_used_bytes, i.disk_quota_bytes, i.disk_state, i.disk_measured_at
          FROM instances i JOIN organizations o ON o.id = i.organization_id LEFT JOIN nodes n ON n.id = i.node_id
          LEFT JOIN LATERAL (SELECT s.plan_id FROM subscriptions s WHERE s.organization_id = i.organization_id
                             ORDER BY (s.status <> 'canceled') DESC, s.created_at DESC LIMIT 1) s ON true

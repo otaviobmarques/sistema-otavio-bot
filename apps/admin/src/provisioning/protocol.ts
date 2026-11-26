@@ -47,6 +47,8 @@ export const observedInstanceSchema = z.object({
   containerId: z.string().regex(/^[0-9a-f]{12,64}$/).nullable().default(null),
   revision: z.string().max(64).nullable().default(null),
   error: z.string().max(2000).nullable().default(null),
+  /** The instance's data volume as the agent last measured it (at most every ~10 min); absent when not measured yet. */
+  disk: z.object({ bytes: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER), measuredAt: z.iso.datetime() }).optional(),
 });
 export type ObservedInstance = z.infer<typeof observedInstanceSchema>;
 
