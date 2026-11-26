@@ -14,7 +14,7 @@ import { hmacHex } from "../security/crypto.ts";
 export const REPORT_LIMITS = { body: 600 * 1024, description: 10_000, field: 40, diagnostics: 262_144, installId: 64, contact: 254, statusIds: 50 } as const;
 
 /** Postgres text and jsonb refuse NUL, so it never reaches the database. */
-const text = (max: number) => z.string().max(max).transform((value) => value.replace(/\u0000/g, ""));
+const text = (max: number) => z.string().max(max).transform((value) => value.replaceAll("\0", ""));
 const line = (max: number) => text(max).pipe(z.string().trim().min(1).max(max));
 const contact = z.email().max(REPORT_LIMITS.contact).optional();
 
