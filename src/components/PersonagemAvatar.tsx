@@ -18,7 +18,6 @@ export function PersonagemAvatar({ personagem, size = 44, state = "idle", animat
       role={label ? "img" : undefined}
       aria-hidden={label ? undefined : true}
       aria-label={label ?? undefined}
-      title={label ?? undefined}
       data-personagem={personagem.id}
       data-personagem-recorte={imagem?.recorte}
       data-personagem-state={state}
@@ -35,6 +34,7 @@ export function PersonagemAvatar({ personagem, size = 44, state = "idle", animat
           height={size}
           draggable={false}
           decoding="async"
+          loading="lazy"
           className={cn(
             "block size-full max-w-none select-none",
             motion === "dim" && "personagem-dim",
