@@ -19,6 +19,8 @@ export interface ContainerDetails {
 export interface NetworkDetails {
   Name: string;
   IPAM?: { Config?: { Subnet?: string }[] | null } | null;
+  /** Attached containers by id; Docker fills it on GET /networks/{name}. */
+  Containers?: Record<string, { Name?: string }> | null;
 }
 
 export class DockerError extends Error {
@@ -38,6 +40,8 @@ export interface DockerApi {
   createVolume(name: string, labels: Record<string, string>): Promise<void>;
   inspectNetwork(name: string): Promise<NetworkDetails | null>;
   createNetwork(name: string, labels: Record<string, string>): Promise<void>;
+  /** Attaches an existing container to a network; false when that container does not exist. */
+  connectNetwork(network: string, container: string): Promise<boolean>;
   createContainer(name: string, body: Record<string, unknown>): Promise<string>;
   startContainer(id: string): Promise<void>;
   stopContainer(id: string, timeoutSeconds: number): Promise<void>;
@@ -125,6 +129,13 @@ export class DockerClient implements DockerApi {
 
   async createNetwork(name: string, labels: Record<string, string>) {
     await this.#json("POST", "/networks/create", { Name: name, Driver: "bridge", Labels: labels, CheckDuplicate: true }, [200, 201]);
+  }
+
+  async connectNetwork(network: string, container: string) {
+    const { status, text } = await this.#call("POST", `/networks/${encodeURIComponent(network)}/connect`, { Container: container });
+    if (status === 404) return false;
+    if (status !== 200) throw new DockerError(status, `Docker POST /networks/connect: ${status} ${messageOf(text)}`);
+    return true;
   }
 
   async createContainer(name: string, body: Record<string, unknown>) {

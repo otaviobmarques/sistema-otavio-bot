@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { agentConfig, createAgent } from "../src/node-agent/main.ts";
 import { splitImage } from "../src/node-agent/docker.ts";
-import { reconcile } from "../src/node-agent/reconcile.ts";
+import { attachProxy, prepareNetwork, reconcile } from "../src/node-agent/reconcile.ts";
 import { containerSpec, type NodeSettings } from "../src/node-agent/spec.ts";
 import type { DesiredInstance, DesiredState } from "../src/provisioning/protocol.ts";
 import { planResources } from "../src/provisioning/settings.ts";
@@ -111,5 +111,24 @@ describe("agente do nó", () => {
     const config = agentConfig({ ARKO_ADMIN_URL: "https://admin.arkobot.com.br/", ARKO_NODE_TOKEN: TOKEN, ARKO_REGISTRY_USER: "u", ARKO_REGISTRY_TOKEN: "p" });
     expect(config).toMatchObject({ adminUrl: "https://admin.arkobot.com.br", network: "arkobot-instances", socketPath: "/var/run/docker.sock" });
     expect(JSON.parse(Buffer.from(config.registryAuth!, "base64url").toString())).toEqual({ username: "u", password: "p", serveraddress: "ghcr.io" });
+  });
+
+  it("keeps Traefik attached to the instances' network, again after Traefik is recreated, and never invents it", async () => {
+    const docker = new FakeDocker();
+    await prepareNetwork(docker, "arkobot-instances", NODE);
+    expect(await attachProxy(docker, "arkobot-instances", "traefik-traefik-1")).toBe("missing");
+    docker.proxies.add("traefik-traefik-1");
+    expect(await attachProxy(docker, "arkobot-instances", "traefik-traefik-1")).toBe("attached");
+    expect(await attachProxy(docker, "arkobot-instances", "traefik-traefik-1")).toBe("already");
+    docker.networks.get("arkobot-instances")!.Containers = {};
+    expect(await attachProxy(docker, "arkobot-instances", "traefik-traefik-1")).toBe("attached");
+    expect(docker.calls.filter((call) => call.startsWith("connect"))).toEqual(["connect traefik-traefik-1 arkobot-instances", "connect traefik-traefik-1 arkobot-instances"]);
+  });
+
+  it("names the Traefik container by default and lets it be turned off", () => {
+    const base = { ARKO_ADMIN_URL: "https://admin.arkobot.com.br", ARKO_NODE_TOKEN: TOKEN };
+    expect(agentConfig(base).proxyContainer).toBe("traefik-traefik-1");
+    expect(agentConfig({ ...base, ARKO_TRAEFIK_CONTAINER: "" }).proxyContainer).toBeNull();
+    expect(agentConfig({ ...base, ARKO_TRAEFIK_CONTAINER: "meu-traefik" }).proxyContainer).toBe("meu-traefik");
   });
 });

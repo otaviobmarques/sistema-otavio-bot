@@ -5,7 +5,7 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { pathToFileURL } from "node:url";
 import { AGENT_API, desiredStateSchema, NODE_TOKEN_PATTERN, type DesiredState, type StatusReport } from "../provisioning/protocol.ts";
 import { DockerClient, type DockerApi } from "./docker.ts";
-import { prepareNetwork, reconcile, type Log } from "./reconcile.ts";
+import { attachProxy, prepareNetwork, reconcile, type Log } from "./reconcile.ts";
 import type { NodeSettings } from "./spec.ts";
 
 export const AGENT_VERSION = "0.1.0";
@@ -15,6 +15,8 @@ export interface AgentConfig {
   token: string;
   socketPath: string;
   network: string;
+  /** The reverse proxy container kept attached to `network`; null: don't manage it. */
+  proxyContainer: string | null;
   entrypoint: string;
   certResolver: string;
   /** OMB_CLOUD_TRUSTED_PROXIES for every instance; null: the instance network's subnet. */
@@ -41,6 +43,7 @@ export function agentConfig(env: NodeJS.ProcessEnv): AgentConfig {
     token,
     socketPath: env.DOCKER_SOCKET?.trim() || "/var/run/docker.sock",
     network: env.ARKO_INSTANCE_NETWORK?.trim() || "arkobot-instances",
+    proxyContainer: env.ARKO_TRAEFIK_CONTAINER === undefined ? "traefik-traefik-1" : env.ARKO_TRAEFIK_CONTAINER.trim() || null,
     entrypoint: env.ARKO_TRAEFIK_ENTRYPOINT?.trim() || "websecure",
     certResolver: env.ARKO_TRAEFIK_CERTRESOLVER?.trim() || "letsencrypt",
     trustedProxies: env.ARKO_TRUSTED_PROXIES?.trim() || null,
@@ -87,6 +90,10 @@ export function createAgent(config: AgentConfig, deps: { docker?: DockerApi; fet
       let report: StatusReport;
       try {
         if (subnet === undefined) subnet = await prepareNetwork(docker, config.network, desired.node.id);
+        if (config.proxyContainer) {
+          const proxy = await attachProxy(docker, config.network, config.proxyContainer);
+          if (proxy !== "already") log(proxy === "attached" ? `${config.proxyContainer} ligado à rede ${config.network}` : `${config.proxyContainer} não existe; as instâncias ficam sem rota`);
+        }
         const node: NodeSettings = {
           nodeId: desired.node.id, network: config.network, entrypoint: config.entrypoint, certResolver: config.certResolver,
           trustedProxies: config.trustedProxies ?? subnet,
