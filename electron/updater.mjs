@@ -112,6 +112,8 @@ function relaunchAfterInstall() {
 function setState(patch) {
   const { messageCode: _stale, messageKey: _key, messageParams: _params, ...kept } = state;
   state = { ...(Object.hasOwn(patch, "message") ? kept : state), ...patch };
+  // A required update that turned out not to be there (Try again found none) leaves the window usable for good.
+  if (patch.status === "idle") delete state.mandatory;
   if (quiet && patch.status === "error") installFailed(quietRecord());
   try {
     const contents = win?.webContents;
@@ -186,6 +188,9 @@ export function startUpdater(signals = null) {
     setState({});
   }
 
-  setTimeout(() => void updaterCoordinator?.check(), 15_000).unref?.();
+  // Where an update installs by restarting the app, one found at launch is required: it downloads and installs at once
+  // (the window covers itself until then). A system package or a password prompt keeps the usual check a little later.
+  if (!handOff && !elevated) void updaterCoordinator.check(false, { mandatory: true });
+  else setTimeout(() => void updaterCoordinator?.check(), 15_000).unref?.();
   setInterval(() => void updaterCoordinator?.check(), 60 * 60 * 1000).unref?.();
 }

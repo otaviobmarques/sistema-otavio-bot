@@ -62,6 +62,8 @@ export function createUpdaterCoordinator(
   // Hourly checks fail quietly one at a time (offline laptop, a feed still uploading), but a feed that stays
   // unreachable must not leave the app on an old version with no sign of it.
   let quietFailures = 0;
+  // The launch check found an update: it stays required, so the person's Try again downloads and installs it too.
+  let required = false;
 
   const routeError = (manual, error) => {
     if (recoveryRequired) return;
@@ -132,12 +134,16 @@ export function createUpdaterCoordinator(
       return;
     }
     if (checkOwnsState()) {
-      download(Boolean(checkOperation?.manual), {
+      // A required update (found at launch) is shown the way a manual one is: its failures stay on screen with Try again.
+      const mandatory = Boolean(checkOperation?.mandatory) || required;
+      required = mandatory;
+      download(Boolean(checkOperation?.manual) || mandatory, {
         version: info?.version,
         releaseNotes: releaseNotesText(info?.releaseNotes),
         percent: undefined,
         message: undefined,
-      });
+        ...(mandatory ? { mandatory: true } : {}),
+      }, false, mandatory);
     }
   });
   updater.on("update-not-available", () => {
@@ -178,7 +184,8 @@ export function createUpdaterCoordinator(
     setState({ status: "downloaded", version: info?.version });
   });
 
-  function check(manual = false) {
+  // `mandatory`: the launch check. An update it finds downloads and installs at once; an unreachable feed stays quiet.
+  function check(manual = false, { mandatory = false } = {}) {
     if (manual && downloadOperation) downloadOperation.manual = true;
     if (recoveryRequired || installOperation || (nativeStaging && (downloadOperation || nativeStagingStarted)) || (!manual && actionOwnsState && !(staged && !nativeStaging && !downloadOperation))) return Promise.resolve();
     if (checkOperation) {
@@ -187,7 +194,7 @@ export function createUpdaterCoordinator(
     }
 
     if (manual) actionOwnsState = false;
-    const operation = { manual, recheck: !manual && actionOwnsState, supersededByDownload: Boolean(downloadOperation), failed: false, promise: null };
+    const operation = { manual, mandatory, recheck: !manual && actionOwnsState, supersededByDownload: Boolean(downloadOperation), failed: false, promise: null };
     checkOperation = operation;
     try {
       operation.promise = Promise.resolve(updater.checkForUpdates())
@@ -205,11 +212,11 @@ export function createUpdaterCoordinator(
     return operation.promise;
   }
 
-  function download(manual, starting, replacing = false) {
+  function download(manual, starting, replacing = false, mandatory = false) {
     if (recoveryRequired || installOperation || nativeStagingStarted) return;
     if (checkOperation) checkOperation.supersededByDownload = true;
 
-    const operation = { downloadedInfo: null, failed: false, manual, replacing, timer: null };
+    const operation = { downloadedInfo: null, failed: false, manual, mandatory, replacing, timer: null };
     downloadOperation = operation;
       // Own the state before the request: the first progress event can be seconds away, and no percent reads as "starting".
     setState({ status: "downloading", ...starting });
@@ -231,6 +238,8 @@ export function createUpdaterCoordinator(
         .finally(() => {
           clearTimeout(operation.timer);
           if (downloadOperation === operation) downloadOperation = null;
+          // Install only once: a failed install shows its error, and only the person's Try again downloads again.
+          if (operation.mandatory && !operation.failed && operation.downloadedInfo && staged) install();
         });
     } catch (error) {
       handleRejectedOperation(operation.manual, error);

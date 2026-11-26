@@ -399,6 +399,27 @@ describe("profileMenuItems", () => {
     expect(build({ update }).map((item) => item.key)).toEqual(["usage", "phone-app", "support", "settings", "update", "account"]);
   });
 
+  it("says the running version in a quiet line under the update row, or under Settings when there is no update row", () => {
+    const update = { key: "update", label: "Check for updates", onSelect: noop };
+    const items = build({ update, version: "0.1.159" });
+    expect(items.find((item) => item.key === "update")).toMatchObject({ label: "Check for updates", note: "Version 0.1.159" });
+    expect(items.find((item) => item.key === "settings")!.note).toBeUndefined();
+    expect(build({ version: "0.1.159" }).find((item) => item.key === "settings")!.note).toBe("Version 0.1.159");
+    expect(build().find((item) => item.key === "settings")!.note).toBeUndefined();
+  });
+
+  it("ends with Quit (desktop) or Sign out (a browser's session) under its own divider, and has neither without one", async () => {
+    const run = vi.fn(async () => {});
+    const update = { key: "update", label: "Check for updates", onSelect: noop };
+    const items = build({ update, version: "0.1.159", leave: { kind: "quit", run } });
+    expect(items.map((item) => item.key)).toEqual(["usage", "phone-app", "support", "settings", "update", "account", "leave"]);
+    expect(items.at(-1)).toMatchObject({ key: "leave", label: "Quit", separatorBefore: true });
+    items.at(-1)!.onSelect();
+    expect(run).toHaveBeenCalledOnce();
+    expect(build({ leave: { kind: "signOut", run } }).at(-1)!.label).toBe("Sign out");
+    expect(build().some((item) => item.key === "leave")).toBe(false);
+  });
+
   it("opens the Usage and account pages of Settings", () => {
     const onUsage = vi.fn(), onAccount = vi.fn();
     const items = build({ onUsage, onAccount });
@@ -445,6 +466,11 @@ describe("Simple mode's account menu", () => {
       ["place", "switch-place", "account"],
     ]);
     expect(items.find((item) => item.key === "support")!.submenu!.map((item) => item.key)).toEqual(["help", "feedback", "shortcuts", "about", "update"]);
+  });
+
+  it("ends with Quit in its own last group", () => {
+    const items = build({ leave: { kind: "quit", run: async () => {} } });
+    expect(groups(items).at(-1)).toEqual(["leave"]);
   });
 
   it("raises an update that is ready or failed to its own top row with a pill, and keeps it out of support", () => {

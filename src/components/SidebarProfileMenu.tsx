@@ -15,6 +15,7 @@ import {
   Laptop,
   LifeBuoy,
   Loader2,
+  LogOut,
   RefreshCw,
   Settings as SettingsIcon,
   Smartphone,
@@ -52,6 +53,7 @@ import { activeLocale, t } from "@/lib/i18n";
 import { FEEDBACK_URL, HELP_CENTER_URL, appVersion, openExternalLink } from "@/lib/app-links";
 import { useOtherServerName } from "@/lib/other-server";
 import { profileForSession, readSessionState, type SessionState } from "@/lib/session";
+import { leaveApp, type LeaveApp } from "@/lib/leave-app";
 import {
   cloudPhoneDestination,
   connectPhoneEntry,
@@ -453,8 +455,10 @@ export function profileMenuItems({
   phone,
   usage,
   usageSummary = null,
-  update,
+  update: updateRow,
   updateTop = null,
+  version = null,
+  leave = null,
   move = [],
   account,
   accounts = [],
@@ -472,6 +476,10 @@ export function profileMenuItems({
   usageSummary?: UsageSummary | null;
   update: SidebarMenuItem | null;
   updateTop?: { label: string; action: string } | null;
+  /** the running app's version, said in a quiet line under the update row (or under Settings when there is none) */
+  version?: string | null;
+  /** Quit (desktop app) or Sign out (a browser's session): the menu's last row, under its own divider */
+  leave?: LeaveApp | null;
   /** the move to My Cloud's own rows, first of all (AccountMove) */
   move?: SidebarMenuItem[];
   account: string | null;
@@ -507,13 +515,22 @@ export function profileMenuItems({
     icon: <Gauge size={18} />,
     onSelect: onUsage,
   } : null;
+  const versionLine = version ? t("about.version", { version }) : null;
+  const update: SidebarMenuItem | null = updateRow && versionLine ? { ...updateRow, note: updateRow.note ?? versionLine } : updateRow;
   const support: SidebarMenuItem = { key: "support", label: t("sidebar.menu.support"), icon: <LifeBuoy size={18} />, submenu: help, onSelect: () => {} };
-  const settings: SidebarMenuItem = { key: "settings", label: t("sidebar.menu.settings"), icon: <SettingsIcon size={18} />, onSelect: onSettings };
+  const settings: SidebarMenuItem = { key: "settings", label: t("sidebar.menu.settings"), icon: <SettingsIcon size={18} />, ...(!update && versionLine ? { note: versionLine } : {}), onSelect: onSettings };
   const accountItem: SidebarMenuItem | null = account ? { key: "account", label: account, icon: <CircleUserRound size={18} />, onSelect: onAccount } : null;
+  const leaveItem: SidebarMenuItem | null = leave ? {
+    key: "leave",
+    label: t(leave.kind === "quit" ? "sidebar.menu.quit" : "sidebar.menu.signOut"),
+    icon: <LogOut size={18} />,
+    separatorBefore: true,
+    onSelect: () => void leave.run().catch(() => {}),
+  } : null;
   const present = (...items: Array<SidebarMenuItem | null | false>) => items.filter((item): item is SidebarMenuItem => Boolean(item));
   if (!simple) {
     const rest = [...present(usageItem), ...phone, support, settings, ...present(update), ...(accountItem ? [{ ...accountItem, separatorBefore: true }] : []), ...accounts.map((item, index) => (index === 0 ? { ...item, separatorBefore: true } : item))];
-    return [...move, ...rest.map((item, index) => (move.length && index === 0 ? { ...item, separatorBefore: true } : item))];
+    return [...move, ...rest.map((item, index) => (move.length && index === 0 ? { ...item, separatorBefore: true } : item)), ...present(leaveItem)];
   }
   const raised: SidebarMenuItem | null = update && updateTop ? {
     ...update,
@@ -531,6 +548,7 @@ export function profileMenuItems({
     [...phone, { ...support, submenu: raised ? help : [...help, ...present(update)] }],
     [...simple.places, ...present(accountItem)],
     accounts,
+    present(leaveItem),
   ].filter((group) => group.length > 0);
   return groups.flatMap((group, at) => group.map((item, index) => (at > 0 && index === 0 ? { ...item, separatorBefore: true } : item)));
 }
@@ -604,6 +622,8 @@ export function SidebarProfileMenu({ iconOnly = false, rail = false, circle = fa
     usageSummary: cloudUsage ?? engineUsage,
     update: update?.item ?? null,
     updateTop: simple ? simpleUpdateTop(update) : null,
+    version: window.ogb?.app?.version || appVersion(),
+    leave: leaveApp(session),
     move: move.items,
     account: cloudAccount ? cloudRow(accounts.view, state.config?.cloudHome === true) : null,
     accounts: accountMenuItems(accounts),
