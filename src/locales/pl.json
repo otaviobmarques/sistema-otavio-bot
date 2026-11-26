@@ -296,8 +296,6 @@
   "server.noAi.ownerLine": "{name} próbuje użyć bota w {team}, ale nie podłączono jeszcze AI. Podłącz je, aby boty mogły odpowiadać.",
   "server.teammates.notPassed": "Nie przekazano do: {name}",
   "star.title": "Podoba ci się {app}?",
-  "star.body": "Gwiazdka na GitHubie pomaga większej liczbie osób go znaleźć.",
-  "star.button": "Dodaj gwiazdkę na GitHubie",
   "boatOffer.title": "50 $ kredytu Boat dla ciebie",
   "boatOffer.body": "Boat obsługuje komputery w chmurze, na których działa {app}. Kup plan Boat za 100 $ lub wyższy, potem powiedz Boat, że przysłał cię {app}, a Boat doda 50 $ kredytu do twojego konta Boat.",
   "boatOffer.yourself": "Zgłaszasz się po niego samodzielnie: nie dzieje się to automatycznie.",

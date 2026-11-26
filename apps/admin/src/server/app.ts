@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { getCookie } from "hono/cookie";
 import { SESSION_COOKIE, sessionFor, type AdminRole } from "../auth/auth.ts";
 import { ingestAsaasWebhook } from "../billing/webhooks.ts";
@@ -6,6 +7,7 @@ import type { AppContext } from "../context.ts";
 import { DomainError } from "../domain/lifecycle.ts";
 import { JOB_HANDLERS, tick } from "../jobs/handlers.ts";
 import { runJobs } from "../jobs/queue.ts";
+import { bugReportStatus, receiveBugReport, REPORT_LIMITS } from "../reports/intake.ts";
 import { safeEqual } from "../security/crypto.ts";
 import type { Ctx, Env } from "./http.ts";
 import { authRoutes } from "./routes/auth.ts";
@@ -17,6 +19,7 @@ import { integrationRoutes } from "./routes/integrations.ts";
 import { auditRoutes, meRoutes } from "./routes/misc.ts";
 import { overviewRoutes } from "./routes/overview.ts";
 import { planRoutes } from "./routes/plans.ts";
+import { reportRoutes } from "./routes/reports.ts";
 
 const ROLE_RANK: Record<AdminRole, number> = { viewer: 0, operator: 1, owner: 2 };
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
@@ -107,6 +110,21 @@ export function createApp(ctx: AppContext) {
     return c.json({ received: true, duplicate: result.duplicate });
   });
 
+  const reportBody = bodyLimit({ maxSize: REPORT_LIMITS.body, onError: (c) => c.json({ error: "O relatório passa de 600 KB." }, 413) });
+  const intake = (handle: typeof receiveBugReport) => async (c: Ctx) => {
+    let payload: unknown;
+    try {
+      payload = await c.req.json();
+    } catch {
+      return c.json({ error: "Corpo da requisição precisa ser JSON" }, 400);
+    }
+    const result = await handle(ctx, payload, c.get("ip"));
+    if (result.status === 429) c.header("Retry-After", String(result.body.retryAfter));
+    return c.json(result.body, result.status);
+  };
+  app.post("/webhooks/bug-reports", reportBody, intake(receiveBugReport));
+  app.post("/webhooks/bug-reports/status", reportBody, intake(bugReportStatus));
+
   const api = new Hono<Env>();
   api.use("*", async (c, next) => {
     const session = await sessionFor(ctx, getCookie(c, SESSION_COOKIE));
@@ -125,6 +143,7 @@ export function createApp(ctx: AppContext) {
   api.route("/integrations", integrationRoutes(ctx));
   api.route("/gateway", gatewayRoutes(ctx));
   api.route("/audit", auditRoutes(ctx));
+  api.route("/reports", reportRoutes(ctx));
   api.route("/me", meRoutes(ctx));
   app.route("/api", api);
 

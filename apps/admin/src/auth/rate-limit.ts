@@ -11,6 +11,8 @@ export const LIMITS = {
   otpRequestIp: { windowMs: 60_000, max: 5 },
   otpVerifyIp: { windowMs: 60_000, max: 10 },
   totpVerifyIp: { windowMs: 60_000, max: 10 },
+  bugReportIp: { windowMs: 60 * 60_000, max: 20 },
+  bugReportStatusIp: { windowMs: 60 * 60_000, max: 120 },
 } satisfies Record<string, Limit>;
 
 const RETENTION_MS = 24 * 60 * 60_000;

@@ -334,7 +334,7 @@ describe("what the person is told, in their language", () => {
     fx.person("scout-main", "@devs o botão travou");
     fx.advance(NO_ANSWER_MS);
     await fx.settle();
-    expect(fx.notices("scout-main")).toEqual(["notice: Relatório report-1 salvo neste computador, na pasta bug-reports dos dados do app. Você pode mandar o arquivo para quem cuida do seu ArkoBot; ele inclui ada@example.com para que possam responder."]);
+    expect(fx.notices("scout-main")).toEqual(["notice: Enviado à equipe do ArkoBot (relatório report-1); a resposta vai para ada@example.com. Se for urgente, escreva para contato@arkobot.com.br ou chame no WhatsApp +55 19 98782-2290 e informe o número do relatório."]);
     expect(fx.store.activePath("scout-main").at(-1)?.tool?.nameCode).toBeUndefined();
     fx.stop();
   });
@@ -348,7 +348,7 @@ describe("what the person is told, in their language", () => {
     fx.busy.add("scout-main");
     fx.reports.note("scout-main", true);
     const answer = await fx.call("scout", "scout-main", { went_wrong: "Bilder laden nicht" });
-    const line = "Fehlerbericht report-1 auf diesem Computer gespeichert, im Ordner bug-reports in den Daten der App. Du kannst die Datei an die Person schicken, die sich um deinen ArkoBot kümmert; sie enthält ada@example.com, damit man dir antworten kann.";
+    const line = "An das ArkoBot-Team gesendet (Bericht report-1); die Antwort geht an ada@example.com. Wenn es dringend ist, schreib an contato@arkobot.com.br oder per WhatsApp an +55 19 98782-2290 und nenne die Berichtsnummer.";
     expect(answer.body.text).toBe(`Sent. Tell the person this line in your reply, word for word: "${line}"`);
     fx.bot("scout-main", "Ich schaue mir das an.", { turnId: "t1", turnSucceeded: true });
     fx.busy.delete("scout-main");
@@ -371,7 +371,7 @@ describe("what the person is told, in their language", () => {
     expect(fx.notices("scout-main")).toEqual([]);
     fx.advance(RETRY_MS[0]);
     await fx.settle();
-    expect(fx.notices("scout-main")).toEqual(["notice: Fehlerbericht report-2 auf diesem Computer gespeichert, nachdem ein früherer Versuch nicht geklappt hat, im Ordner bug-reports in den Daten der App. Du kannst die Datei an die Person schicken, die sich um deinen ArkoBot kümmert."]);
+    expect(fx.notices("scout-main")).toEqual(["notice: An das ArkoBot-Team gesendet (Bericht report-2), nachdem ein früherer Versuch nicht geklappt hat. Wenn es dringend ist, schreib an contato@arkobot.com.br oder per WhatsApp an +55 19 98782-2290 und nenne die Berichtsnummer."]);
     fx.stop();
   });
 });
@@ -397,7 +397,7 @@ describe("a report that cannot go yet", () => {
     await fx.settle();
     expect(fx.sent).toHaveLength(3);
     expect(fx.sent[2]).toEqual(fx.sent[0]);
-    expect(fx.notices("scout-main").at(-1)).toBe("notice: Bug report report-3 saved on this computer after an earlier try did not go through, in the bug-reports folder of the app's data. You can send the file to whoever looks after your ArkoBot.");
+    expect(fx.notices("scout-main").at(-1)).toBe("notice: Sent to the ArkoBot team (report report-3) after an earlier try did not go through. If it is urgent, write to contato@arkobot.com.br or WhatsApp +55 19 98782-2290 and mention the report number.");
     expect(JSON.parse(readFileSync(join(fx.dataDir, DEVS_REPORTS_FILE), "utf8")).outbox).toEqual([]);
     fx.stop();
   });

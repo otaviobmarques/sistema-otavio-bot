@@ -347,8 +347,6 @@
   "server.mcp.reconnect.many": "MCP 服务器 {names} 未能连接，所以这次它们的工具不可用。你下一条消息发出时它们会重新连接。",
   "server.bots.nameClash": "{person} 也是这里的人员，因此「@{name}」会指向 {person}，而不是这个机器人。请重命名机器人以区分两者。",
   "star.title": "喜欢 {app} 吗？",
-  "star.body": "在 GitHub 上点个星，能帮助更多人发现它。",
-  "star.button": "在 GitHub 上点星",
   "productHunt.title": "我们上线 Product Hunt 了",
   "productHunt.body": "{app} 刚刚发布。你的一个赞同对我们意义重大。",
   "productHunt.button": "在 Product Hunt 上赞同",

@@ -15,7 +15,7 @@ import { MANAGED_ENDPOINT_PHONES_UNUSED } from "./companion-endpoint-need.mjs";
 
 export { managedEndpointNeed, PHONE_UNUSED_RELEASE_MS } from "./companion-endpoint-need.mjs";
 
-export const DEFAULT_COMPANION_CONTROL_PLANE_URL = "https://accounts.openmausbot.com";
+export const DEFAULT_COMPANION_CONTROL_PLANE_URL = ""; // ArkoBot has no account control plane: only OMB_CONTROL_PLANE_URL names one.
 
 export const COMPANION_CLIENT_INSTANCE_FIELD = "companionClientInstanceId";
 export const COMPANION_ACCOUNT_TOKEN_FIELD = "companionAccountToken";

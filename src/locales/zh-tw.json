@@ -423,8 +423,6 @@
   "server.mcp.reconnect.many": "MCP 伺服器 {names} 沒有連上，因此這次無法使用它們的工具。它們會在你傳送下一則訊息時重新連線。",
   "server.bots.nameClash": "{person} 也是這裡的成員，因此「@{name}」會送達 {person}，而不是這個機器人。請重新命名機器人以區分兩者。",
   "star.title": "喜歡 {app} 嗎？",
-  "star.body": "在 GitHub 上給顆星，能幫助更多人找到它。",
-  "star.button": "在 GitHub 上給星",
   "productHunt.title": "我們在 Product Hunt 上線了",
   "productHunt.body": "{app} 剛剛發布。你的一票對我們意義重大。",
   "productHunt.button": "在 Product Hunt 上投票支持",

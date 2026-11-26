@@ -290,8 +290,6 @@
   "server.noAi.ownerLine": "{name}, {team} içinde bir bot kullanmak istedi ama henüz bağlı bir yapay zekâ yok. Botların yanıt verebilmesi için bir tane bağlayın.",
   "server.teammates.notPassed": "{name} kişisine iletilmedi",
   "star.title": "{app}'u beğendiniz mi?",
-  "star.body": "GitHub'da vereceğiniz bir yıldız, daha fazla kişinin onu bulmasına yardımcı olur.",
-  "star.button": "GitHub'da yıldız ver",
   "boatOffer.title": "Size 50 $ Boat kredisi",
   "boatOffer.body": "{app}'un arkasındaki bulut bilgisayarları Boat çalıştırır. Boat'un 100 $ veya daha büyük bir planını satın alın, ardından Boat'a sizi {app}'un yönlendirdiğini söyleyin; Boat hesabınıza 50 $ kredi eklenecek.",
   "boatOffer.yourself": "Krediyi kendiniz talep edersiniz: otomatik değildir.",

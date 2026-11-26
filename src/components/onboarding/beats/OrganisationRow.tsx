@@ -3,7 +3,7 @@ import { Building2, Check } from "lucide-react";
 import type { ManagedDesktopBridge, ManagedDesktopState } from "../../../../electron/managed-desktop.mjs";
 import { productName } from "@/lib/brand";
 import { t } from "@/lib/i18n";
-import { companyModelCount, DEFAULT_ADMIN_ORIGIN } from "@/lib/onboarding";
+import { companyModelCount } from "@/lib/onboarding";
 import { staggerIndex } from "./shared";
 
 const linkClass = "w-fit text-[12px] text-ink-secondary underline-offset-2 transition-colors hover:text-ink hover:underline";
@@ -99,7 +99,7 @@ export function OrganisationRow({
       <button
         type="button"
         disabled={busy}
-        onClick={() => void perform(() => bridge.begin({ portalOrigin: DEFAULT_ADMIN_ORIGIN }))}
+        onClick={onOpenSettings}
         className="shrink-0 rounded-lg bg-accent px-3 py-1.5 text-[13px] font-medium text-white transition-[filter] hover:brightness-110 disabled:opacity-50"
       >
         {busy ? t("organization.working") : t("onboarding.org.signIn")}

@@ -59,6 +59,9 @@ services:
       # Send the codes through your own mail server (same section of the docs).
       OMB_SIGNIN_SMTP_URL: ${OMB_SIGNIN_SMTP_URL:-}
       OMB_SIGNIN_SMTP_FROM: ${OMB_SIGNIN_SMTP_FROM:-}
+      # @devs bug reports: empty sends them to the ArkoBot team; "off" keeps
+      # them in the data folder; an https address sends them there.
+      OMB_BUG_REPORT_URL: ${OMB_BUG_REPORT_URL:-}
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://127.0.0.1:8799/api/health | grep -q openmausbot"]
       interval: 30s

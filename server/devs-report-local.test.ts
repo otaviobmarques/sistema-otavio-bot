@@ -44,13 +44,34 @@ describe("saving a @devs report on this computer", () => {
   });
 });
 
+const recording = () => {
+  const calls: Array<{ url: string; headers: Record<string, string> }> = [];
+  const fetcher = (async (url: string, init?: RequestInit) => {
+    calls.push({ url, headers: (init?.headers ?? {}) as Record<string, string> });
+    return new Response(JSON.stringify(url.endsWith("/status") ? { reports: [], notify: false } : { id: "r-1" }), { status: url.endsWith("/status") ? 200 : 201 });
+  }) as unknown as typeof fetch;
+  return { calls, fetcher };
+};
+
 describe("where reports go", () => {
-  it("without OMB_BUG_REPORT_URL, saves the report and never calls fetch, to send or to ask", async () => {
+  it("without OMB_BUG_REPORT_URL, posts to the ArkoBot Central and asks there, unsigned even on a Cloud home", async () => {
+    for (const env of [{}, { OMB_BUG_REPORT_URL: "" }, { OMB_BUG_REPORT_URL: "   " }]) {
+      const { calls, fetcher } = recording();
+      const route = devsReportRoute(env, dataDir, HOME, fetcher, () => AT);
+      expect(await route.send(PAYLOAD)).toEqual({ ok: true, id: "r-1" });
+      await route.askStatus({ installId: PAYLOAD.installId, ids: ["r-1"] });
+      expect(calls.map((call) => call.url)).toEqual(["https://admin.arkobot.com.br/webhooks/bug-reports", "https://admin.arkobot.com.br/webhooks/bug-reports/status"]);
+      expect(calls.flatMap((call) => Object.keys(call.headers)).filter((name) => name.startsWith("x-omb-cloud"))).toEqual([]);
+    }
+    expect(readdirSync(dataDir)).toEqual([]);
+  });
+
+  it("with OMB_BUG_REPORT_URL=off, saves the report and never calls fetch, to send or to ask", async () => {
     const fetcher = neverFetch();
     vi.stubGlobal("fetch", fetcher);
-    const route = devsReportRoute({}, dataDir, HOME, fetcher, () => AT);
+    const route = devsReportRoute({ OMB_BUG_REPORT_URL: "off" }, dataDir, HOME, fetcher, () => AT);
     const outcome = await route.send(PAYLOAD);
-    expect(outcome).toMatchObject({ ok: true });
+    expect(outcome).toMatchObject({ ok: true, saved: true });
     const id = (outcome as { id: string }).id;
     expect(readdirSync(join(dataDir, BUG_REPORTS_DIR))).toEqual([`${id}.json`]);
     expect(await route.askStatus({ installId: PAYLOAD.installId, ids: [id] }))
@@ -58,8 +79,8 @@ describe("where reports go", () => {
     expect(fetcher).not.toHaveBeenCalled();
   });
 
-  it("treats an empty or unusable OMB_BUG_REPORT_URL as unset, never falling back to a remote host", async () => {
-    for (const url of ["", "   ", "http://192.0.2.1/api/bug-reports", "https://user:pw@evil.example/x", "not an address"]) {
+  it("treats an unusable OMB_BUG_REPORT_URL as off, never falling back to a remote host", async () => {
+    for (const url of ["local", "http://192.0.2.1/api/bug-reports", "https://user:pw@evil.example/x", "not an address"]) {
       const fetcher = neverFetch();
       const route = devsReportRoute({ OMB_BUG_REPORT_URL: url }, dataDir, null, fetcher, () => AT);
       expect(await route.send(PAYLOAD), url).toMatchObject({ ok: true });

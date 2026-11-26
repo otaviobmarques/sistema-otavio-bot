@@ -1,5 +1,5 @@
 import {
-  Boxes, Building2, CreditCard, Gauge, KeyRound, LayoutDashboard, LogOut, Package, ReceiptText, ScrollText, ServerCog, UserRound,
+  Boxes, Bug, Building2, CreditCard, Gauge, KeyRound, LayoutDashboard, LogOut, Package, ReceiptText, ScrollText, ServerCog, UserRound,
 } from "lucide-react";
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { NavLink, Navigate, Route, Routes } from "react-router";
@@ -15,6 +15,7 @@ import { OverviewPage } from "./pages/Overview.tsx";
 import { ComingSoon } from "./pages/ComingSoon.tsx";
 import { PlansPage } from "./pages/Plans.tsx";
 import { PricesPage } from "./pages/Prices.tsx";
+import { ReportsPage } from "./pages/Reports.tsx";
 import { UsagePage } from "./pages/Usage.tsx";
 import { cx, Loading, Mark, Wordmark } from "./ui.tsx";
 
@@ -40,6 +41,7 @@ const NAV: { to: string; label: string; icon: ReactNode; soon?: boolean }[] = [
   { to: "/consumo", label: "Consumo de IA", icon: <Gauge className="h-4 w-4" /> },
   { to: "/precos", label: "Tabela de preços", icon: <ReceiptText className="h-4 w-4" /> },
   { to: "/integracoes", label: "Integrações", icon: <KeyRound className="h-4 w-4" /> },
+  { to: "/relatorios", label: "Relatórios", icon: <Bug className="h-4 w-4" /> },
   { to: "/auditoria", label: "Auditoria", icon: <ScrollText className="h-4 w-4" /> },
 ];
 
@@ -129,6 +131,7 @@ export function App() {
           <Route path="/planos" element={<PlansPage />} />
           <Route path="/cobranca" element={<BillingPage />} />
           <Route path="/integracoes" element={<IntegrationsPage />} />
+          <Route path="/relatorios" element={<ReportsPage />} />
           <Route path="/auditoria" element={<AuditPage />} />
           <Route path="/conta" element={<AccountPage />} />
           <Route path="/instancias" element={<ComingSoon kind="instances" />} />

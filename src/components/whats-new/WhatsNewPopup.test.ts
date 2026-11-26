@@ -123,12 +123,12 @@ describe("the What's new popup", () => {
 
     vi.clearAllMocks(); await show();
     await click("See the new Cloud"); await flush();
-    expect(window.ogb!.openExternal).toHaveBeenCalledWith("https://cloud.openmausbot.com/cloud?src=app_whats_new_pro");
+    expect(window.ogb!.openExternal).toHaveBeenCalledWith("https://conta.arkobot.com.br/?src=app_whats_new_pro");
     expect(props.onDone).toHaveBeenCalledOnce(); expect(steps.at(-1)).toEqual(["see_cloud", "pro"]);
 
     vi.clearAllMocks(); await show(); await click("Next");
     await click("Start a Team"); await flush();
-    expect(window.ogb!.openExternal).toHaveBeenCalledWith("https://cloud.openmausbot.com/pro/buy?plan=team&src=app_whats_new_team");
+    expect(window.ogb!.openExternal).toHaveBeenCalledWith("https://conta.arkobot.com.br/?src=app_whats_new_team");
     expect(props.onDone).toHaveBeenCalledOnce(); expect(steps.at(-1)).toEqual(["start_team", "team"]);
     expect(props.onBuy).not.toHaveBeenCalled();
   });
@@ -141,10 +141,10 @@ describe("the What's new popup", () => {
     expect(steps.at(-1)).toEqual(["start_team", "team"]);
   });
 
-  it("an app on the staging Admin opens the staging Cloud website", async () => {
+  it("an app on the staging Admin opens the same ArkoBot customer area", async () => {
     await show({ ...BOTH, staging: true }); await click("Next");
     await click("Start a Team"); await flush();
-    expect(window.ogb!.openExternal).toHaveBeenCalledWith("https://omb-cloud-staging.fly.dev/pro/buy?plan=team&src=app_whats_new_team");
+    expect(window.ogb!.openExternal).toHaveBeenCalledWith("https://conta.arkobot.com.br/?src=app_whats_new_team");
   });
 
   it("a browser that won't open keeps it up and says so", async () => {

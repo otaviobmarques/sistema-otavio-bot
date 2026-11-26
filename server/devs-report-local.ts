@@ -1,6 +1,6 @@
-// Where @devs reports go. With OMB_BUG_REPORT_URL set they are posted there and their status asked there. Without it
-// each report is saved as <data dir>/bug-reports/<id>.json and no host is contacted: not the upstream MausBot Cloud,
-// not even to ask about status.
+// Where @devs reports go. By default they are posted to the ArkoBot Central and their status asked there. A valid
+// OMB_BUG_REPORT_URL sends them to that address instead. Any other OMB_BUG_REPORT_URL ("off", "local", a refused address)
+// saves each report as <data dir>/bug-reports/<id>.json and contacts no host, not even to ask about status.
 import { randomBytes } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
@@ -8,7 +8,7 @@ import { join } from "node:path";
 import { writeFileAtomic } from "./atomic.ts";
 import type { DevsReportPayload } from "./devs-report.ts";
 import {
-  devsReportSender, devsStatusAsker, explicitBugReportEndpoint,
+  ARKOBOT_BUG_REPORT_URL, devsReportSender, devsStatusAsker, explicitBugReportEndpoint,
   type ReportStatusAnswer, type ReportStatusHome, type ReportStatusQuestion, type SendOutcome,
 } from "./devs-report-send.ts";
 
@@ -32,7 +32,7 @@ export function saveDevsReportLocally(dataDir: string, payload: DevsReportPayloa
     console.warn(`devs reports: could not save a bug report in ${dir}: ${error instanceof Error ? error.message : String(error)}`);
     return { ok: false, retry: true, why: "server" };
   }
-  return { ok: true, id };
+  return { ok: true, id, saved: true };
 }
 
 /** Nobody but this computer holds a saved report, so nobody can say what became of it. */
@@ -43,5 +43,7 @@ export function devsReportRoute(env: NodeJS.ProcessEnv, dataDir: string, home: R
   fetcher: typeof fetch = fetch, now: () => number = Date.now): DevsReportRoute {
   const endpoint = explicitBugReportEndpoint(env);
   if (endpoint) return { send: devsReportSender(endpoint, fetcher), askStatus: devsStatusAsker(endpoint, home, fetcher) };
-  return { send: async (payload) => saveDevsReportLocally(dataDir, payload, now), askStatus: unknownReportStatus };
+  if (env.OMB_BUG_REPORT_URL?.trim()) return { send: async (payload) => saveDevsReportLocally(dataDir, payload, now), askStatus: unknownReportStatus };
+  // Security: a Cloud home's bootstrap secret belongs to its own Admin, so the ArkoBot Central never gets its signature.
+  return { send: devsReportSender(ARKOBOT_BUG_REPORT_URL, fetcher), askStatus: devsStatusAsker(ARKOBOT_BUG_REPORT_URL, null, fetcher) };
 }

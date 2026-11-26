@@ -100,11 +100,11 @@ function WhatsNewSlides({ view, report, onBuy, onDone }: WhatsNewProps) {
   const actions = (of: WhatsNewSlide): ReactNode => of === "pro"
     ? <>
       <button type="button" className={cn(PRIMARY, "ui-button-lg")} onClick={() => buy("pro")}>{t("cloudBuy.card.get", { plan: view.plans.pro?.name ?? "Pro" })}</button>
-      <LinkButton url={newCloudUrl(view.staging)} label={t("whatsNew.cloud.see")} className={cn(QUIET, "ui-button-lg gap-1.5")} onOpened={() => end("see_cloud")} />
+      <LinkButton url={newCloudUrl()} label={t("whatsNew.cloud.see")} className={cn(QUIET, "ui-button-lg gap-1.5")} onOpened={() => end("see_cloud")} />
     </>
     : view.audience === "own"
       ? <button type="button" className={cn(PRIMARY, "ui-button-lg")} onClick={() => buy("team")}>{t("whatsNew.team.start")}</button>
-      : <LinkButton url={startTeamUrl(view.staging)} label={t("whatsNew.team.start")} className={cn(PRIMARY, "ui-button-lg gap-1.5")} onOpened={() => end("start_team")} />;
+      : <LinkButton url={startTeamUrl()} label={t("whatsNew.team.start")} className={cn(PRIMARY, "ui-button-lg gap-1.5")} onOpened={() => end("start_team")} />;
 
   return <div className="ui-scrim fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6" onMouseDown={event => { if (event.target === event.currentTarget) end("close"); }}>
     <div role="dialog" aria-modal="true" aria-labelledby={titleId(slide)} data-whats-new={slide} tabIndex={-1}

@@ -12,7 +12,7 @@ interface Entry {
 
 const GROUPS: [string, string][] = [
   ["", "Todas as ações"], ["organization.", "Clientes"], ["credits.", "Créditos"], ["subscription.", "Assinaturas"], ["payment.", "Pagamentos"],
-  ["plan.", "Planos"], ["billing_account.", "Contas de cobrança"], ["ai_key.", "Chaves de IA"], ["vps_account.", "Hostinger"], ["admin.", "Administradores"],
+  ["plan.", "Planos"], ["billing_account.", "Contas de cobrança"], ["ai_key.", "Chaves de IA"], ["vps_account.", "Hostinger"], ["admin.", "Administradores"], ["bug_report.", "Relatórios"],
 ];
 
 const ACTOR_TONE: Record<string, "cyan" | "violet" | "slate" | "amber" | "green"> = { admin: "cyan", webhook: "violet", system: "slate", cli: "amber", customer: "green" };

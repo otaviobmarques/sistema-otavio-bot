@@ -1,12 +1,12 @@
-// @devs: a person's message that tags it files exactly one bug report (saved on this computer unless OMB_BUG_REPORT_URL
-// names an address to send it to). The bot answering it is
+// @devs: a person's message that tags it files exactly one bug report (sent to the ArkoBot team, to the address
+// OMB_BUG_REPORT_URL names, or saved on this computer: devs-report-local.ts). The bot answering it is
 // asked (a note on its turn, and report_bug) to add a summary; when none comes, because its engine has no tools, its
 // turn failed, it never called report_bug or no bot answered, the server sends the report with its own facts once
 // nothing runs in the conversation any more. The person's message and that summary are the only words that go, never
 // the conversation. A report that cannot go yet waits in devs-reports.json and is sent again on its own.
 //
 // Closing the loop: each report sent is followed (`tracked`, in the same file). The person's message shows its status
-// ("Bug report saved", then "Fixed in 0.1.x"), and this server asks the report address about its open reports at each
+// ("Bug report filed", then "Fixed in 0.1.x"), and this server asks the report address about its open reports at each
 // start and about hourly, at the address it sends them to (devs-report-send.ts `askReportStatus`): one way on the desktop
 // and on a Cloud, so nothing ever has to reach this server, or wake a sleeping Cloud. Once it runs the fix's release, and
 // the team's answer says it may (never a former customer's Cloud), the person gets one line in the chat they reported in,
@@ -361,7 +361,7 @@ export function createDevsReports(deps: DevsReportsDeps) {
     if (outcome.ok) {
       lastSent.set(entry.threadId, { reportId: outcome.id, at: now() });
       track(entry, outcome.id, payload, person, entry.words);
-      return { ok: true, line: sentLine(outcome.id, contact, language), marker: outcome.id };
+      return { ok: true, line: sentLine(outcome.id, contact, language, outcome.saved), marker: outcome.id };
     }
     if (!outcome.retry) return { ok: false, line: refusedLine(outcome.detail, language), marker: FAILED_MARKER };
     if (outbox.length >= MAX_OUTBOX) return { ok: false, line: fullLine(MAX_OUTBOX, language), marker: FAILED_MARKER };
@@ -405,7 +405,7 @@ export function createDevsReports(deps: DevsReportsDeps) {
       outbox = outbox.filter((one) => one !== queued);
       lastSent.set(queued.threadId, { reportId: outcome.id, at: now() });
       track(queued, outcome.id, queued.payload, queued.person, queued.payload.description.split("\n")[0] ?? "");
-      notice(queued.threadId, { ok: true, line: laterLine(outcome.id, contact, language), marker: outcome.id });
+      notice(queued.threadId, { ok: true, line: laterLine(outcome.id, contact, language, outcome.saved), marker: outcome.id });
     } else if (!outcome.retry) {
       outbox = outbox.filter((one) => one !== queued);
       notice(queued.threadId, { ok: false, line: refusedLine(outcome.detail, language), marker: "" });

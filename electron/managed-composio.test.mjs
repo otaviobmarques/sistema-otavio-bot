@@ -20,9 +20,9 @@ describe("managed Composio desktop registration", () => {
     expect(managedComposioAccess("", { composioBrokerToken: TOKEN })).toBeNull();
   });
 
-  it("uses the default service only in a shipped build (the packaged app, a Cloud home's image); an explicit URL wins", () => {
-    expect(DEFAULT_MANAGED_COMPOSIO_BROKER_URL).toMatch(/^https:\/\//);
-    expect(managedComposioBrokerUrl(undefined, true)).toBe(DEFAULT_MANAGED_COMPOSIO_BROKER_URL);
+  it("has no default service, so only an explicit URL turns the broker on", () => {
+    expect(DEFAULT_MANAGED_COMPOSIO_BROKER_URL, "no broker of the original project").toBe("");
+    expect(managedComposioBrokerUrl(undefined, true)).toBe("");
     expect(managedComposioBrokerUrl("  ", true)).toBe(DEFAULT_MANAGED_COMPOSIO_BROKER_URL);
     expect(managedComposioBrokerUrl(undefined, false)).toBe("");
     expect(managedComposioBrokerUrl(" http://127.0.0.1:8787/ ", false)).toBe("http://127.0.0.1:8787");

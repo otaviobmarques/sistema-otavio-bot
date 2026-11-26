@@ -103,20 +103,22 @@ describe("optional desktop Organisation settings", () => {
     expect(bridge.begin).not.toHaveBeenCalled();
   });
 
-  it("uses the default portal from one sign-in action and keeps custom setup advanced", async () => {
+  it("has no default portal: it signs in to the address the organization gave, once", async () => {
     await ready();
     let view = render();
-    expect(view.html).toContain("https://admin.openmausbot.com");
+    expect(view.html).not.toContain("openmausbot");
+    expect(view.html).toContain("https://admin.example.com");
     expect(view.html).toContain("Sign in with your organization");
-    expect(view.html).toContain("<summary");
-    expect(view.html).toContain("Advanced");
-    expect(view.html).not.toMatch(/<details[^>]*\bopen/);
     expect(view.html).toContain("personal and local models");
     expect(view.html).toContain("does not upload your chat history");
     expect(bridge.begin).not.toHaveBeenCalled();
-    const signIn = () => view.nodes.find(node => node.type === "button" && node.props.children === "Sign in with your organization")!.props.onClick!();
-    signIn(); signIn(); await flush();
-    expect(bridge.begin).toHaveBeenCalledExactlyOnceWith({ portalOrigin: "https://admin.openmausbot.com" });
+    view.nodes.find(node => node.type === "form")!.props.onSubmit!({ preventDefault: vi.fn() }); await flush();
+    expect(bridge.begin).not.toHaveBeenCalled();
+    view.nodes.find(node => node.type === "input")!.props.onChange!({ target: { value: " https://admin.example.test " } });
+    view = render();
+    const submit = () => view.nodes.find(node => node.type === "form")!.props.onSubmit!({ preventDefault: vi.fn() });
+    submit(); submit(); await flush();
+    expect(bridge.begin).toHaveBeenCalledExactlyOnceWith({ portalOrigin: "https://admin.example.test" });
     expect(fetch).not.toHaveBeenCalled();
     const progress = render().html;
     expect(progress).toContain("Finish signing in through your browser");
@@ -228,7 +230,8 @@ describe("optional desktop Organisation settings", () => {
     const cleanup = await ready();
     let resolveBegin!: (state: ManagedDesktopState) => void;
     vi.mocked(bridge.begin).mockImplementation(() => new Promise(resolve => { resolveBegin = resolve; }));
-    button("Sign in with your organization").props.onClick!();
+    render().nodes.find(node => node.type === "input")!.props.onChange!({ target: { value: "https://admin.example.test" } });
+    render().nodes.find(node => node.type === "form")!.props.onSubmit!({ preventDefault: vi.fn() });
     if (typeof cleanup === "function") cleanup();
     push(connected); resolveBegin(connecting); await flush();
     expect(unsubscribe).toHaveBeenCalledOnce();

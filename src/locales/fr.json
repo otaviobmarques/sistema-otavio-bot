@@ -257,8 +257,6 @@
   "server.noAi.ownerLine": "{name} a essayé d'utiliser un bot dans {team}, mais aucune IA n'est encore connectée. Connectez-en une pour que les bots puissent répondre.",
   "server.teammates.notPassed": "Non transmis à {name}",
   "star.title": "Vous aimez {app} ?",
-  "star.body": "Une étoile sur GitHub aide plus de gens à le découvrir.",
-  "star.button": "Mettre une étoile sur GitHub",
   "boatOffer.title": "50 $ de crédit Boat pour vous",
   "boatOffer.body": "Boat fait tourner les ordinateurs cloud de {app}. Souscrivez l'offre Boat à 100 $ ou plus, puis dites à Boat que vous venez de la part de {app} : Boat ajoutera 50 $ de crédits à votre compte Boat.",
   "boatOffer.yourself": "C'est à vous de le réclamer : ce n'est pas automatique.",

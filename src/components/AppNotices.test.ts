@@ -658,13 +658,13 @@ describe("What's new after the update", () => {
   it("See the new Cloud and Start a Team open the Cloud website with their slide's tag, and end it for good", async () => {
     await launch();
     press("See the new Cloud"); await flush();
-    expect(window.ogb?.openExternal).toHaveBeenCalledWith("https://cloud.openmausbot.com/cloud?src=app_whats_new_pro");
+    expect(window.ogb?.openExternal).toHaveBeenCalledWith("https://conta.arkobot.com.br/?src=app_whats_new_pro");
     expect(steps().at(-1)).toEqual(step("see_cloud", "pro"));
     await keptForGood();
     fresh(); vi.mocked(window.ogb!.openExternal!).mockClear();
     await relaunch(); press("Next");
     press("Start a Team"); await flush();
-    expect(window.ogb?.openExternal).toHaveBeenCalledWith("https://cloud.openmausbot.com/pro/buy?plan=team&src=app_whats_new_team");
+    expect(window.ogb?.openExternal).toHaveBeenCalledWith("https://conta.arkobot.com.br/?src=app_whats_new_team");
     expect(steps().at(-1)).toEqual(step("start_team", "team"));
     await keptForGood();
   });

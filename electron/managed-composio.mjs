@@ -1,7 +1,10 @@
 const TOKEN = /^[0-9a-f]{64}$/;
 
-/** OpenMausBot's connected-apps service (cloudflare/composio-broker): the packaged desktop app and a Cloud home use it. */
-export const DEFAULT_MANAGED_COMPOSIO_BROKER_URL = "https://openmausbot-composio.milindsoni201.workers.dev";
+/**
+ * Security: the shipped connected-apps broker (cloudflare/composio-broker), "" until ArkoBot deploys its own. The original
+ * project's broker is never used, so connected apps need OMB_COMPOSIO_BROKER_URL or the person's own Composio key.
+ */
+export const DEFAULT_MANAGED_COMPOSIO_BROKER_URL = "";
 
 /** An explicit URL wins; otherwise the default, only for a shipped build, so development and tests never register. */
 export function managedComposioBrokerUrl(configured, shipped) {

@@ -1,10 +1,12 @@
 import { serverLine } from "../server-lines.ts";
 import type { SendOutcome } from "../devs-report-send.ts";
 
-export const sentLine = (reportId: string, contact?: string, language?: string) => contact
-  ? serverLine(language, "server.reports.sentReply", { report: reportId, contact }) : serverLine(language, "server.reports.sent", { report: reportId });
-export const laterLine = (reportId: string, contact: string | undefined, language: string | undefined) => contact
-  ? serverLine(language, "server.reports.sentLaterReply", { report: reportId, contact }) : serverLine(language, "server.reports.sentLater", { report: reportId });
+export const sentLine = (reportId: string, contact?: string, language?: string, saved = false) => saved
+  ? contact ? serverLine(language, "server.reports.sentReply", { report: reportId, contact }) : serverLine(language, "server.reports.sent", { report: reportId })
+  : contact ? serverLine(language, "server.reports.sentTeamReply", { report: reportId, contact }) : serverLine(language, "server.reports.sentTeam", { report: reportId });
+export const laterLine = (reportId: string, contact: string | undefined, language: string | undefined, saved = false) => saved
+  ? contact ? serverLine(language, "server.reports.sentLaterReply", { report: reportId, contact }) : serverLine(language, "server.reports.sentLater", { report: reportId })
+  : contact ? serverLine(language, "server.reports.sentTeamLaterReply", { report: reportId, contact }) : serverLine(language, "server.reports.sentTeamLater", { report: reportId });
 export function notYetLine(outcome: Extract<SendOutcome, { retry: true }>, language: string | undefined): string {
   const minutes = outcome.retryAfterMs ? Math.max(1, Math.ceil(outcome.retryAfterMs / 60_000)) : 0;
   const why = serverLine(language, outcome.why === "limited" ? "server.reports.why.limited" : outcome.why === "offline" ? "server.reports.why.offline" : "server.reports.why.busy");

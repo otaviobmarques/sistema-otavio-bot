@@ -295,8 +295,6 @@
   "server.noAi.ownerLine": "{name} ha provato a usare un bot in {team}, ma non è ancora collegata nessuna IA. Collegane una perché i bot possano rispondere.",
   "server.teammates.notPassed": "Non passato a {name}",
   "star.title": "Ti piace {app}?",
-  "star.body": "Una stella su GitHub aiuta più persone a trovarlo.",
-  "star.button": "Stella su GitHub",
   "boatOffer.title": "50 $ di credito Boat per te",
   "boatOffer.body": "Boat gestisce i computer cloud dietro {app}. Acquista il piano Boat da 100 $ o superiore, poi di' a Boat che ti manda {app} e aggiungeranno 50 $ di crediti al tuo account Boat.",
   "boatOffer.yourself": "Il credito lo richiedi tu: non è automatico.",
