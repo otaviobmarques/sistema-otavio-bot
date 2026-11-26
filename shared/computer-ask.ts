@@ -8,7 +8,7 @@ import { PRODUCT_NAME } from "./product-name.ts";
 export const COMPUTER_ASK_TOOL = "turn_on_your_computer";
 /** The bots' tool that raises the card. */
 export const ASK_FOR_COMPUTER_TOOL = "ask_for_computer";
-export const DESKTOP_DOWNLOAD_URL = "https://www.openmausbot.com/download";
+export const DESKTOP_DOWNLOAD_URL = "https://github.com/otaviobmarques/otavio-bot-releases/releases/latest";
 
 export const COMPUTER_NEEDS = ["screen", "folders", "terminal"] as const;
 export type ComputerNeed = (typeof COMPUTER_NEEDS)[number];

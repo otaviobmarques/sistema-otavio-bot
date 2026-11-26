@@ -514,7 +514,7 @@ export async function runLogin(options: CliOptions, io: CliIo = defaultIo()): Pr
     return 1;
   }
   if (!account.controlPlane) {
-    io.error("OMB_CONTROL_PLANE_URL is set but is not an https address");
+    io.error("no account service is set up: ArkoBot has none of its own, so OMB_CONTROL_PLANE_URL must name an https one");
     return 1;
   }
   const existing = describeTunnelAccount(account.credentials.read());

@@ -41,13 +41,16 @@ const cleanLabel = (value, fallback) => {
   return label || fallback;
 };
 
-/** The third Cloudflare account's zone apex, "" until the owner names it. Set it, ship that release, and only then
- * add the control-plane entry with that release as its minAppVersion. */
+/** The zone apex of a control plane ArkoBot runs itself, "" until there is one. Set it, ship that release, and only
+ * then let the control plane hand out addresses there. */
 export const NEXT_MANAGED_COMPANION_HOST_SUFFIX = "";
 
-/** Every zone the control plane makes addresses in, lowercase apex names. Ship a new domain here first. */
+/**
+ * Security: every zone a pairing code and device token may be sent to over HTTPS, lowercase apex names. The original
+ * project's zones are not ArkoBot's and are never listed; without a zone only Tailscale addresses pair.
+ */
 export const MANAGED_COMPANION_HOST_SUFFIXES = Object.freeze(
-  ["openmausbot.com", "mausbot.si", NEXT_MANAGED_COMPANION_HOST_SUFFIX].filter(Boolean),
+  [NEXT_MANAGED_COMPANION_HOST_SUFFIX].filter(Boolean),
 );
 
 /** Only the control plane's `c-<32 hex>` names: any other name in those zones never receives a pairing code. */

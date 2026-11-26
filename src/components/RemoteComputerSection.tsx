@@ -192,7 +192,7 @@ export function RemoteComputerSection({ hideWhenUnavailable = false, legacyOnly 
                 <input
                   value={endpoint}
                   onChange={(event) => setEndpoint(event.target.value)}
-                  placeholder="https://…openmausbot.com or computer.tailnet.ts.net"
+                  placeholder="computer.tailnet.ts.net"
                   disabled={busy}
                   autoCapitalize="none"
                   autoCorrect="off"
