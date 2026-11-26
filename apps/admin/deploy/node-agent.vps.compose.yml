@@ -4,7 +4,8 @@
 #   ARKO_NODE_TOKEN=arko_node_…              (pnpm --filter admin create-node … ou Admin → Instâncias → Cadastrar servidor)
 #   ARKO_REGISTRY_USER / ARKO_REGISTRY_TOKEN (só se a imagem do ArkoBot no GHCR for privada: usuário e PAT com read:packages)
 # Opcionais: ARKO_INSTANCE_NETWORK (padrão arkobot-instances), ARKO_TRAEFIK_ENTRYPOINT (websecure),
-#   ARKO_TRAEFIK_CERTRESOLVER (letsencrypt), ARKO_TRUSTED_PROXIES (padrão: a sub-rede da rede das instâncias).
+#   ARKO_TRAEFIK_CERTRESOLVER (letsencrypt), ARKO_TRUSTED_PROXIES (padrão: a sub-rede da rede das instâncias),
+#   ARKO_TRAEFIK_CONTAINER (padrão traefik-traefik-1: o agente o mantém ligado à rede das instâncias; vazio desliga).
 #
 # O agente não abre porta nenhuma: ele chama o Admin (pull). Só ele tem o socket do Docker; as instâncias nunca.
 # Ele só mexe em contêineres com a etiqueta arkobot.managed=true deste nó e nunca apaga volumes.

@@ -73,7 +73,7 @@ function agentFor(f: BillingFixture, token: string, docker = new FakeDocker()) {
   const appFetch = ((input: RequestInfo | URL, init?: RequestInit) => app.request(String(input), init, { incoming: { socket: { remoteAddress: "198.51.100.9" } } })) as typeof fetch;
   const logs: string[] = [];
   const agent = createAgent({
-    adminUrl: TEST_URL, token, socketPath: "/nao/usado", network: "arkobot-instances", entrypoint: "websecure", certResolver: "letsencrypt",
+    adminUrl: TEST_URL, token, socketPath: "/nao/usado", network: "arkobot-instances", proxyContainer: null, entrypoint: "websecure", certResolver: "letsencrypt",
     trustedProxies: null, registryAuth: null,
   }, { docker, fetch: appFetch, log: (line) => logs.push(line) });
   return { agent, docker, logs };

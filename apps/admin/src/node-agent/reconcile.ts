@@ -122,3 +122,15 @@ export async function prepareNetwork(docker: DockerApi, name: string, nodeId: st
   }
   return network?.IPAM?.Config?.find((entry) => entry.Subnet)?.Subnet ?? null;
 }
+
+/**
+ * Keeps the node's reverse proxy (Traefik) attached to the instances' network, so it can reach them while they stay
+ * off the network the node's other projects use. Checked every loop: if Traefik is recreated, it is attached again.
+ * Returns what happened, for the log; a missing proxy container changes nothing.
+ */
+export async function attachProxy(docker: DockerApi, network: string, proxy: string): Promise<"attached" | "already" | "missing"> {
+  const details = await docker.inspectNetwork(network);
+  const names = Object.values(details?.Containers ?? {}).map((entry) => entry.Name);
+  if (names.includes(proxy)) return "already";
+  return (await docker.connectNetwork(network, proxy)) ? "attached" : "missing";
+}
