@@ -73,7 +73,7 @@ export function RequiredUpdateScreen() {
       aria-labelledby="required-update-title"
       aria-describedby="required-update-step"
       data-required-update={view.step}
-      className={cn("fixed inset-x-0 bottom-0 z-[100] flex items-center justify-center bg-app p-6", windowsCaption ? "top-7" : "top-0")}
+      className={cn("fixed bottom-0 left-[var(--rail-beside,0px)] right-0 z-[100] flex items-center justify-center bg-app p-6", windowsCaption ? "top-7" : "top-0")}
     >
       {dragProps.style && !windowsCaption && <div aria-hidden {...dragProps} className="absolute inset-x-0 top-0 h-7" />}
       <div className="w-full max-w-[380px] rounded-2xl border border-hairline/40 bg-panel p-6 shadow-2xl shadow-black/30">
