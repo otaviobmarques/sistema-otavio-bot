@@ -518,7 +518,7 @@ describe("the avatar editor", () => {
     expect(rendered.html.match(/aria-label="Use the \w+ color"/g)).toHaveLength(12);
     expect(has(rendered, "data-avatar-face", "idle")).toBe(false);
     click(find(parts.rendered, "data-figurinha-option", "head.tall"));
-    expect(patch).toHaveBeenLastCalledWith({ avatarCrop: "mascot", figurinha: { head: "tall" } });
+    expect(patch).toHaveBeenLastCalledWith({ avatarCrop: "mascot", personagem: "classico", figurinha: { head: "tall" } });
     click(find(rendered, "aria-label", "Use the blue color"));
     expect(patch).toHaveBeenLastCalledWith({ color: "blue" });
     expect(find(rendered, "aria-label", "Use the silver color").props.title).toBe("Silver");
@@ -545,7 +545,7 @@ describe("the avatar editor", () => {
     const parts = picker(editor(makeBot({ figurinha: { eyes: "glasses" } })));
     expect(find(parts.rendered, "data-figurinha-option", "eyes.glasses").props["aria-pressed"]).toBe(true);
     click(find(parts.rendered, "data-figurinha-option", "accessory.headset"));
-    expect(patch).toHaveBeenLastCalledWith({ avatarCrop: "mascot", figurinha: { eyes: "glasses", accessory: "headset" } });
+    expect(patch).toHaveBeenLastCalledWith({ avatarCrop: "mascot", personagem: "classico", figurinha: { eyes: "glasses", accessory: "headset" } });
   });
 
   it("opens More looks at once for a chosen face", () => {
@@ -560,12 +560,12 @@ describe("the avatar editor", () => {
     const parts = picker(editor(bot));
     expect(parts.props.selectable).toBe(false);
     click(find(parts.rendered, "data-figurinha-option", "head.round"));
-    expect(patch).toHaveBeenLastCalledWith({ avatarCrop: "mascot", figurinha: { head: "round" } });
+    expect(patch).toHaveBeenLastCalledWith({ avatarCrop: "mascot", personagem: "classico", figurinha: { head: "round" } });
   });
 
   it("resets the figurinha as the Advanced card does", () => {
     click(find(editor(makeBot()), "data-avatar-reset"));
-    expect(patch).toHaveBeenLastCalledWith({ avatarCrop: "mascot", color: "green", mascotExpression: null, mascotBody: "cursor", mascotFaceColor: null, figurinha: null });
+    expect(patch).toHaveBeenLastCalledWith({ avatarCrop: "mascot", color: "green", mascotExpression: null, mascotBody: "cursor", mascotFaceColor: null, figurinha: null, personagem: null });
   });
 
   it("generates with the shared generator, and uploads with shape and framing", () => {

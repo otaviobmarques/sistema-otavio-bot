@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import { StoreProvider, type Bot } from "@/state/store";
+import { derivedPersonagem } from "../../shared/personagens";
 import { derivedFigurinha, FIGURINHA_ACCESSORIES, FIGURINHA_EYES, FIGURINHA_HEADS } from "../../shared/figurinha";
 import { BotProfileAvatarCard } from "./BotProfileAvatarCard";
 
@@ -50,9 +51,15 @@ describe("BotProfileAvatarCard figurinha picker", () => {
     expect(markup).not.toContain(">Halloween<");
   });
 
-  it("marks the parts derived from the bot id when it picked none", () => {
-    const derived = derivedFigurinha("bot-1");
+  it("marks the character derived from the bot id, and no figurinha part, when it picked nothing", () => {
     const markup = renderCard(makeBot());
+    expect(markup).toMatch(new RegExp(`aria-pressed="true"[^>]*data-personagem-option="${derivedPersonagem("bot-1").id}"`));
+    expect(markup).not.toMatch(/aria-pressed="true"[^>]*data-figurinha-option=/);
+  });
+
+  it("marks the parts derived from the bot id in the classic style", () => {
+    const derived = derivedFigurinha("bot-1");
+    const markup = renderCard(makeBot({ personagem: "classico" }));
 
     expect(markup).toMatch(new RegExp(`aria-pressed="true"[^>]*data-figurinha-option="head\\.${derived.head}"`));
     expect(markup).toMatch(new RegExp(`aria-pressed="true"[^>]*data-figurinha-option="eyes\\.${derived.eyes}"`));

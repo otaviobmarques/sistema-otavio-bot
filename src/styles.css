@@ -3467,3 +3467,11 @@ button:disabled.bg-danger {
 @media (prefers-reduced-motion: reduce) {
   .figurinha-bob, .figurinha-pulse, .figurinha-pop, .figurinha-breathe { animation: none; }
 }
+
+.personagem-bob { transform-origin: 50% 100%; animation: personagem-bob 1.6s ease-in-out infinite; }
+.personagem-dim { filter: saturate(0.35) brightness(0.82); transition: filter 0.6s ease; }
+@keyframes personagem-bob { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-3%) scale(1.015); } }
+@media (prefers-reduced-motion: reduce) {
+  .personagem-bob { animation: none; }
+  .personagem-dim { transition: none; }
+}

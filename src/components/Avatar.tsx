@@ -7,6 +7,8 @@ import { resolveFigurinha, type FigurinhaChoice } from "../../shared/figurinha";
 import { useFestivalDress, wornBody } from "@/lib/festival-dress";
 import { t } from "@/lib/i18n";
 import { Figurinha } from "./Figurinha";
+import { PersonagemAvatar } from "./PersonagemAvatar";
+import { resolvePersonagem } from "../../shared/personagens";
 import { useInstances } from "@/state/instances-context";
 import type { ModelSelection } from "../../shared/wire";
 import { AI_BADGE_MIN_AVATAR, AiVendorBadge, botAiVendor } from "./AiVendorBadge";
@@ -77,6 +79,7 @@ export type BotAvatarProps = Omit<MausAvatarProps, "color" | "seed" | "figurinha
     mascotBody?: BotBodyId | null;
     mascotFaceColor?: MascotFaceColor | null;
     figurinha?: FigurinhaChoice | null;
+    personagem?: string | null;
     modelSelection?: Pick<ModelSelection, "instanceId" | "model"> | null;
   };
   /** false hides the mark of the bot's AI maker, where something else already sits on the avatar's corner. */
@@ -124,6 +127,10 @@ function BotFace({ bot, size = 44, label, ...mascotProps }: Omit<BotAvatarProps,
     imageFailed,
   });
 
+  const personagem = outcome === "flatImage" ? null : resolvePersonagem({ seed: bot.id ?? bot.name ?? "", choice: bot.personagem, figurinha: bot.figurinha });
+  if (personagem) {
+    return <PersonagemAvatar personagem={personagem} size={size} state={mascotProps.state} animated={mascotProps.animated} label={label ?? bot.name} />;
+  }
   if (outcome !== "flatImage") {
     return (
       <MausAvatar

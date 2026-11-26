@@ -11,6 +11,7 @@ import { AvatarImageGenerator } from "../AvatarImageGenerator";
 import { AvatarFraming, OrganizationAvatarIcons, RESET_MASCOT_PATCH, useAvatarImage, type AvatarPatch } from "../avatar-editing";
 import { Segmented } from "./rows";
 import { FigurinhaPicker } from "../FigurinhaPicker";
+import { ClassicoTitulo, PersonagemPicker } from "../PersonagemPicker";
 
 export type AvatarEditorTab = "bot" | "generate" | "upload";
 
@@ -110,6 +111,8 @@ export function AvatarEditorCard({ bot, activeState, onPatch, onClose }: {
         {tab === "bot" && (
           <>
             <div className="-mt-3">
+              <PersonagemPicker bot={bot} disabled={busy} selectable={!showsImage} size={44} onPatch={onPatch} />
+              <ClassicoTitulo />
               <FigurinhaPicker bot={bot} disabled={busy} selectable={!showsImage} size={36} onPatch={onPatch} />
             </div>
             <div className="flex flex-wrap justify-center gap-2 px-1 pb-1 pt-3.5">

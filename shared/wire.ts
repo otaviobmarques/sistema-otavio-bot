@@ -299,7 +299,7 @@ export interface WireBot extends DefaultBotFields, BotAccessFields {
   mascotExpression?: MausExpression | null;
   mascotBody?: BotBodyId | null;
   /** Kept for looks saved before figurinhas, which draw their features in their own ink. */ mascotFaceColor?: MascotFaceColor | null;
-  /** The figurinha parts a person picked; a part left out, or the whole field absent, is derived from the bot id. */ figurinha?: import("./figurinha.ts").FigurinhaChoice | null;
+  /** The figurinha parts a person picked; a part left out, or the whole field absent, is derived from the bot id. */ figurinha?: import("./figurinha.ts").FigurinhaChoice | null; /** The ArkoBot character a person picked, or "classico"; absent, null or unknown: the figurinha when `figurinha` holds picks, else the character the bot id derives. */ personagem?: string | null;
   /** App-owned attachment served as this bot's custom profile image;
    * always present on the wire, null when the bot has none. */
   avatarUrl: string | null;

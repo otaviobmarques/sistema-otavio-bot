@@ -9,8 +9,11 @@ import { FIGURINHA_HEAD_LABEL } from "@/lib/figurinha";
 import type { Bot } from "@/state/store";
 import { BOT_PROFILE_LIMITS } from "../../shared/bot-profile";
 import { FIGURINHA_HEADS } from "../../shared/figurinha";
+import { PERSONAGEM_CLASSICO, PERSONAGENS } from "../../shared/personagens";
 import { Figurinha } from "./Figurinha";
 import { botFigurinha } from "./FigurinhaPicker";
+import { PersonagemAvatar } from "./PersonagemAvatar";
+import { botPersonagem } from "./PersonagemPicker";
 import { AvatarImageGenerator } from "./AvatarImageGenerator";
 import type { AvatarPatch, useAvatarImage } from "./avatar-editing";
 
@@ -30,6 +33,8 @@ export function MausBotCustomize({ preview, name, nameRef, image, onName, onPatc
   const picture = Boolean(preview.avatarUrl) && preview.avatarCrop !== "mascot";
   const shape = (patch: AvatarPatch) => onPatch({ ...patch, avatarCrop: "mascot" });
   const look = botFigurinha(preview);
+  const personagem = picture ? null : botPersonagem(preview);
+  const classico = !picture && !personagem;
   return (
     <div className="space-y-3 rounded-2xl bg-ink/[0.03] p-3.5 text-left">
       <label className="block">
@@ -65,17 +70,33 @@ export function MausBotCustomize({ preview, name, nameRef, image, onName, onPatc
       </div>
       <div>
         <span className={LABEL}>{t("mausbotWelcome.look")}</span>
-        <div className="mt-1.5 grid grid-cols-5 gap-1">
+        <div className="mt-1.5 grid grid-cols-7 gap-1" role="group" aria-label={t("personagem.section")}>
+          {PERSONAGENS.map((option, index) => (
+            <button
+              key={option.id}
+              type="button"
+              aria-pressed={personagem?.id === option.id}
+              aria-label={t("personagem.option", { n: index + 1 })}
+              data-mausbot-welcome-personagem={option.id}
+              onClick={() => shape({ personagem: option.id })}
+              className={cn("flex items-center justify-center rounded-xl p-0.5", personagem?.id === option.id ? "bg-ink/[0.08] ring-[1.5px] ring-inset ring-ink/25" : "hover:bg-ink/[0.05]")}
+            >
+              <PersonagemAvatar personagem={option} size={34} animated={false} />
+            </button>
+          ))}
+        </div>
+        <div className="mt-2 text-[12px] text-ink-secondary">{t("personagem.classic")}</div>
+        <div className="mt-1 grid grid-cols-5 gap-1">
           {FIGURINHA_HEADS.map((head) => (
             <button
               key={head}
               type="button"
-              aria-pressed={!picture && look.head === head}
+              aria-pressed={classico && look.head === head}
               aria-label={t(FIGURINHA_HEAD_LABEL[head])}
               title={t(FIGURINHA_HEAD_LABEL[head])}
               data-mausbot-welcome-head={head}
-              onClick={() => shape({ figurinha: { ...preview.figurinha, head } })}
-              className={cn("flex h-11 items-center justify-center rounded-xl", !picture && look.head === head ? "bg-ink/[0.08] ring-[1.5px] ring-inset ring-ink/25" : "hover:bg-ink/[0.05]")}
+              onClick={() => shape({ personagem: PERSONAGEM_CLASSICO, figurinha: { ...preview.figurinha, head } })}
+              className={cn("flex h-11 items-center justify-center rounded-xl", classico && look.head === head ? "bg-ink/[0.08] ring-[1.5px] ring-inset ring-ink/25" : "hover:bg-ink/[0.05]")}
             >
               <Figurinha look={{ ...look, head }} color={preview.color} size={30} animated={false} />
             </button>

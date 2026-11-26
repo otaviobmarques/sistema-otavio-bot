@@ -79,6 +79,6 @@ describe("the AI maker's badge on a bot's avatar", () => {
     expect(show(createElement(BotAvatar, { bot: bot("claude", "opus"), size: 22 }))).toBeNull();
     expect(show(createElement(BotAvatar, { bot: bot("claude", "opus"), size: 44, aiBadge: false }))).toBeNull();
     expect(show(createElement(BotAvatar, { bot: bot("claude", "opus"), size: 44 }), [])).toBeNull();
-    expect(host.querySelector("svg[data-figurinha]")).not.toBeNull();
+    expect(host.querySelector("[data-personagem]")).not.toBeNull();
   });
 });
