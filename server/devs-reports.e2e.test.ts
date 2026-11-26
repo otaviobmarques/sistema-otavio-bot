@@ -126,7 +126,7 @@ it("sends one report with the bot's report_bug summary and the facts, redacted, 
 
   const dump = JSON.parse(readFileSync(fixture.fixtureDumpPath, "utf8")) as { prompt: unknown };
   expect(JSON.stringify(dump.prompt)).toContain("this message tags @devs, so it is a bug report about this app");
-  const line = "Bug report report-1 saved on this computer, in the bug-reports folder of the app's data. You can send the file to whoever looks after your ArkoBot; it includes ada@example.com so they can reply.";
+  const line = "Sent to the ArkoBot team (report report-1); they will reply to ada@example.com. If it is urgent, write to contato@arkobot.com.br or WhatsApp +55 19 98782-2290 and mention the report number.";
   await until(async () => (await rows()).some((row) => row.kind === "activity" && row.tool?.name === `notice: ${line}`), 20_000);
   const tool = (await rows()).find((row) => row.kind === "activity" && row.tool?.name === "report_bug");
   expect(tool?.tool?.output).toContain(line);
@@ -140,8 +140,8 @@ it("still sends the report, with the server's facts, when the bot never calls re
   expect(report.description.split("\n")[0]).toBe("the send button froze again");
   expect(report.description).toContain("No summary from a bot: the bot did not call report_bug.");
   expect(report.diagnostics).toContain("tool Bash failed: convert: command not found");
-  expect(report.diagnostics).toContain("notice: Bug report report-1 saved on this computer");
-  const line = "Bug report report-2 saved on this computer, in the bug-reports folder of the app's data. You can send the file to whoever looks after your ArkoBot; it includes ada@example.com so they can reply.";
+  expect(report.diagnostics).toContain("notice: Sent to the ArkoBot team (report report-1)");
+  const line = "Sent to the ArkoBot team (report report-2); they will reply to ada@example.com. If it is urgent, write to contato@arkobot.com.br or WhatsApp +55 19 98782-2290 and mention the report number.";
   await until(async () => (await rows()).some((row) => row.kind === "activity" && row.tool?.name === `notice: ${line}`), 20_000);
 
   plan([], "Noted.");
