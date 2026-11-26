@@ -252,7 +252,7 @@ describe("primeiro acesso: cadastro da empresa e aceite dos termos", () => {
     const { api } = await onboarded(ctx, "k@cliente.com.br");
     const plans = await customerClient(ctx).get("/api/conta/planos");
     expect(plans.data.paymentsAvailable).toBe(false);
-    expect(plans.data.plans.map((plan: { code: string }) => plan.code)).toEqual(["essencial", "profissional", "empresa"]);
+    expect(plans.data.plans.map((plan: { code: string }) => plan.code)).toEqual(["inicial", "essencial", "profissional", "empresa"]);
     const attempt = await api.post("/api/conta/assinatura", { plan: "essencial", billingType: "PIX" });
     expect(attempt.status).toBe(409);
     expect(attempt.data.error).toMatch(/WhatsApp/);
@@ -346,7 +346,7 @@ describe("assinatura, créditos, cancelamento e LGPD pela área do cliente", () 
     expect((await api.post("/api/conta/assinatura/cancelar", { reason: "" })).status).toBe(400);
     advance(f.ctx, 2 * DAY);
     const canceled = await api.post("/api/conta/assinatura/cancelar", { reason: "Não preciso mais" });
-    expect(canceled.data).toEqual({ ok: true, withinWithdrawalPeriod: true });
+    expect(canceled.data).toEqual({ ok: true, withinWithdrawalPeriod: true, duringTrial: false });
     const sub = await f.ctx.db.query<{ status: string; cancel_reason: string; provider_subscription_id: string }>(
       "SELECT status, cancel_reason, provider_subscription_id FROM subscriptions WHERE organization_id = $1", [orgId]);
     expect(sub.rows[0]).toMatchObject({ status: "canceled", cancel_reason: "Cancelado pelo cliente: Não preciso mais" });

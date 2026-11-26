@@ -19,7 +19,8 @@
     "create-admin": "node src/cli/create-admin.ts",
     "jobs": "node src/cli/run-jobs.ts",
     "seed:demo": "node src/cli/seed-demo.ts",
-    "screenshots": "node scripts/screenshots.mjs"
+    "screenshots": "node scripts/screenshots.mjs",
+    "ia:testar": "node scripts/testar-ia-gratuita.mjs"
   },
   "dependencies": {
     "@hono/node-server": "2.1.11",

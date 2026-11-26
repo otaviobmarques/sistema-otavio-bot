@@ -28,7 +28,7 @@ export function DeskFace({ bot, status, size = 40 }: { bot: Bot; status: DeskSta
     <span data-desk-status={status} className={cn("relative grid shrink-0 place-items-center rounded-xl bg-raised ring-2", STATUS_RING[status])}
       style={{ width: size + 10, height: size + 10 }}>
       <BotAvatar bot={bot} size={size} state="happy" motion="none" motionKey={0} animated={false} />
-      <span aria-hidden="true" className={cn("absolute -bottom-1 -right-1 size-3.5 rounded-full border-2 border-card", STATUS_DOT[status], status === "working" && "motion-safe:animate-pulse")} />
+      <span aria-hidden="true" className={cn("absolute -right-1 -top-1 size-3.5 rounded-full border-2 border-card", STATUS_DOT[status], status === "working" && "motion-safe:animate-pulse")} />
     </span>
   );
 }

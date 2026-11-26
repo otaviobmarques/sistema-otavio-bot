@@ -14,6 +14,7 @@ export interface CustomerState {
   subscriptionStatus: string | null;
   needsOnboarding: boolean;
   pendingDocuments: string[];
+  trialAvailable: boolean;
 }
 
 export function Logo({ className = "text-2xl", dark = false }: { className?: string; dark?: boolean }) {

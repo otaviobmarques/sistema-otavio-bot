@@ -22,7 +22,7 @@ Por que não Next.js: daria certo, mas o painel não ganha nada com SSR, e com H
 
 ```
 apps/admin
-├── migrations/            0001_init.sql (todas as tabelas), 0002_planos_iniciais.sql, … 0007_relatorios.sql
+├── migrations/            0001_init.sql (todas as tabelas), 0002_planos_iniciais.sql, … 0008_plano_inicial.sql
 ├── src/
 │   ├── auth/              login por e-mail + código, sessões, TOTP, limites de taxa
 │   ├── billing/           BillingProvider, Asaas (asaas.ts), webhooks, régua, máquina de estados
@@ -148,17 +148,46 @@ Cada evento é gravado bruto em `billing_events` (único por conta + id do event
 - `audit_log` e `credit_ledger` têm gatilhos que recusam `UPDATE`, `DELETE` e `TRUNCATE`.
 - `terms_acceptances` guarda versão, data, IP e navegador de cada aceite (gravado pela Área do cliente; o painel mostra no detalhe do cliente).
 
-## Planos iniciais
+## Planos
 
-Criados pela migração `0002` e editáveis em **Planos**:
+A escada de planos: cada degrau acrescenta **um** diferencial (é a descrição do plano, que vira o título do cartão na Área do cliente). Criados pelas migrações `0002` e `0008` e editáveis em **Planos**:
 
-| Plano | Preço | Créditos/mês | Bots | Empresas | VPS incluídos |
-| --- | --- | --- | --- | --- | --- |
-| Essencial | R$ 159,00 | 4.000 | 3 | 1 | 0 |
-| Profissional | R$ 599,00 | 20.000 | 10 | 3 | 1 |
-| Empresa | R$ 999,00 | 40.000 | sem limite | sem limite | 2 |
+| Plano | Preço | Diferencial | Créditos/mês | Bots | Empresas | VPS incluídos | Teste grátis | IA gratuita/dia |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Inicial (`inicial`) | R$ 39,00 | Assistente pessoal 24 h com IA gratuita | 0 | 1 | 1 | 0 | 7 dias | 200 requisições |
+| Essencial | R$ 159,00 | Bots que trabalham sozinhos (rotinas + aprovações pelo WhatsApp) | 4.000 | 3 | 1 | 0 | — | — |
+| Profissional | R$ 599,00 | Computador próprio na nuvem | 20.000 | 10 | 3 | 1 | — | — |
+| Empresa | R$ 999,00 | Gestão de várias empresas | 40.000 | sem limite | sem limite | 2 | — | — |
 
-Adicional: **computador individual (VPS)** a R$ 159,00/mês **por bot**, só nos planos pagos; muda o valor recorrente da assinatura no Asaas. Não há plano gratuito na oferta inicial, mas o modelo o suporta (`free`, modo `shared_limited`, sem navegador/computador, `idle_sleep_minutes`, `inactive_delete_days`). Todo plano tem `allow_byo_ai` (padrão ligado): o cliente pode usar a própria conta ou chave de IA, e esse uso não passa pelo gateway nem gasta créditos.
+O Inicial roda no servidor compartilhado (`cloud_mode = 'shared_limited'`), dorme após 30 min sem uso, 1 GB de RAM, 5 GB de disco, com navegador e sem computador; o Essencial também fica sem computador próprio (`computer_enabled = false`, pela `0008`). O Inicial não tem créditos: a IA dele é a **IA gratuita** do gateway (abaixo), só com os modelos marcados *grátis*; com `credits_per_month = 0` o gateway também não deixa o saldo ficar negativo (sem tolerância), então ele nunca usa IA paga "fiado".
+
+Adicional: **computador individual (VPS)** a R$ 159,00/mês **por bot**, em todos os planos pagos (o Inicial incluído); muda o valor recorrente da assinatura no Asaas. Não há plano gratuito (`free`); o modelo continua suportando um. Todo plano tem `allow_byo_ai` (padrão ligado): o cliente pode usar a própria conta ou chave de IA, e esse uso não passa pelo gateway nem gasta créditos. Na Área do cliente, o painel sugere o próximo degrau (`PLAN_UPGRADES` em `src/customer/catalog.ts`); a troca de plano em si ainda é pelo WhatsApp.
+
+## Teste grátis
+
+`plans.trial_days` (0 a 90; o Inicial vem com 7) vale para qualquer plano pago. Na assinatura pela Área do cliente (`startSubscription`), se a organização **nunca teve teste nem pagou uma assinatura**:
+
+- a assinatura nasce no Asaas com o **primeiro vencimento no fim do teste** (hoje + dias, data de Brasília);
+- aqui ela fica `active` na hora, com `current_period_end` e `trial_ends_at` = fim do teste, e recebe os créditos do plano proporcionais aos dias (`ceil(cota × dias ÷ 30)`, referência `trial:<id>`; 0 no Inicial). O primeiro pagamento credita a cota cheia e expira o que sobrou do teste;
+- **um teste por organização e por CPF/CNPJ**: `subscription_trials` (chave primária = documento, `organization_id` único) guarda cada teste para sempre, mesmo que a assinatura seja cancelada ou o documento da organização seja corrigido. Quem já pagou uma assinatura também não ganha teste.
+
+Se a primeira cobrança não for paga, vale a régua normal: o `PAYMENT_OVERDUE` do Asaas leva a `past_due`, depois `suspended` e `canceled`. Se o aviso do Asaas não chegar, o cron marca o teste vencido e não pago como atrasado `TRIAL_GRACE_DAYS` (2) dias depois do fim. **Cancelar durante o teste** cancela no Asaas antes de qualquer cobrança, marca a fatura pendente como cancelada e não gera reembolso (a auditoria grava `duringTrial`).
+
+A Área do cliente mostra "N dias grátis" no plano (só para quem ainda pode testar), o botão "Começar N dias grátis" e, no painel, "Teste grátis até dd/mm — a primeira cobrança vem em dd/mm". A ficha do cliente no painel mostra *Teste grátis até*.
+
+## IA gratuita (plano Inicial)
+
+O cliente do Inicial não precisa configurar nenhuma IA: o gateway atende com os **planos gratuitos** de provedores compatíveis com a API da OpenAI, nas contas da Domma.
+
+- **Provedores**: Groq (`https://api.groq.com/openai/v1`), Google AI Studio/Gemini (`https://generativelanguage.googleapis.com/v1beta/openai`), NVIDIA (`https://integrate.api.nvidia.com/v1`), OpenRouter (só modelos `:free`) e Cerebras (`https://api.cerebras.ai/v1`, ainda sem chave: é pulado).
+- **Chaves**: em **Integrações** (várias por provedor, por prioridade; a tela já preenche a URL base) e/ou nas variáveis do host do gateway `GROQ_API_KEY`, `GEMINI_API_KEY`, `NVIDIA_API_KEY`, `OPENROUTER_API_KEY` (`CEREBRAS_API_KEY` opcional). As do ambiente vêm depois das de Integrações e só servem os modelos grátis. Nenhuma chave vai para log ou para o banco em claro.
+- **Modelos**: linhas de **Preços** com `free = true` (preço zero, `CHECK` no banco) e `upstream_model` (o id no provedor). A `0008` semeia os que responderam em 2026-11-26: `openai/gpt-oss-120b` (Groq), `gemini-3.8-flash`, `moonshotai/kimi-k3.1-pro` (NVIDIA), `nvidia/nemotron-3.5-super-vl:free` e `google/gemma-4-31b-it:free` (OpenRouter), `gpt-oss-120b` (Cerebras). `ARKOBOT_FREE_MODEL_<GROQ|GEMINI|NVIDIA|OPENROUTER|CEREBRAS>` troca o modelo de um provedor sem mexer na tabela. No OpenRouter, qualquer id sem `:free` é **bloqueado no código** (e por um `CHECK` no banco), porque seria cobrado da conta.
+- **Ordem e queda**: o modelo pedido primeiro; se o provedor responder 429/5xx/401, não responder em `ARKOBOT_FREE_TIMEOUT_MS` (30 s) ou estiver sem vez no ritmo por minuto, passa para a próxima chave e depois para o próximo provedor, na ordem `ARKOBOT_FREE_AI_ORDER` (padrão `groq,gemini,nvidia,openrouter`). Ritmo por provedor neste processo: `ARKOBOT_FREE_RPM_<PROVEDOR>` (padrões 30, 10, 40, 20, 30). Se nenhum atender: `503 free_ai_unavailable` ("A IA gratuita está sobrecarregada agora…").
+- **Limite por cliente**: `plans.free_requests_per_day` (Inicial: 200; 0 = sem IA gratuita, o padrão dos outros planos), por dia de Brasília: `429 free_daily_limit_reached` ("Limite diário da IA gratuita atingido — volta amanhã, ou faça upgrade / conecte sua própria IA"). Modelos grátis custam **0 crédito e não reservam** nada; ficam em `usage_events` com `provider`, `upstream_model` e `duration_ms` (e uma linha de log com provedor, modelo e latência). A ficha do cliente mostra *IA gratuita hoje*.
+- **Na instância**: o catálogo (`/v1/models`) apresenta esses modelos como `provider: "openrouter"` (com `upstream_provider`), porque a instância só conhece os motores Anthropic, OpenAI e OpenRouter; o gateway aceita qualquer modelo compatível com OpenAI no caminho `/v1/openrouter/…`. Por isso os ids na tabela têm barra (`gratis/…`).
+- **Conferir as chaves**: `pnpm --filter admin ia:testar` lê as quatro variáveis (do ambiente ou de `apps/admin/.env`), manda "Olá" a cada provedor com o modelo configurado e mostra OK/erro, status HTTP, latência e o começo da resposta, nunca a chave. Pula quem está sem chave.
+
+**Atenção aos termos dos provedores.** Os planos gratuitos (Google AI Studio, catálogo de API da NVIDIA, modelos gratuitos do OpenRouter, Groq, Cerebras) têm limites de uso **compartilhados por toda a conta da Domma** e podem restringir uso comercial ou em produção, ou usar os dados enviados para treinar modelos. Confira os termos de cada um antes de vender o Inicial em escala. Se os gratuitos não bastarem, dá para trocar o Inicial para um modelo pago barato (ex.: `claude-haiku-5-5`) editando o plano: ponha o modelo em *Modelos permitidos* e dê créditos ao plano (`credits_per_month`), senão o gateway recusa com `402`.
 
 ## Testes
 
@@ -173,6 +202,8 @@ O gateway tem `test/gateway.test.ts` e `test/gateway-admin.test.ts`, com um prov
 Cobrem: cifra (ida e volta, adulteração, contexto, rotação de chave), TOTP (vetores do RFC 6238), login por código e seus limites, 2º fator, sessões revogadas/expiradas, permissões (anônimo, viewer, origem, cron), cliente Asaas contra um servidor falso (`test/fake-asaas.ts`), idempotência de webhook e de créditos (inclusive corrida), transições da assinatura, estorno, chargeback, régua de inadimplência, adicionais e a fila de tarefas com `SKIP LOCKED`.
 
 A Área do cliente tem `test/customer.test.ts`: login por código e limites, separação de hosts (cookie do cliente não abre o painel e vice-versa, origem das escritas), validação do cadastro e gravação dos aceites, cadastro → assinatura no Asaas falso → fatura → webhook, compra de créditos, computadores adicionais, cancelamento, exportação, pedido de exclusão e isolamento entre organizações.
+
+O plano Inicial tem `test/trial.test.ts` (teste grátis: vencimento no Asaas, assinatura ativa, texto do painel, créditos proporcionais, um teste por organização e por CPF/CNPJ, régua depois do teste, cancelamento durante o teste) e `test/free-ai.test.ts` (IA gratuita: catálogo, 0 crédito sem reserva, limite diário, troca de chave e de provedor, chaves/ordem/modelo/ritmo/tempo pelo ambiente, bloqueio de OpenRouter sem `:free`, Inicial fora dos modelos pagos e sem tolerância negativa, planos pagos como antes). `test/plans.test.ts` confere que a `0008` roda de novo sem mudar nada.
 
 A cortesia tem `test/courtesy.test.ts`: liberação com créditos na hora, recusa com assinatura paga, troca da assinatura pendente (cancelada no Asaas pela fila), renovação mensal idempotente, fim pela data (dia de Brasília) e pelo operador, régua que não a toca, permissões e o que a Área do cliente mostra.
 
@@ -192,7 +223,7 @@ O cliente se cadastra, assina e acompanha a conta sozinho. Roda no **mesmo deplo
 Os dois cookies são `HttpOnly`, `Secure` e sem `Domain` (valem só no próprio host), e o banco guarda só o hash do token. Em qualquer outro host a API do cliente responde 404; no host do cliente, a do painel também. `Lax` no cliente é para ele continuar logado ao voltar da página de pagamento do Asaas.
 
 **Fluxo**
-1. **Entrar / criar conta** (`/entrar`, `/cadastro?plano=essencial|profissional|empresa`): só e-mail; código de 8 dígitos com as mesmas regras e limites do login do painel (3 códigos por e-mail a cada 15 min, 5 pedidos/min e 10 verificações/min por IP, 5 tentativas, 10 min). A conta (`accounts`) só é criada quando o código confere. Sessão de 7 dias, renovada com o uso.
+1. **Entrar / criar conta** (`/entrar`, `/cadastro?plano=inicial|essencial|profissional|empresa`): só e-mail; código de 8 dígitos com as mesmas regras e limites do login do painel (3 códigos por e-mail a cada 15 min, 5 pedidos/min e 10 verificações/min por IP, 5 tentativas, 10 min). A conta (`accounts`) só é criada quando o código confere. Sessão de 7 dias, renovada com o uso.
 2. **Boas-vindas**: nome, celular, empresa (CPF ou CNPJ com dígitos verificadores) e o aceite obrigatório dos [Termos de Uso](https://arkobot.com.br/termos/) e da [Política de Privacidade](https://arkobot.com.br/privacidade/). Cada documento vira uma linha em `terms_acceptances` com versão, IP (`ADMIN_CLIENT_IP_HEADER`/`x-real-ip`) e navegador. Cria a organização com a conta como `owner`. As versões ficam em `src/customer/catalog.ts` (`LEGAL_DOCUMENTS`, hoje `2026-11-25`); um teste confere com a data "em vigor a partir de" dos textos em `apps/site/conteudo/legal/`. **Ao mudar um texto, mude a data lá**: quem aceitou a versão anterior precisa aceitar de novo no próximo acesso.
 3. **Plano**: plano (pré-escolhido pelo site), computadores adicionais (R$ 159/mês cada) e Pix, boleto ou cartão. Cria a assinatura no Asaas pela conta *ativa para novos* (`startSubscription` + `setSubscriptionAddon`) e mostra o link da primeira fatura. O cartão é digitado na página do Asaas; nunca passa por aqui. Sem conta Asaas ativa, a tela diz que os pagamentos ainda não estão disponíveis e leva ao WhatsApp.
 4. **Painel**: situação da assinatura (pendente, em dia, em atraso, suspensa, cancelada) com o próximo passo, pagamentos com o link da fatura/boleto/Pix, saldo de créditos (plano e avulsos) e extrato, compra de pacotes de créditos (`CREDIT_PACKAGES`: 5.000, 10.000 e 25.000 créditos = R$ 50, R$ 100 e R$ 250), quantidade de computadores adicionais, cancelamento (com motivo; marca na auditoria se foi dentro dos 7 dias de arrependimento, para o reembolso manual), exportação dos dados (JSON) e pedido de exclusão.
@@ -247,7 +278,8 @@ instância ArkoBot ──(token arko_ai_…)──▶ gateway (VPS) ──(chave
 | --- | --- |
 | `POST /v1/anthropic/v1/messages` | Messages API (com ou sem `stream`). `…/v1/messages/count_tokens` é repassado sem cobrar. |
 | `POST /v1/openai/v1/chat/completions` e `/v1/openai/v1/responses` | Chat Completions e Responses (com streaming). |
-| `POST /v1/openrouter/v1/chat/completions` | OpenRouter (compatível com OpenAI). |
+| `POST /v1/openrouter/v1/chat/completions` | OpenRouter e, para a instância, qualquer modelo compatível com OpenAI da tabela (Gemini, NVIDIA, Groq, Cerebras). |
+| `POST /v1/{google,nvidia,groq,cerebras}/v1/chat/completions` | Direto num provedor compatível com OpenAI. |
 | `GET /v1/models` (e `/v1/{provedor}/v1/models`) | O catálogo do plano: modelos da tabela de preços permitidos pelo `allowed_models` do plano, mais `organization` e `usable`. |
 | `GET /health` | Saúde (consulta o banco). |
 
@@ -276,6 +308,8 @@ Recusas (corpo JSON `{ code, message, type, error }`, mensagem em pt-BR):
 | 403 | `model_not_in_plan` / `model_unavailable` | Modelo fora do plano / desativado ou de outro provedor. |
 | 409 | `duplicate_request` | `X-Arko-Request-Id` repetido. |
 | 429 | `rate_limited` | Limite por minuto. |
+| 429 | `free_daily_limit_reached` | Limite diário da IA gratuita do plano. |
+| 503 | `free_ai_unavailable` | Nenhum provedor gratuito atendeu (todos no limite ou fora do ar). |
 
 ### Painel
 
@@ -300,7 +334,7 @@ GATEWAY_DOMAIN=ia.arkobot.com.br docker compose -f gateway.compose.yml up -d --b
 
 A imagem (`Dockerfile.gateway`) leva só o gateway empacotado num arquivo (`pnpm --filter admin build:gateway` → `dist/gateway/gateway.mjs`) e o Node 24. Use a conexão direta ou o *Session pooler* do Supabase (processo longo). Sem Docker: `node dist/gateway/gateway.mjs` atrás de qualquer proxy HTTPS que não faça buffer de `text/event-stream`. Ao receber SIGTERM o gateway espera os streams em andamento liquidarem antes de sair.
 
-Depois: cadastre as chaves da Domma em **Integrações** (Anthropic, OpenAI, OpenRouter), confira a **Tabela de preços** e os `allowed_models` dos **Planos**, e emita um token na ficha do cliente.
+Depois: cadastre as chaves da Domma em **Integrações** (Anthropic, OpenAI, OpenRouter e, para a IA gratuita, Groq, Google AI Studio, NVIDIA; ou as variáveis `*_API_KEY` do `gateway.env`), confira a **Tabela de preços** e os `allowed_models` dos **Planos**, e emita um token na ficha do cliente.
 
 ### Lado da instância
 

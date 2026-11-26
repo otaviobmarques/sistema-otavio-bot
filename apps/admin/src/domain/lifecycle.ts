@@ -25,6 +25,8 @@ export interface SubscriptionRow {
   /** YYYY-MM-DD, the last day of the courtesy (Brasília); null = no end. */
   courtesy_until: string | null;
   courtesy_granted_by: string | null;
+  /** End of the free trial, when the subscription started with one; also its first due date. */
+  trial_ends_at: Date | null;
 }
 
 export interface OrganizationRow {

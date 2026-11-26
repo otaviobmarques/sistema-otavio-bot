@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { initialState, type AppState, type Bot, type Group } from "@/state/store";
 import type { SidebarDensity } from "@/lib/sidebar-preferences";
+import { InstancesContext } from "@/state/instances-context";
 
 const fixture = vi.hoisted(() => ({ advanced: false, showThreads: true, admin: true as boolean | null, state: {} as Partial<AppState>, dispatch: vi.fn() }));
 vi.mock("@/lib/interface-mode", async (original) => ({
@@ -167,15 +168,17 @@ describe("bot-first sidebar", () => {
     expect(markup).toMatch(/data-bot-actions="atlas"[^>]*class="[^"]*\bright-2 top-1 translate-y-0\b/);
   });
 
-  it("fades the collapsed rail's engine badge in both modes", () => {
+  it("puts the AI maker's mark on the collapsed rail's avatar in both modes, and no faded engine mark", () => {
     fixture.showThreads = false;
-    fixture.state = { ...fixture.state, instances: [{ instanceId: "fake", driverKind: "claudeAgent", displayName: "Claude" }] as unknown as AppState["instances"] };
+    const instances = [{ instanceId: "fake", driverKind: "claudeAgent", displayName: "Claude" }] as unknown as AppState["instances"];
+    fixture.state = { ...fixture.state, instances };
     const candidate = { ...bot, tasks: [], projects: [] };
-    const rail = renderToStaticMarkup(createElement(BotListItem, rowProps("icons", candidate)));
-    expect(rail).toMatch(/<span data-testid="model-badge"[^>]*><span data-provider-mark="brand" class="[^"]*\bopacity-60\b/);
+    const render = () => renderToStaticMarkup(createElement(InstancesContext, { value: instances }, createElement(BotListItem, rowProps("icons", candidate))));
+    const rail = render();
+    expect(rail).toMatch(/<span data-testid="ai-badge" data-ai-vendor="anthropic"[^>]*aria-label="AI: Claude \(Anthropic\)"/);
+    expect(rail).not.toContain("data-provider-mark");
     fixture.advanced = true;
-    const advanced = renderToStaticMarkup(createElement(BotListItem, rowProps("icons", candidate)));
-    expect(advanced).toMatch(/<span data-testid="model-badge"[^>]*><span data-provider-mark="brand" class="[^"]*\bopacity-60\b/);
+    expect(render()).toMatch(/<span data-testid="ai-badge" data-ai-vendor="anthropic"/);
   });
 
   it("shows a waiting Simple row as an amber dot and preview, and a working one as a ring-cut dot on the avatar, with no badge or live region", () => {
@@ -259,16 +262,21 @@ describe("bot-first sidebar", () => {
     expect(markup).toContain('<span class="sr-only">Unread</span>');
   });
 
-  it("draws no engine mark for a bot with no AI yet or in a group chat, and a faded one in Advanced mode", () => {
+  it("draws no engine or AI mark for a bot with no AI yet or in a group chat, and only the AI mark in Advanced mode", () => {
     fixture.showThreads = false;
-    fixture.state = { ...fixture.state, instances: [{ instanceId: "fake", driverKind: "claudeAgent", displayName: "Claude" }] as unknown as AppState["instances"] };
+    const instances = [{ instanceId: "fake", driverKind: "claudeAgent", displayName: "Claude" }] as unknown as AppState["instances"];
+    fixture.state = { ...fixture.state, instances };
     const candidate = { ...bot, tasks: [], projects: [] };
-    expect(renderToStaticMarkup(createElement(BotListItem, rowProps("comfortable", { ...candidate, modelSelection: { instanceId: "none", model: "m" } })))).not.toContain("data-provider-mark");
+    const render = (node: ReactElement) => renderToStaticMarkup(createElement(InstancesContext, { value: instances }, node));
+    const noAi = render(createElement(BotListItem, rowProps("comfortable", { ...candidate, modelSelection: { instanceId: "none", model: "m" } })));
+    expect(noAi).not.toContain("data-provider-mark");
+    expect(noAi).not.toContain('data-testid="ai-badge"');
     const group: Group = { id: "room", threadId: "room-thread", name: "Launch", memberIds: [bot.id], messages: [], defaultResponder: { kind: "mentions" }, bulletin: "", unread: false, createdAt: 1 };
-    expect(renderToStaticMarkup(createElement(GroupListItem, { group, density: "comfortable", onMenu: vi.fn() }))).not.toContain("data-provider-mark");
+    expect(render(createElement(GroupListItem, { group, density: "comfortable", onMenu: vi.fn() }))).not.toContain("data-provider-mark");
     fixture.advanced = true;
-    const advanced = renderToStaticMarkup(createElement(BotListItem, rowProps("comfortable", candidate)));
-    expect(advanced).toMatch(/data-testid="model-badge"[^>]*><span data-provider-mark="brand" class="[^"]*\bopacity-60\b/);
+    const advanced = render(createElement(BotListItem, rowProps("comfortable", candidate)));
+    expect(advanced).not.toContain("data-provider-mark");
+    expect(advanced).toContain('data-testid="ai-badge" data-ai-vendor="anthropic"');
   });
 
   it("keeps a Simple row to its name, preview and one faded engine mark, naming role, Chief and engine in its tooltip", () => {

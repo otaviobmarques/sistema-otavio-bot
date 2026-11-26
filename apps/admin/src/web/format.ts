@@ -98,8 +98,10 @@ export const AI_PROVIDER: Record<string, string> = {
   anthropic: "Anthropic (Claude)",
   openai: "OpenAI",
   openrouter: "OpenRouter",
-  google: "Google (Gemini)",
+  google: "Google AI Studio (Gemini)",
+  nvidia: "NVIDIA (catálogo de API)",
   groq: "Groq",
+  cerebras: "Cerebras",
   other: "Outro (compatível com OpenAI)",
 };
 
