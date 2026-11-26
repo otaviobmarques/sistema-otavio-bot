@@ -17,7 +17,7 @@ registerHooks({
   load(url, context, nextLoad) {
     const result = nextLoad(url, context);
     if (url === plan) {
-      const anchor = 'starter: () => tier === "starter",';
+      const anchor = 'starter: () => tier === "starter" || tier === "inicial",';
       if (!String(result.source).includes(anchor)) throw new Error('Plan seam changed');
       return { ...result, source: String(result.source).replace(anchor, 'starter: () => globalThis.__ombTestStarter(),') };
     }
