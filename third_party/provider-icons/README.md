@@ -13,3 +13,13 @@ artwork at runtime.
 
 OpenAI, Anthropic, xAI, Qwen, and Moonshot reuse provider marks that were
 already part of OpenMausBot.
+
+The AI maker badge on bot avatars reuses the marks above and adds:
+
+- NVIDIA and Ollama: Simple Icons 16.0.0, same source, CC0 1.0.
+- MiniMax and Z.ai: a plain letter in a brand colour, drawn here. Simple
+  Icons' MiniMax mark is under a custom license, and Z.ai has none there.
+- Local servers: the Lucide `hard-drive` icon, already a dependency (ISC).
+
+Every mark is a trademark of its owner and is shown only to name the AI a bot
+uses; no endorsement is implied.

@@ -7,6 +7,9 @@ import { resolveFigurinha, type FigurinhaChoice } from "../../shared/figurinha";
 import { useFestivalDress, wornBody } from "@/lib/festival-dress";
 import { t } from "@/lib/i18n";
 import { Figurinha } from "./Figurinha";
+import { useInstances } from "@/state/instances-context";
+import type { ModelSelection } from "../../shared/wire";
+import { AI_BADGE_MIN_AVATAR, AiVendorBadge, botAiVendor } from "./AiVendorBadge";
 
 const MOTION_STATE: Partial<Record<Exclude<MausMotion, "none">, MausState>> = {
   arrive: "spawning",
@@ -74,7 +77,10 @@ export type BotAvatarProps = Omit<MausAvatarProps, "color" | "seed" | "figurinha
     mascotBody?: BotBodyId | null;
     mascotFaceColor?: MascotFaceColor | null;
     figurinha?: FigurinhaChoice | null;
+    modelSelection?: Pick<ModelSelection, "instanceId" | "model"> | null;
   };
+  /** false hides the mark of the bot's AI maker, where something else already sits on the avatar's corner. */
+  aiBadge?: boolean;
 };
 
 export type BotAvatarOutcome = "flatImage" | "figurinha";
@@ -92,7 +98,20 @@ export function resolveBotAvatarOutcome(params: {
   return "flatImage";
 }
 
-export function BotAvatar({ bot, size = 44, label, ...mascotProps }: BotAvatarProps) {
+export function BotAvatar({ aiBadge = true, ...props }: BotAvatarProps) {
+  const instances = useInstances();
+  const size = props.size ?? 44;
+  const vendor = aiBadge && size >= AI_BADGE_MIN_AVATAR ? botAiVendor(props.bot.modelSelection, instances) : null;
+  if (!vendor) return <BotFace {...props} />;
+  return (
+    <span className="relative block shrink-0" style={{ width: size, height: size }}>
+      <BotFace {...props} />
+      <AiVendorBadge vendor={vendor} avatarSize={size} />
+    </span>
+  );
+}
+
+function BotFace({ bot, size = 44, label, ...mascotProps }: Omit<BotAvatarProps, "aiBadge">) {
   const profile = botAvatarProfile(bot);
   const festival = useFestivalDress();
   const [imageFailed, setImageFailed] = useState(false);
