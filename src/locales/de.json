@@ -314,8 +314,6 @@
   "server.mcp.reconnect.many": "Die MCP-Server {names} haben sich nicht verbunden, daher waren ihre Tools diesmal nicht verfügbar. Bei deiner nächsten Nachricht verbinden sie sich wieder.",
   "server.bots.nameClash": "{person} ist hier auch eine Person, daher erreicht „@{name}“ {person} und nicht diesen Bot. Benenne den Bot um, damit man beide auseinanderhält.",
   "star.title": "Gefällt dir {app}?",
-  "star.body": "Ein Stern auf GitHub hilft mehr Menschen, es zu finden.",
-  "star.button": "Stern auf GitHub geben",
   "boatOffer.title": "50 $ Boat-Guthaben für dich",
   "boatOffer.body": "Boat betreibt die Cloud-Computer hinter {app}. Buch bei Boat den Tarif für 100 $ oder einen größeren und sag Boat dann, dass {app} dich geschickt hat. Dann schreibt Boat deinem Boat-Konto 50 $ Guthaben gut.",
   "boatOffer.yourself": "Du forderst es selbst an: Es passiert nicht automatisch.",

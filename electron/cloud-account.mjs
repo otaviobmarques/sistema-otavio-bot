@@ -7,9 +7,15 @@ import nativeText from "./native-text.cjs";
 
 const { englishText } = nativeText;
 
-export const CLOUD_ORIGIN = "https://cloud.openmausbot.com";
-/** The staging Admin (Dodo test mode, real test Clouds): a fixed address, on only with OMB_CLOUD_STAGING=1. */
-export const STAGING_CLOUD_ORIGIN = "https://omb-cloud-staging.fly.dev";
+/**
+ * Security: ArkoBot runs no Cloud desktop service, so both Admins are reserved names (RFC 2606 `.invalid`) and a client
+ * that is not a loopback fixture never sends a request (`served`). The original project's Cloud is never contacted.
+ */
+export const CLOUD_ORIGIN = "https://cloud.arkobot.invalid";
+/** The staging Admin, on only with OMB_CLOUD_STAGING=1. */
+export const STAGING_CLOUD_ORIGIN = "https://cloud-staging.arkobot.invalid";
+/** Where Plan and billing pages open instead: the ArkoBot customer area. */
+export const ACCOUNT_SITE = "https://conta.arkobot.com.br";
 /** Which Admin this app signs in to, and the files that depend on it (the sign-in, saved servers with the Cloud's
  * entry, Files' state, the Cloud's chosen name): staging never reads or writes production's. */
 export function cloudTarget(env = process.env) {
@@ -152,7 +158,10 @@ export function createCloudAccountClient({ store, openBrowser, platform, deviceN
   let quiet = false;
   const current = stamp => !closed && !quiet && generation === stamp;
   const versionHeader = text(appVersion, 40) && /^[0-9A-Za-z][0-9A-Za-z.+-]{0,39}$/.test(appVersion) ? { "x-openmausbot-version": appVersion } : {};
+  const served = fixture;
+  const page = path => (served ? `${origin}${path}` : ACCOUNT_SITE);
   async function request(route, { method = "GET", body, token, signal = controller.signal, path = `/api/cloud/desktop/${route}`, timeoutMs = 20_000 } = {}) {
+    if (!served) throw new Error("ArkoBot Cloud is not available.");
     const response = await fetcher(`${origin}${path}`, {
       method, redirect: "error", credentials: "omit", cache: "no-store",
       headers: { accept: "application/json", ...(body === undefined ? {} : { "content-type": "application/json" }), ...(token ? { authorization: `Bearer ${token}`, ...versionHeader } : {}) },
@@ -204,7 +213,7 @@ export function createCloudAccountClient({ store, openBrowser, platform, deviceN
     if (!browser && (!error?.status || error.opaque || error.status === 504)) return { outcome: "unconfirmed" };
     if (!error?.opaque && UPGRADE_REFUSALS.includes(error?.code)) return { outcome: "refused", code: error.code };
     if (browser && grant === signedIn && !error?.opaque && ([404, 405, 501].includes(error?.status) || (error?.status === 503 && error.code === "temporarily_unavailable"))) {
-      await openBrowser(`${origin}/cloud`);
+      await openBrowser(page("/cloud"));
       return { outcome: "browser" };
     }
     return { outcome: "failed" };
@@ -216,7 +225,7 @@ export function createCloudAccountClient({ store, openBrowser, platform, deviceN
   async function renewalFailure(error, signedIn) {
     if (signInEnded(error)) return { outcome: "failed", state: await refresh().catch(() => state()) };
     if (grant === signedIn && !error?.opaque && [404, 405, 501].includes(error?.status) && error.code !== "not_found") {
-      await openBrowser(`${origin}/cloud/personal/billing`);
+      await openBrowser(page("/cloud/personal/billing"));
       return { outcome: "browser" };
     }
     return { outcome: "failed", state: [404, 409].includes(error?.status) ? await refresh().catch(() => state()) : state() };
@@ -511,7 +520,7 @@ export function createCloudAccountClient({ store, openBrowser, platform, deviceN
     },
     cancel: () => { if (!pending && value.status !== "connecting") return Promise.resolve(state()); opened = null; return signOut(); },
     refresh, signOut,
-    async openDashboard() { await openBrowser(`${origin}/cloud`); return state(); },
+    async openDashboard() { await openBrowser(page("/cloud")); return state(); },
     async upgradePreview(plan, source) {
       if (!UPGRADE_TIERS.includes(plan) || !UPGRADE_SOURCES.includes(source)) throw new Error("Invalid Cloud upgrade.");
       const signedIn = grant;

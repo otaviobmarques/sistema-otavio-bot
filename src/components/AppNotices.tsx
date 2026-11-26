@@ -3,7 +3,7 @@ import { Rocket, Star } from "lucide-react";
 import type { CloudAccountState } from "../../electron/cloud-account.mjs";
 import type { CloudOffer } from "../../electron/cloud-home.mjs";
 import { api, useStore } from "@/state/store";
-import { APP_REPOSITORY } from "@/lib/app-links";
+import { SUPPORT_WHATSAPP_URL } from "@/lib/app-links";
 import { track } from "@/lib/analytics";
 import { boatOfferRuns } from "@/lib/boat-offer";
 import { cloudOffersEnabled } from "@/lib/cloud-offers";
@@ -41,7 +41,7 @@ function StarCard({ onDismiss }: { onDismiss: () => void }) {
   return <NoticeCard titleId="github-star-title" notice="github-star" icon={Star} title={t("star.title")} onDismiss={onDismiss}>
     <p className="mb-3 mt-1 text-[13px] text-ink-secondary">{t("star.body")}</p>
     <div className="flex flex-wrap items-center gap-3">
-      <LinkButton url={APP_REPOSITORY} label={t("star.button")} onOpened={onDismiss} />
+      <LinkButton url={SUPPORT_WHATSAPP_URL} label={t("star.button")} onOpened={onDismiss} />
       <NotNowButton onClick={onDismiss} />
     </div>
   </NoticeCard>;

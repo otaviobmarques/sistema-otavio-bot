@@ -5,10 +5,11 @@ import { X } from "lucide-react";
 import type { CloudCancelAnswer, CloudCancelSurvey, CloudRenewalResult } from "../../electron/cloud-account.mjs";
 import type { CloudRenewal } from "../../electron/cloud-list.mjs";
 import { cn } from "@/lib/cn";
+import { SUPPORT_WHATSAPP_URL } from "@/lib/app-links";
 import { activeLocale, t } from "@/lib/i18n";
 import type { LocaleKey } from "@/locales";
 
-export const CLOUD_CALL_URL = "https://cal.com/milind-soni-002qed/30min";
+export const CLOUD_CALL_URL = SUPPORT_WHATSAPP_URL;
 const ANSWERS: readonly CloudCancelAnswer[] = ["feature", "price", "setup", "broken", "later", "other"];
 const ANSWER_LABEL: Record<CloudCancelAnswer, LocaleKey> = {
   feature: "cloudCancel.answer.feature", price: "cloudCancel.answer.price", setup: "cloudCancel.answer.setup",

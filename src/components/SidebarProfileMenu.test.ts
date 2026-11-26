@@ -23,7 +23,7 @@ import {
   updateLabel,
   updatePhase,
 } from "./SidebarProfileMenu";
-import { DOCS_URL, FEEDBACK_URL, HELP_CENTER_URL, platformLabel } from "@/lib/app-links";
+import { CLOUD_PLAN_URL, FEEDBACK_URL, HELP_CENTER_URL, platformLabel, PRICING_URL, RELEASES_URL } from "@/lib/app-links";
 import { profileForSession } from "@/lib/session";
 import {
   cloudPhoneDestination,
@@ -198,13 +198,15 @@ describe("updateNoteworthy", () => {
 });
 
 describe("outward links", () => {
-  it("sends Help Center to the docs the website also links to", () => {
-    expect(HELP_CENTER_URL).toBe(DOCS_URL);
-    expect(DOCS_URL).toBe("https://github.com/milind-soni/OpenMausBot/tree/main/docs");
+  it("sends Help Center and Send Feedback to ArkoBot support on WhatsApp", () => {
+    expect(HELP_CENTER_URL).toBe("https://wa.me/5519987822290");
+    expect(FEEDBACK_URL).toBe("https://wa.me/5519987822290");
   });
 
-  it("sends Send Feedback to the Discord community", () => {
-    expect(FEEDBACK_URL).toBe("https://discord.gg/9Wb8MEpXRs");
+  it("sends plans, the Plan page and releases to ArkoBot's own addresses", () => {
+    expect(PRICING_URL).toBe("https://arkobot.com.br/#planos");
+    expect(CLOUD_PLAN_URL).toBe("https://conta.arkobot.com.br");
+    expect(RELEASES_URL).toBe("https://github.com/otaviobmarques/otavio-bot-releases/releases");
   });
 });
 

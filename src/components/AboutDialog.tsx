@@ -3,10 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import notice from "../../NOTICE?raw";
 
 import {
-  APP_REPOSITORY,
-  DOCS_URL,
   LICENSE_URL,
   RELEASES_URL,
+  SITE_URL,
   appVersion,
   openExternalLink,
   platformLabel,
@@ -71,8 +70,7 @@ export function AboutDialog({ open, onClose }: { open: boolean; onClose: () => v
           {t("about.tagline")}
         </p>
         <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-[13px]">
-          <AboutLink href={APP_REPOSITORY} label="GitHub" />
-          <AboutLink href={DOCS_URL} label={t("about.docs")} />
+          <AboutLink href={SITE_URL} label="arkobot.com.br" />
           <AboutLink href={RELEASES_URL} label={t("about.releases")} />
           <AboutLink href={LICENSE_URL} label={t("about.license")} />
           <button type="button" aria-expanded={licenses} onClick={() => setLicenses((shown) => !shown)} className="text-accent hover:underline">

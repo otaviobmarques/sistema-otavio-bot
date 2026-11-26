@@ -68,7 +68,7 @@ async function mount(state: ManagedDesktopState = { status: "signed-out" }) {
 
 const connecting: ManagedDesktopState = {
   status: "connecting",
-  enrollment: { userCode: "ABCDE-FGHIJ", verificationUri: "https://admin.openmausbot.com/enroll?code=ABCDE-FGHIJ", expiresAt: Date.now() + 60_000 },
+  enrollment: { userCode: "ABCDE-FGHIJ", verificationUri: "https://admin.example.test/enroll?code=ABCDE-FGHIJ", expiresAt: Date.now() + 60_000 },
 };
 const connected: ManagedDesktopState = {
   status: "connected",
@@ -122,14 +122,17 @@ describe("organisation sign-in row in the welcome flow", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it("signs in to the default Admin once, then follows the browser step to connected", async () => {
+  it("has no default Admin: Sign in asks for the organization's address in Settings", async () => {
     await mount();
-    const signIn = button("Sign in")!;
-    signIn.props.onClick!();
-    signIn.props.onClick!();
+    button("Sign in")!.props.onClick!();
     await flush();
-    expect(bridge.begin).toHaveBeenCalledExactlyOnceWith({ portalOrigin: "https://admin.openmausbot.com" });
+    expect(onOpenSettings).toHaveBeenCalledOnce();
+    expect(bridge.begin).not.toHaveBeenCalled();
+    expect(fetch).not.toHaveBeenCalled();
+  });
 
+  it("follows a sign-in begun in Settings through the browser step to connected", async () => {
+    await mount(connecting);
     let html = render().html;
     expect(html).toContain("Finish in your browser");
     expect(html).toContain("ABCDE-FGHIJ");
@@ -181,9 +184,9 @@ describe("organisation sign-in row in the welcome flow", () => {
   });
 
   it("shows product copy for a failed action, never the IPC error", async () => {
-    await mount();
-    vi.mocked(bridge.begin).mockRejectedValueOnce(new Error("Private /path token-secret"));
-    button("Sign in")!.props.onClick!();
+    await mount(connecting);
+    vi.mocked(bridge.cancelEnrollment).mockRejectedValueOnce(new Error("Private /path token-secret"));
+    button("Cancel sign-in")!.props.onClick!();
     await flush();
     const html = render().html;
     expect(html).toContain("Could not complete this action");
@@ -191,17 +194,17 @@ describe("organisation sign-in row in the welcome flow", () => {
   });
 
   it("unsubscribes and ignores late answers once the beat closes", async () => {
-    const cleanup = await mount();
-    let resolveBegin!: (state: ManagedDesktopState) => void;
-    vi.mocked(bridge.begin).mockImplementation(() => new Promise((resolve) => { resolveBegin = resolve; }));
-    button("Sign in")!.props.onClick!();
+    const cleanup = await mount(connecting);
+    let resolveCancel!: (state: ManagedDesktopState) => void;
+    vi.mocked(bridge.cancelEnrollment).mockImplementation(() => new Promise((resolve) => { resolveCancel = resolve; }));
+    button("Cancel sign-in")!.props.onClick!();
     if (typeof cleanup === "function") cleanup();
     push(connected);
-    resolveBegin(connecting);
+    resolveCancel({ status: "signed-out" });
     await flush();
     expect(unsubscribe).toHaveBeenCalledOnce();
     expect(render().html).not.toContain("Fixture Company");
-    expect(render().html).not.toContain("ABCDE-FGHIJ");
+    expect(render().html).toContain("ABCDE-FGHIJ");
     expect(onConnected).not.toHaveBeenCalled();
   });
 });

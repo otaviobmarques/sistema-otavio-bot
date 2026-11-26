@@ -1,18 +1,19 @@
-export const APP_REPOSITORY = "https://github.com/milind-soni/OpenMausBot";
-export const DOCS_URL = `${APP_REPOSITORY}/tree/main/docs`;
-export const HELP_CENTER_URL = DOCS_URL;
-export const APPROVAL_LEVELS_URL = `${APP_REPOSITORY}/blob/main/docs/approval-levels.md`;
-export const PASSKEY_HELP_URL = "https://docs.openmausbot.com/docs/troubleshooting/google-sign-in-cloud-browser";
-export const FEEDBACK_URL = "https://discord.gg/9Wb8MEpXRs";
-export const RELEASES_URL = `${APP_REPOSITORY}/releases`;
-export const PRICING_URL = "https://www.openmausbot.com/pricing";
-export const CLOUD_PLAN_URL = "https://cloud.openmausbot.com/cloud";
+export const SITE_URL = "https://arkobot.com.br";
+export const SUPPORT_EMAIL = "contato@arkobot.com.br";
+export const SUPPORT_WHATSAPP_URL = "https://wa.me/5519987822290";
+/** ArkoBot has no help pages yet, so Help opens support on WhatsApp. */
+export const HELP_CENTER_URL = SUPPORT_WHATSAPP_URL;
+export const FEEDBACK_URL = SUPPORT_WHATSAPP_URL;
+export const RELEASES_URL = "https://github.com/otaviobmarques/otavio-bot-releases/releases";
+export const PRICING_URL = `${SITE_URL}/#planos`;
+export const CLOUD_PLAN_URL = "https://conta.arkobot.com.br";
 export function withSource(url: string, source: string): string {
   const target = new URL(url);
   target.searchParams.set("src", source);
   return target.href;
 }
-export const LICENSE_URL = `${APP_REPOSITORY}/blob/main/LICENSE`;
+/** Apache-2.0 attribution: the license of the project ArkoBot is built on. */
+export const LICENSE_URL = "https://github.com/milind-soni/OpenMausBot/blob/main/LICENSE";
 
 export function appVersion(): string {
   return typeof __APP_VERSION__ === "string" ? __APP_VERSION__ : "dev";

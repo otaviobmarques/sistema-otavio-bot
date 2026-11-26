@@ -13,12 +13,11 @@ export type WhatsNewAudience = "none" | "own" | "team" | "other";
 
 /** Each slide's tag on the Cloud's funnel: `src` on its links, and `source` on the checkout the app opens from it. */
 export const WHATS_NEW_SOURCES = { pro: "app_whats_new_pro", team: "app_whats_new_team" } as const satisfies Record<WhatsNewSlide, string>;
-const CLOUD_SITE = "https://cloud.openmausbot.com", STAGING_SITE = "https://omb-cloud-staging.fly.dev";
+const ACCOUNT_SITE = "https://conta.arkobot.com.br";
 
-/** The Cloud website's Home, which shows the plans to someone without one; `src` on /cloud opens that page. */
-export const newCloudUrl = (staging = false) => `${staging ? STAGING_SITE : CLOUD_SITE}/cloud?src=${WHATS_NEW_SOURCES.pro}`;
-/** The Team plan's checkout, as the website's Get Team opens it: its free trial while the Admin offers one. */
-export const startTeamUrl = (staging = false) => `${staging ? STAGING_SITE : CLOUD_SITE}/pro/buy?plan=team&src=${WHATS_NEW_SOURCES.team}`;
+/** Plans are bought in the ArkoBot customer area, staging or not. */
+export const newCloudUrl = () => `${ACCOUNT_SITE}/?src=${WHATS_NEW_SOURCES.pro}`;
+export const startTeamUrl = () => `${ACCOUNT_SITE}/?src=${WHATS_NEW_SOURCES.team}`;
 
 const listedCloud = (account: CloudAccountState, team: boolean) =>
   (account.clouds ?? []).some(cloud => cloud.managed !== false && cloud.status !== "ended" && (cloud.teamId !== null) === team);

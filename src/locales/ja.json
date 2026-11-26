@@ -349,8 +349,6 @@
   "server.mcp.reconnect.many": "MCP サーバー {names} に接続できなかったため、今回はそれらのツールを使えませんでした。次にメッセージを送るときに、もう一度接続します。",
   "server.bots.nameClash": "ここには {person} という人もいるため、「@{name}」はこのボットではなく {person} に届きます。区別できるように、ボットの名前を変更してください。",
   "star.title": "{app} を気に入っていただけましたか？",
-  "star.body": "GitHub でスターを付けていただくと、より多くの人に見つけてもらえます。",
-  "star.button": "GitHub でスターを付ける",
   "boatOffer.title": "$50 分の Boat クレジットがもらえます",
   "boatOffer.body": "{app} を支えるクラウドコンピューターは Boat が運営しています。Boat の $100 以上のプランを購入し、{app} の紹介で来たことを Boat に伝えると、Boat のアカウントに $50 分のクレジットが追加されます。",
   "boatOffer.yourself": "申請はご自身で行ってください。自動では適用されません。",
