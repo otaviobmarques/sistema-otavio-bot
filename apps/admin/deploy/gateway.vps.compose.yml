@@ -1,0 +1,29 @@
+# Gateway de IA na VPS que já tem o Traefik (rede traefik-edge, certificados letsencrypt).
+# Projeto Docker "arkobot-gateway" no gerenciador da Hostinger. Variáveis do projeto (.env):
+#   GATEWAY_DOMAIN=ia.arkobot.com.br
+#   DATABASE_URL, ADMIN_ENCRYPTION_KEY   (as mesmas do Admin; use o Session pooler do Supabase, porta 5432)
+#   GROQ_API_KEY, GEMINI_API_KEY, NVIDIA_API_KEY, OPENROUTER_API_KEY, CEREBRAS_API_KEY (IA gratuita; opcionais)
+#   e, se quiser, as ARKOBOT_FREE_* de gateway.env.example.
+name: arkobot-gateway
+services:
+  gateway:
+    image: ghcr.io/otaviobmarques/arkobot-gateway:latest
+    pull_policy: always
+    restart: unless-stopped
+    stop_grace_period: 2m
+    env_file: .env
+    networks: [traefik-edge]
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: traefik-edge
+      traefik.http.routers.arkobotia.rule: Host(`${GATEWAY_DOMAIN}`)
+      traefik.http.routers.arkobotia.entrypoints: websecure
+      traefik.http.routers.arkobotia.tls: "true"
+      traefik.http.routers.arkobotia.tls.certresolver: letsencrypt
+      traefik.http.services.arkobotia.loadbalancer.server.port: "8791"
+      # Respostas em streaming (SSE) passam na hora, sem buffer.
+      traefik.http.services.arkobotia.loadbalancer.responseforwarding.flushinterval: "-1"
+
+networks:
+  traefik-edge:
+    external: true
