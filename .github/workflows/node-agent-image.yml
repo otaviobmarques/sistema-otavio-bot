@@ -1,0 +1,67 @@
+name: node-agent-image
+
+# Imagem do agente do nó do ArkoBot (apps/admin/Dockerfile.node-agent), que sobe as instâncias dos clientes na VPS.
+# Em PR: só monta e testa. Na main: publica ghcr.io/<dono>/arkobot-node-agent:latest
+# (apps/admin/deploy/node-agent.vps.compose.yml).
+on:
+  push:
+    branches: [main]
+    paths: ["apps/admin/**", "pnpm-lock.yaml", ".github/workflows/node-agent-image.yml"]
+  pull_request:
+    paths: ["apps/admin/**", "pnpm-lock.yaml", ".github/workflows/node-agent-image.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: node-agent-image-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Nome da imagem
+        id: img
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/arkobot-node-agent" >> "$GITHUB_OUTPUT"
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/admin/Dockerfile.node-agent
+          load: true
+          tags: |
+            ${{ steps.img.outputs.name }}:latest
+            ${{ steps.img.outputs.name }}:${{ github.sha }}
+          cache-from: type=gha,scope=node-agent
+          cache-to: type=gha,scope=node-agent,mode=max
+      - name: Testa a imagem (recusa configuração errada; com o Admin fora do ar, não mexe no Docker)
+        run: |
+          set -euo pipefail
+          img=${{ steps.img.outputs.name }}:${{ github.sha }}
+          if docker run --rm "$img" 2>err.txt; then echo "subiu sem ARKO_ADMIN_URL"; exit 1; fi
+          grep -q ARKO_ADMIN_URL err.txt
+          before=$(docker ps -aq | sort)
+          token="arko_node_$(head -c32 /dev/urandom | base64 | tr '+/' '-_' | tr -d '=\n' | head -c43)"
+          docker run -d --name agent -v /var/run/docker.sock:/var/run/docker.sock \
+            -e ARKO_ADMIN_URL=https://127.0.0.1:9 -e "ARKO_NODE_TOKEN=$token" "$img"
+          sleep 8
+          test "$(docker inspect -f '{{.State.Running}}' agent)" = true
+          docker logs agent 2>&1 | grep -q "nada foi mudado"
+          docker rm -f agent >/dev/null
+          test "$(docker ps -aq | sort)" = "$before"
+      - if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publica no GHCR
+        if: github.event_name != 'pull_request'
+        run: |
+          docker push ${{ steps.img.outputs.name }}:${{ github.sha }}
+          docker push ${{ steps.img.outputs.name }}:latest

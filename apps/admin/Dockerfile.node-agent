@@ -1,0 +1,19 @@
+# Agente do nó do ArkoBot: sobe e para as instâncias dos clientes nesta VPS. Build a partir da raiz do repositório:
+#   docker build -f apps/admin/Dockerfile.node-agent -t arkobot-node-agent .
+# A imagem final leva só o agente empacotado num arquivo (dist/node-agent/agent.mjs) e o Node.
+FROM node:24-slim AS build
+ENV CI=true
+RUN corepack enable
+WORKDIR /src
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY apps/admin/package.json apps/admin/
+RUN pnpm install --filter @arkobot/admin --frozen-lockfile --ignore-scripts
+COPY apps/admin apps/admin
+RUN node apps/admin/scripts/build-node-agent.mjs
+
+FROM node:24-slim
+WORKDIR /app
+COPY --from=build /src/apps/admin/dist/node-agent/agent.mjs ./agent.mjs
+ENV NODE_ENV=production
+# Roda como root só para falar com /var/run/docker.sock (que é do root). Não abre porta nenhuma.
+CMD ["node", "agent.mjs"]

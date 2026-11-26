@@ -5,6 +5,7 @@ import { isUniqueViolation, type Queryable } from "../db/db.ts";
 import { grantPlanPeriod } from "../credits/ledger.ts";
 import { applySubscriptionSignal, DomainError, lockOrganization, type OrganizationRow, type SubscriptionRow } from "../domain/lifecycle.ts";
 import { enqueue } from "../jobs/queue.ts";
+import { queueProvisioning } from "../provisioning/queue.ts";
 import { activeBillingAccount, billingAccount, defaultProviderFactory, type BillingAccountRow, type ProviderFactory } from "./accounts.ts";
 import type { BillingType, PixQrCode } from "./provider.ts";
 import { ProviderError } from "./provider.ts";
@@ -47,6 +48,7 @@ async function startTrial(
     billingAccountId: sub.billing_account_id, metadata: { subscriptionId: sub.id } });
   await audit(q, actor, { action: "subscription.trial_started", targetType: "subscription", targetId: sub.id, organizationId: org.id,
     data: { plan: plan.code, days: plan.trial_days, endsAt: endsAt.toISOString() } });
+  await queueProvisioning(q, org.id, now);
   return rows[0]!;
 }
 
@@ -112,6 +114,7 @@ export async function startSubscription(ctx: AppContext, actor: Actor, input: St
       const sub = rows[0]!;
       await grantPlanPeriod(q, { organizationId: org.id, quota: Number(plan.credits_per_month), reference: `free:${sub.id}:${isoDate(now)}` });
       await audit(q, actor, { action: "subscription.created", targetType: "subscription", targetId: sub.id, organizationId: org.id, data: { plan: plan.code, free: true } });
+      await queueProvisioning(q, org.id, now);
       return sub;
     });
   }

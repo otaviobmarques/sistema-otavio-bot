@@ -10,11 +10,14 @@ import { runJobs } from "../jobs/queue.ts";
 import { bugReportStatus, receiveBugReport, REPORT_LIMITS } from "../reports/intake.ts";
 import { safeEqual } from "../security/crypto.ts";
 import type { Ctx, Env } from "./http.ts";
+import { AGENT_API } from "../provisioning/protocol.ts";
+import { agentRoutes } from "./routes/agent.ts";
 import { authRoutes } from "./routes/auth.ts";
 import { billingRoutes } from "./routes/billing.ts";
 import { clientRoutes } from "./routes/clients.ts";
 import { contaRoutes } from "./routes/conta.ts";
 import { gatewayRoutes } from "./routes/gateway.ts";
+import { instanceRoutes } from "./routes/instances.ts";
 import { integrationRoutes } from "./routes/integrations.ts";
 import { auditRoutes, meRoutes } from "./routes/misc.ts";
 import { overviewRoutes } from "./routes/overview.ts";
@@ -84,6 +87,8 @@ export function createApp(ctx: AppContext) {
 
   app.route("/api/auth", authRoutes(ctx));
   app.route("/api/conta", contaRoutes(ctx));
+  // Node agents: bearer node token, no cookie (src/provisioning). Before the panel's session gate below.
+  app.route(AGENT_API, agentRoutes(ctx));
 
   const cron = async (c: Ctx) => {
     const expected = ctx.config.cronSecret;
@@ -142,6 +147,7 @@ export function createApp(ctx: AppContext) {
   api.route("/billing", billingRoutes(ctx));
   api.route("/integrations", integrationRoutes(ctx));
   api.route("/gateway", gatewayRoutes(ctx));
+  api.route("/instances", instanceRoutes(ctx));
   api.route("/audit", auditRoutes(ctx));
   api.route("/reports", reportRoutes(ctx));
   api.route("/me", meRoutes(ctx));

@@ -2,6 +2,7 @@ import { audit, type Actor } from "../audit.ts";
 import type { AppContext } from "../context.ts";
 import { grantPlanPeriod } from "../credits/ledger.ts";
 import type { Queryable } from "../db/db.ts";
+import { queueProvisioning } from "../provisioning/queue.ts";
 import { applySubscriptionSignal, DomainError, lockOrganization, setOrganizationStatus, type SubscriptionRow } from "../domain/lifecycle.ts";
 import { enqueue } from "../jobs/queue.ts";
 import { CANCEL_PROVIDER_SUBSCRIPTION_JOB, type PlanRow } from "./service.ts";
@@ -85,6 +86,7 @@ export async function grantCourtesy(ctx: AppContext, actor: Actor, input: GrantC
       action: "subscription.courtesy_granted", targetType: "subscription", targetId: sub.id, organizationId: org.id, reason,
       data: { plan: plan.code, until, creditsPerMonth: Number(plan.credits_per_month), replacedSubscriptionId: current?.id ?? null },
     });
+    await queueProvisioning(q, org.id, now);
     return sub;
   });
 }

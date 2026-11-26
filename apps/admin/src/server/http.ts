@@ -5,9 +5,10 @@ import type { Actor } from "../audit.ts";
 import type { SessionAdmin } from "../auth/auth.ts";
 import type { SessionCustomer } from "../customer/auth.ts";
 import { DomainError } from "../domain/lifecycle.ts";
+import type { NodeRow } from "../provisioning/nodes.ts";
 
 export interface Env {
-  Variables: { admin: SessionAdmin; customer: SessionCustomer; ip: string };
+  Variables: { admin: SessionAdmin; customer: SessionCustomer; ip: string; node: NodeRow };
   Bindings: { incoming?: { socket?: { remoteAddress?: string } } };
 }
 

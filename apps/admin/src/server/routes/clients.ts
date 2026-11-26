@@ -91,7 +91,7 @@ export function clientRoutes(ctx: AppContext) {
                     FROM credit_ledger l LEFT JOIN admins ad ON ad.id = l.admin_id WHERE l.organization_id = $1 ORDER BY l.id DESC LIMIT 50`, [id]),
       ctx.db.query(`SELECT p.*, b.label AS billing_account_label FROM payments p JOIN billing_accounts b ON b.id = p.billing_account_id
                     WHERE p.organization_id = $1 ORDER BY p.created_at DESC LIMIT 30`, [id]),
-      ctx.db.query("SELECT id, slug, machine_id, mode, state, state_reason, public_url, last_active_at FROM instances WHERE organization_id = $1 ORDER BY created_at", [id]),
+      ctx.db.query("SELECT id, slug, machine_id, mode, state, state_reason, public_url, last_active_at FROM instances WHERE organization_id = $1 AND decommissioned_at IS NULL ORDER BY created_at", [id]),
       ctx.db.query("SELECT id, created_at, actor_type, actor_label, action, reason, data FROM audit_log WHERE organization_id = $1 ORDER BY id DESC LIMIT 30", [id]),
       ctx.db.query(`SELECT t.document, t.version, t.accepted_at, t.ip, a.email FROM terms_acceptances t JOIN accounts a ON a.id = t.account_id
                     WHERE t.organization_id = $1 OR t.account_id IN (SELECT account_id FROM memberships WHERE organization_id = $1)

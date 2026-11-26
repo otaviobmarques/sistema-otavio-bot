@@ -161,6 +161,18 @@ const ACTIONS: Record<string, string> = {
   "terms.accepted": "Termos aceitos",
   "subscription.canceled_by_customer": "Cliente cancelou a assinatura",
   "bug_report.status_changed": "Situação de relatório alterada",
+  "instance.provisioned": "Instância criada",
+  "instance.assigned": "Instância colocada num servidor",
+  "instance.ready": "Instância pronta",
+  "instance.stopped": "Instância parada pelo operador",
+  "instance.started": "Instância ligada pelo operador",
+  "instance.reprovisioned": "Instância reprovisionada",
+  "instance.decommissioned": "Instância desativada",
+  "instance.opened": "Cliente abriu o ArkoBot",
+  "node.created": "Servidor cadastrado",
+  "node.token_rotated": "Token do servidor trocado",
+  "node.status_changed": "Situação do servidor alterada",
+  "subscription.trial_started": "Teste grátis iniciado",
 };
 
 export const actionLabel = (action: string) => ACTIONS[action] ?? action;

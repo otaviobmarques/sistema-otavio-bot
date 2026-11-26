@@ -9,6 +9,7 @@ import { AuditPage } from "./pages/Audit.tsx";
 import { BillingPage } from "./pages/Billing.tsx";
 import { ClientDetailPage } from "./pages/ClientDetail.tsx";
 import { ClientsPage } from "./pages/Clients.tsx";
+import { InstancesPage } from "./pages/Instances.tsx";
 import { IntegrationsPage } from "./pages/Integrations.tsx";
 import { LoginPage } from "./pages/Login.tsx";
 import { OverviewPage } from "./pages/Overview.tsx";
@@ -36,7 +37,7 @@ const NAV: { to: string; label: string; icon: ReactNode; soon?: boolean }[] = [
   { to: "/clientes", label: "Clientes", icon: <Building2 className="h-4 w-4" /> },
   { to: "/planos", label: "Planos", icon: <Package className="h-4 w-4" /> },
   { to: "/cobranca", label: "Cobrança", icon: <CreditCard className="h-4 w-4" /> },
-  { to: "/instancias", label: "Instâncias", icon: <Boxes className="h-4 w-4" />, soon: true },
+  { to: "/instancias", label: "Instâncias", icon: <Boxes className="h-4 w-4" /> },
   { to: "/computadores", label: "Computadores", icon: <ServerCog className="h-4 w-4" />, soon: true },
   { to: "/consumo", label: "Consumo de IA", icon: <Gauge className="h-4 w-4" /> },
   { to: "/precos", label: "Tabela de preços", icon: <ReceiptText className="h-4 w-4" /> },
@@ -134,7 +135,7 @@ export function App() {
           <Route path="/relatorios" element={<ReportsPage />} />
           <Route path="/auditoria" element={<AuditPage />} />
           <Route path="/conta" element={<AccountPage />} />
-          <Route path="/instancias" element={<ComingSoon kind="instances" />} />
+          <Route path="/instancias" element={<InstancesPage />} />
           <Route path="/computadores" element={<ComingSoon kind="computers" />} />
           <Route path="/consumo" element={<UsagePage />} />
           <Route path="/precos" element={<PricesPage />} />

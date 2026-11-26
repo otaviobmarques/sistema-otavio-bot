@@ -1,0 +1,23 @@
+# Agente do nó: sobe e para as instâncias dos clientes nesta VPS (apps/admin/src/node-agent).
+# Projeto Docker "arkobot-node-agent" na VPS. Variáveis do projeto (.env, nunca no git):
+#   ARKO_ADMIN_URL=https://admin.arkobot.com.br
+#   ARKO_NODE_TOKEN=arko_node_…              (pnpm --filter admin create-node … ou Admin → Instâncias → Cadastrar servidor)
+#   ARKO_REGISTRY_USER / ARKO_REGISTRY_TOKEN (só se a imagem do ArkoBot no GHCR for privada: usuário e PAT com read:packages)
+# Opcionais: ARKO_INSTANCE_NETWORK (padrão arkobot-instances), ARKO_TRAEFIK_ENTRYPOINT (websecure),
+#   ARKO_TRAEFIK_CERTRESOLVER (letsencrypt), ARKO_TRUSTED_PROXIES (padrão: a sub-rede da rede das instâncias).
+#
+# O agente não abre porta nenhuma: ele chama o Admin (pull). Só ele tem o socket do Docker; as instâncias nunca.
+# Ele só mexe em contêineres com a etiqueta arkobot.managed=true deste nó e nunca apaga volumes.
+name: arkobot-node-agent
+services:
+  agent:
+    image: ghcr.io/otaviobmarques/arkobot-node-agent:latest
+    pull_policy: always
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    mem_limit: 256m
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }

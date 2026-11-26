@@ -2,7 +2,7 @@
 
 O painel interno da Domma Tecnologia para operar o ArkoBot como SaaS: clientes (CPF/CNPJ), planos, créditos ArkoBot (1 crédito = R$ 0,01), cobrança pelo Asaas, integrações e auditoria. Roda **separado das instâncias dos clientes**; os limites de uso só valem quando aplicados aqui e no gateway, nunca dentro da instância.
 
-A **Parte 1** fez o painel, a cobrança e os créditos; a **Parte 2** acrescenta o [gateway de IA](#gateway-de-ia-parte-2), que cobra os créditos da IA paga pela Domma. O mesmo deploy também serve a [Área do cliente](#área-do-cliente-contaarkobotcombr) em `conta.arkobot.com.br`. O provisionamento das instâncias e os computadores (VPS) vêm nas próximas partes; o banco já tem as tabelas deles.
+A **Parte 1** fez o painel, a cobrança e os créditos; a **Parte 2** acrescenta o [gateway de IA](#gateway-de-ia-parte-2), que cobra os créditos da IA paga pela Domma. O mesmo deploy também serve a [Área do cliente](#área-do-cliente-contaarkobotcombr) em `conta.arkobot.com.br`. O [provisionamento automático](#provisionamento-automático-instâncias-dos-clientes) sobe o ArkoBot de cada cliente num servidor nosso; os computadores (VPS) vêm nas próximas partes.
 
 ![Visão geral](screenshots/03-visao-geral.png)
 
@@ -22,7 +22,7 @@ Por que não Next.js: daria certo, mas o painel não ganha nada com SSR, e com H
 
 ```
 apps/admin
-├── migrations/            0001_init.sql (todas as tabelas), 0002_planos_iniciais.sql, … 0008_plano_inicial.sql
+├── migrations/            0001_init.sql (todas as tabelas), 0002_planos_iniciais.sql, … 0009_provisionamento.sql
 ├── src/
 │   ├── auth/              login por e-mail + código, sessões, TOTP, limites de taxa
 │   ├── billing/           BillingProvider, Asaas (asaas.ts), webhooks, régua, máquina de estados
@@ -31,6 +31,8 @@ apps/admin
 │   ├── gateway/           gateway de IA: proxy, reserva e liquidação, preços, tokens (processo próprio: node.ts)
 │   ├── domain/            clientes, CPF/CNPJ, efeitos de status em cliente e instâncias
 │   ├── jobs/              fila em Postgres e o "tick" do cron
+│   ├── provisioning/      instâncias dos clientes: nós, estado desejado, segredos, pedidos assinados à instância
+│   ├── node-agent/        agente do nó (roda na VPS com o socket do Docker; imagem própria)
 │   ├── security/          AES-256-GCM (SecretBox), TOTP
 │   ├── server/            app Hono, rotas, entradas Node (node.ts) e Vercel (vercel.ts)
 │   ├── cli/               migrate, create-admin, run-jobs, seed-demo
@@ -340,9 +342,48 @@ Depois: cadastre as chaves da Domma em **Integrações** (Anthropic, OpenAI, Ope
 
 No servidor do ArkoBot, `OMB_CLOUD_AI_GATEWAY_URL` (raiz do gateway, https) e `OMB_CLOUD_AI_GATEWAY_TOKEN` (o `arko_ai_…`) ligam o caminho "gateway ArkoBot" (`server/hosted-models.ts`): a instância lê `/v1/models` e registra os motores **ArkoBot · Claude** (Claude Code com `ANTHROPIC_BASE_URL` no gateway), **ArkoBot · Codex** e **ArkoBot · OpenRouter** ao lado dos motores do dono, que continuam funcionando como antes. O token segue o caminho dos tokens incluídos: chega pelo pipe de segredos do Cloud, sai do ambiente do servidor na partida, nunca vai para `config.json` nem aparece na lista de motores. Como nos motores de empresa, o processo do Claude Code/Codex recebe o token no próprio ambiente para falar com o gateway; um token vazado só gasta os créditos do próprio cliente e é revogado na ficha. Um 402/403 do gateway vira uma nota no chat ("Os créditos de IA do seu plano acabaram…", traduzida), com o botão para conectar a própria IA. O catálogo é relido a cada 15 minutos; token revogado tira os motores.
 
+## Provisionamento automático (instâncias dos clientes)
+
+Quando um cliente assina (ou começa o teste grátis do Inicial, ou recebe uma cortesia), o ArkoBot dele sobe sozinho num servidor nosso, já ligado ao gateway de IA com os limites do plano, e o cliente abre pela Área do cliente com **Abrir meu ArkoBot**. Suspensão ou cancelamento param a instância; o pagamento em dia liga de novo. Os dados ficam num volume Docker que nunca é apagado sozinho.
+
+### Como funciona
+
+```
+Asaas/teste/cortesia ──► Admin (Vercel + Postgres) ◄── GET /api/agent/v1/desired ──── agente do nó (VPS, socket do Docker)
+                          instâncias: estado, segredos      POST /api/agent/v1/status ──►  │ cria / para / remove contêineres
+                          cifrados, token de IA                                            ▼
+Cliente ── conta.arkobot.com.br ── "Abrir" ──► Admin assina POST /api/cloud/pairing ──► https://<slug>.arkobot.com.br (Traefik → contêiner cloud-home)
+```
+
+- **Quem dispara**: `applySubscriptionSignal` (assinatura ficou ativa), o início do teste grátis, a cortesia, o plano gratuito e a reativação do cliente enfileiram `instance.provision`. Como rede de segurança, o cron (`/api/cron/tick`) e **cada consulta do agente** varrem quem tem assinatura ativa/em atraso e ainda não tem instância. A Área do cliente também provisiona na hora ao abrir o painel.
+- **Instância** (`src/provisioning/instances.ts`): uma por organização (`instances_one_live_per_org`), `slug` a partir do slug do cliente (nomes reservados como `admin`, `conta`, `ia` ganham `-bot`; repetidos ganham `-2`, `-3`…), `machine_id` = id da instância, segredo de bootstrap (256 bits) e token `arko_ai_…` do gateway, **os dois cifrados** com `ADMIN_ENCRYPTION_KEY` (o agente precisa deles a cada recriação). Vai para o servidor ativo com menos instâncias que ainda tenha vaga (`capacity_instances`); sem vaga, espera e entra assim que houver.
+- **Estado**: a cobrança move `state` como antes (`domain/lifecycle.ts`). O desejado é `running`, menos quando `stopped`/`failed` ou parada pelo operador (`stopped`) e quando desativada (`absent`: remove o contêiner, nunca o volume). Quando o agente informa "rodando e saudável", `setting_up` vira `ready` e a instância aprende o plano (`POST /api/cloud/plan` assinado → limite de bots).
+- **Agente** (`src/node-agent`, imagem `ghcr.io/otaviobmarques/arkobot-node-agent`): a cada 15 s lê o estado desejado, acerta o Docker e devolve o que viu. Só toca em contêineres com `arkobot.managed=true` **e** `arkobot.node=<este nó>`; contêineres com a etiqueta que o Admin não pediu aparecem como "sem instância" no painel e ficam como estão. Admin fora do ar: não muda nada (as instâncias seguem pelo `restart: unless-stopped`). Mudou a configuração (imagem, plano, segredo, "Reprovisionar")? Recria o contêiner com o mesmo volume.
+- **Contêiner** (`src/node-agent/spec.ts`): a imagem **cloud-home** (`ghcr.io/otaviobmarques/sistema-otavio-bot-cloud-home:latest`, alvo `cloud-home` do Dockerfile, publicada pelo `docker.yml`). A `sistema-otavio-bot:latest` é o servidor auto-hospedado e não tem o modo Cloud home. Volume `arkoinst-<id>-data` em `/data`, memória do plano (`ram_mb`, sem swap), CPU (1 por 2 GB, de 0,5 a 4), limite de processos, `init`, `shm` de 512 MB, log com rotação, **sem socket do Docker, sem bind mount, sem privilégio**. Rede `arkobot-instances` (só as instâncias e o Traefik), etiquetas do Traefik para `Host(<slug>.arkobot.com.br)`, `websecure`, `letsencrypt`, porta 8080, sem buffer (stream de eventos).
+- **Variáveis da instância** (o contrato do Cloud home, `docs/cloud-pro.md`): `OMB_CLOUD_ROLE=home`, `OMB_CLOUD_MACHINE_ID`, `OMB_CLOUD_ADMIN_URL=https://conta.arkobot.com.br`, `OMB_PUBLIC_URL=https://<slug>.arkobot.com.br`, `OMB_CLOUD_BOOTSTRAP_SECRET`, `OMB_CLOUD_AI_GATEWAY_URL=https://ia.arkobot.com.br` + `OMB_CLOUD_AI_GATEWAY_TOKEN` (a instância lê `/v1/models` e só vê os modelos do plano: os `gratis/…` no Inicial), `OMB_CLOUD_EDGE_HOLD=30s`, `OMB_CLOUD_TRUSTED_PROXIES` (a sub-rede da rede das instâncias, onde está o Traefik) e `TZ`. O supervisor da imagem tira os segredos do ambiente do servidor e os passa por um pipe; nada disso vai para log.
+- **Primeiro acesso (e todos os outros)**: "Abrir meu ArkoBot" pede à instância, num pedido assinado com o segredo de bootstrap, um **login de navegador de uso único** (`purpose: "browser"`, dono = e-mail do cliente, 2 min) e abre `https://<slug>.arkobot.com.br/pair#signin=omb_pair_…` numa aba nova. A credencial só existe no fragmento da URL (não chega a servidor nem a log) e vale uma vez; a instância mostra de quem é o ArkoBot e pede um **Continuar**. Só o dono ou admin da organização abre por aqui.
+- **Limite de bots**: o Admin diz o plano à instância (`POST /api/cloud/plan {"v":1,"tier":"<código do plano>"}`) e o servidor aplica `PLAN_BOT_LIMITS` (`server/host/starter-bot-limit.ts`): Inicial 1, Essencial 3, Profissional 10, Empresa sem limite (o MausBot não conta). O Inicial também vale como "Starter" (2 turnos ao mesmo tempo, 1 conversa por bot).
+- **Painel → Instâncias**: servidores (online, versão do agente, erros, contêineres sem instância) e as instâncias de cada cliente com estado, servidor, endereço e o que o agente viu; ações **Parar/Ligar**, **Reprovisionar** (baixa a imagem e recria) e **Desativar** (remove o contêiner e revoga o token de IA; o volume fica). Cadastro de servidor e troca de token só para o dono.
+
+### Colocar no ar (passo a passo)
+
+1. **Migração** (da sua máquina, com a `DATABASE_URL` de produção): `pnpm --filter admin migrate` aplica `0009_provisionamento.sql` (só acrescenta colunas e índices).
+2. **DNS**: registro `A` curinga `*.arkobot.com.br` → `200.141.20.53`. Os registros que já existem (`admin`, `conta`, `ia`…) continuam valendo, porque são mais específicos. Cada instância nova pede o próprio certificado ao Let's Encrypt pelo Traefik (limite de 50 por semana por domínio; para passar disso, um certificado curinga com desafio DNS no Traefik).
+3. **Rede das instâncias** (uma vez, na VPS): `docker network create arkobot-instances` e ligue o Traefik a ela: `docker network connect arkobot-instances <contêiner do Traefik>`; para sobreviver a um `docker compose up` do Traefik, acrescente a rede `arkobot-instances` (externa) ao compose dele. Assim as instâncias ficam fora da `traefik-edge` dos outros projetos. Se preferir não mexer no Traefik, use `ARKO_INSTANCE_NETWORK=traefik-edge`, sabendo que aí as instâncias enxergam os outros contêineres dessa rede.
+4. **Cadastrar o servidor** e copiar o token (aparece uma vez): Admin → **Instâncias → Cadastrar servidor**, ou `pnpm --filter admin create-node vps-hostinger-1 --capacity=20 --ip=200.141.20.53`. Para trocar o token: botão **Novo token** ou `create-node vps-hostinger-1 --rotate`.
+5. **Agente na VPS**: projeto Docker `arkobot-node-agent` com `apps/admin/deploy/node-agent.vps.compose.yml` e um `.env` com `ARKO_ADMIN_URL=https://admin.arkobot.com.br` e `ARKO_NODE_TOKEN=…` (mais `ARKO_REGISTRY_USER`/`ARKO_REGISTRY_TOKEN` se a imagem do ArkoBot no GHCR for privada). `docker compose up -d`. Em até 15 s o servidor aparece **online** no painel.
+6. **Admin (Vercel)**: nada obrigatório. Opcionais: `INSTANCES_BASE_DOMAIN`, `INSTANCE_IMAGE` (fixe por digest para controlar as atualizações) e `AI_GATEWAY_PUBLIC_URL`.
+
+**Recursos por instância na VPS**: o teto é o `ram_mb` do plano (Inicial 1 GB, Essencial 2 GB, Profissional 4 GB, Empresa 8 GB) e 0,5/1/2/4 CPUs. Uma instância sem bot trabalhando fica em torno de 300–500 MB (servidor + Caddy); com um bot trabalhando (Claude Code/Codex + Chrome) chega perto do teto. Disco: a imagem é compartilhada (alguns GB, uma vez só); cada volume começa com poucos MB e cresce com o uso. O `disk_gb` do plano ainda **não** é imposto (o driver `local` do Docker não tem cota).
+
+### Ainda não feito
+
+- **Dormir depois de 30 min parado (Inicial)**: a instância já sabe dizer se está ociosa e aceitar dormir (`GET /api/cloud/power`, `POST /api/cloud/power/sleep`, em `docs/cloud-pro.md`), mas acordar sozinha depende de algo que segure o primeiro pedido e ligue o contêiner (no Fly é nativo; aqui seria um plugin como o Sablier no Traefik, ou o agente ligando no "Abrir"). Por ora as instâncias do Inicial ficam ligadas (TODO em `desiredOf`, `src/provisioning/instances.ts`).
+- Cota de disco por instância, troca de plano aplicada sem reprovisionar à mão (o limite de bots já muda no próximo "Abrir"), nós dedicados e equipes (`role=team`), backup dos volumes, alerta quando um servidor fica sem contato, e apagar o volume de uma instância desativada (hoje só à mão: `docker volume rm arkoinst-<id>-data`).
+
 ## Próximas partes
 
-- **Instâncias**: provisionar o contêiner `cloud-home` por cliente (`OMB_CLOUD_*`), nó compartilhado do modo limitado, saúde e pareamento assinados.
-- **Gateway**: e-mail dos avisos de 50/80/100% (`UsageAlertNotifier`), emissão automática do token no provisionamento da instância, preços por faixa de contexto longo.
+- **Instâncias**: dormir quando ociosa (Inicial), cota de disco, nós dedicados por cliente e backup dos volumes (veja [Provisionamento automático](#provisionamento-automático-instâncias-dos-clientes)).
+- **Gateway**: e-mail dos avisos de 50/80/100% (`UsageAlertNotifier`), preços por faixa de contexto longo.
 - **Computadores (VPS)**: interface `VpsProvider` com a Hostinger primeiro (`vps_machines`, `vps_provider_accounts`).
 - Troca de plano com pró-rata (também na Área do cliente), emissão de NFS-e quando a conta PJ estiver ativa, convites de membros para a organização.

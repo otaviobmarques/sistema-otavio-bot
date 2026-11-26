@@ -24,6 +24,15 @@ export interface AdminConfig {
   /** Development and tests only: send every Asaas call to this base URL (a fake server). */
   asaasBaseUrlOverride?: string;
   dunning: { suspendAfterDays: number; cancelAfterDays: number };
+  /** Customer instances (src/provisioning). Unset fields take the defaults in provisioning/settings.ts. */
+  provisioning?: {
+    /** Each instance answers at https://<slug>.<baseDomain>. */
+    baseDomain?: string;
+    /** The ArkoBot Cloud home image the agents run. */
+    image?: string;
+    /** The AI gateway the instances use (OMB_CLOUD_AI_GATEWAY_URL). */
+    gatewayUrl?: string;
+  };
 }
 
 export class ConfigError extends Error {}
@@ -85,6 +94,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AdminConfig {
     dunning: {
       suspendAfterDays: positiveInt(env.DUNNING_SUSPEND_AFTER_DAYS, 7, "DUNNING_SUSPEND_AFTER_DAYS"),
       cancelAfterDays: positiveInt(env.DUNNING_CANCEL_AFTER_DAYS, 30, "DUNNING_CANCEL_AFTER_DAYS"),
+    },
+    provisioning: {
+      baseDomain: env.INSTANCES_BASE_DOMAIN?.trim() || undefined,
+      image: env.INSTANCE_IMAGE?.trim() || undefined,
+      gatewayUrl: env.AI_GATEWAY_PUBLIC_URL?.trim() || undefined,
     },
   };
 }
