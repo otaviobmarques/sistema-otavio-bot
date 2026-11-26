@@ -1,0 +1,63 @@
+name: gateway-image
+
+# Imagem do Gateway de IA do ArkoBot (apps/admin/Dockerfile.gateway).
+# Em PR: só monta e testa. Na main: publica ghcr.io/<dono>/arkobot-gateway:latest, que a VPS usa
+# (apps/admin/deploy/gateway.vps.compose.yml).
+on:
+  push:
+    branches: [main]
+    paths: ["apps/admin/**", "pnpm-lock.yaml", ".github/workflows/gateway-image.yml"]
+  pull_request:
+    paths: ["apps/admin/**", "pnpm-lock.yaml", ".github/workflows/gateway-image.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: gateway-image-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Nome da imagem
+        id: img
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/arkobot-gateway" >> "$GITHUB_OUTPUT"
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/admin/Dockerfile.gateway
+          load: true
+          tags: |
+            ${{ steps.img.outputs.name }}:latest
+            ${{ steps.img.outputs.name }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Testa a imagem (sobe com um Postgres de teste e responde /health)
+        run: |
+          docker network create gwtest
+          docker run -d --name pg --network gwtest -e POSTGRES_PASSWORD=teste postgres:16
+          for i in $(seq 1 30); do docker exec pg pg_isready -U postgres && break; sleep 1; done
+          docker run -d --name gw --network gwtest -p 8791:8791 \
+            -e DATABASE_URL=postgres://postgres:teste@pg:5432/postgres -e DATABASE_SSL=off \
+            -e ADMIN_ENCRYPTION_KEY=$(head -c32 /dev/urandom | base64) \
+            ${{ steps.img.outputs.name }}:${{ github.sha }}
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8791/health && exit 0; sleep 1; done
+          docker logs gw; exit 1
+      - if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publica no GHCR
+        if: github.event_name != 'pull_request'
+        run: |
+          docker push ${{ steps.img.outputs.name }}:${{ github.sha }}
+          docker push ${{ steps.img.outputs.name }}:latest
