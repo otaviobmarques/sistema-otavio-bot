@@ -1,6 +1,7 @@
 import type { CredentialCheck } from "../billing/provider.ts";
+import { OPENAI_COMPATIBLE_BASE_URLS } from "../gateway/providers.ts";
 
-export const AI_PROVIDERS = ["anthropic", "openai", "openrouter", "google", "groq", "other"] as const;
+export const AI_PROVIDERS = ["anthropic", "openai", "openrouter", "google", "nvidia", "groq", "cerebras", "other"] as const;
 export type AiProvider = (typeof AI_PROVIDERS)[number];
 
 interface Probe {
@@ -17,9 +18,12 @@ function aiProbe(provider: AiProvider, key: string, baseUrl: string | null): Pro
     case "openrouter":
       return { url: `${baseUrl ?? "https://openrouter.ai"}/api/v1/key`, headers: { Authorization: `Bearer ${key}` } };
     case "google":
-      return { url: `${baseUrl ?? "https://generativelanguage.googleapis.com"}/v1beta/models?pageSize=1`, headers: { "x-goog-api-key": key } };
+      // Google's OpenAI-compatible model list answers without checking the key; the native one checks it.
+      return { url: `${new URL(baseUrl ?? OPENAI_COMPATIBLE_BASE_URLS.google).origin}/v1beta/models?pageSize=1`, headers: { "x-goog-api-key": key } };
+    case "nvidia":
     case "groq":
-      return { url: `${baseUrl ?? "https://api.groq.com"}/openai/v1/models`, headers: { Authorization: `Bearer ${key}` } };
+    case "cerebras":
+      return { url: `${baseUrl ?? OPENAI_COMPATIBLE_BASE_URLS[provider]}/models`, headers: { Authorization: `Bearer ${key}` } };
     case "other":
       return baseUrl ? { url: `${baseUrl}/v1/models`, headers: { Authorization: `Bearer ${key}` } } : null;
   }
@@ -40,6 +44,10 @@ async function probe(fetcher: typeof fetch, target: Probe): Promise<CredentialCh
 export function checkAiKey(fetcher: typeof fetch, provider: AiProvider, key: string, baseUrl: string | null): Promise<CredentialCheck> {
   const target = aiProbe(provider, key, baseUrl?.replace(/\/+$/, "") ?? null);
   if (!target) return Promise.resolve({ ok: false, message: "Informe a URL base para testar este provedor" });
+  // NVIDIA's model list answers without checking the key, and there is no read-only call that does.
+  if (provider === "nvidia") {
+    return probe(fetcher, target).then((result) => result.ok ? { ok: true, message: "Provedor no ar; a NVIDIA só confere a chave na primeira requisição" } : result);
+  }
   return probe(fetcher, target);
 }
 

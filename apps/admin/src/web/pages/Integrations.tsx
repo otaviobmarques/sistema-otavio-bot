@@ -1,6 +1,7 @@
 import { BrainCircuit, KeyRound, Landmark, Lock, Plus, Server, Zap } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router";
+import { isVersionedProvider, OPENAI_COMPATIBLE_BASE_URLS } from "../../gateway/providers.ts";
 import { api, useApi } from "../api.ts";
 import { canWrite, useMe } from "../App.tsx";
 import { AI_PROVIDER, dateTime } from "../format.ts";
@@ -112,6 +113,10 @@ export function IntegrationsPage() {
   );
 }
 
+function defaultBaseUrl(provider: string): string {
+  return isVersionedProvider(provider) ? OPENAI_COMPATIBLE_BASE_URLS[provider] : "";
+}
+
 function AiKeyDialog({ current, onClose, onSaved }: { current: AiKey | null; onClose: () => void; onSaved: () => void }) {
   const toast = useToast();
   const [f, setF] = useState({ provider: current?.provider ?? "anthropic", label: current?.label ?? "", apiKey: "", baseUrl: current?.base_url ?? "", priority: String(current?.priority ?? 100), enabled: current?.enabled ?? true });
@@ -150,11 +155,16 @@ function AiKeyDialog({ current, onClose, onSaved }: { current: AiKey | null; onC
       <Button variant="secondary" onClick={onClose}>Cancelar</Button><Button busy={busy} onClick={save}>Salvar</Button>
     </>}>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Provedor"><Select disabled={Boolean(current)} value={f.provider} onChange={(e) => setF({ ...f, provider: e.target.value })}>{Object.entries(AI_PROVIDER).map(([v, l]) => <option key={v} value={v}>{l}</option>)}</Select></Field>
+        <Field label="Provedor"><Select disabled={Boolean(current)} value={f.provider} onChange={(e) => setF({ ...f, provider: e.target.value, baseUrl: defaultBaseUrl(e.target.value) })}>{Object.entries(AI_PROVIDER).map(([v, l]) => <option key={v} value={v}>{l}</option>)}</Select></Field>
         <Field label="Prioridade" hint="Menor é usada primeiro"><Input inputMode="numeric" value={f.priority} onChange={(e) => setF({ ...f, priority: e.target.value })} /></Field>
       </div>
       <Field label="Nome"><Input value={f.label} onChange={(e) => setF({ ...f, label: e.target.value })} placeholder="Anthropic – conta principal" /></Field>
-      {!current && (f.provider === "other" || f.provider === "openai") ? <Field label="URL base (opcional)" hint="Só para provedores compatíveis com a API da OpenAI"><Input value={f.baseUrl} onChange={(e) => setF({ ...f, baseUrl: e.target.value })} placeholder="https://…" /></Field> : null}
+      {!current && (f.provider === "other" || f.provider === "openai" || isVersionedProvider(f.provider)) ? (
+        <Field label={isVersionedProvider(f.provider) ? "URL base" : "URL base (opcional)"} hint={isVersionedProvider(f.provider) ? "Já preenchida com a do provedor (com a versão, ex.: …/v1)" : "Só para provedores compatíveis com a API da OpenAI"}>
+          <Input value={f.baseUrl} onChange={(e) => setF({ ...f, baseUrl: e.target.value })} placeholder="https://…" />
+        </Field>
+      ) : null}
+      {!current && isVersionedProvider(f.provider) ? <p className="text-xs text-slate-500">Chave do plano gratuito do provedor serve para a IA gratuita do gateway (modelos marcados "grátis" em Preços). Pode cadastrar várias: o gateway usa pela prioridade e passa para a próxima quando uma chega no limite.</p> : null}
       <Field label={current ? "Nova chave (deixe vazio para manter)" : "Chave de API"} hint="Cifrada antes de gravar; não é exibida depois.">
         <Input type="password" autoComplete="off" className="font-mono" value={f.apiKey} onChange={(e) => setF({ ...f, apiKey: e.target.value })} />
       </Field>

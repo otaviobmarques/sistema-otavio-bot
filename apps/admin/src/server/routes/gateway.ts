@@ -2,19 +2,34 @@ import { z } from "zod";
 import { audit } from "../../audit.ts";
 import type { AppContext } from "../../context.ts";
 import { DomainError } from "../../domain/lifecycle.ts";
-import { GATEWAY_PROVIDERS } from "../../gateway/pricing.ts";
+import { freeModelAllowed } from "../../gateway/free-ai.ts";
+import { GATEWAY_PROVIDERS, isOpenAiCompatible } from "../../gateway/pricing.ts";
 import { actorOf, body, router } from "../http.ts";
 
 const usd = z.number().min(0).max(10_000);
 const markup = z.number().min(0).max(1000).nullable();
+const MODEL_ID = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,159}$/;
 const priceSchema = z.object({
-  model: z.string().trim().regex(/^[A-Za-z0-9][A-Za-z0-9._:/-]{0,159}$/, "use o id do modelo no provedor (ex.: claude-haiku-4-5, google/gemini-2.5-flash)"),
-  provider: z.enum(GATEWAY_PROVIDERS as unknown as ["anthropic", "openai", "openrouter"]),
+  model: z.string().trim().regex(MODEL_ID, "use o id do modelo no provedor (ex.: claude-haiku-4-5, google/gemini-2.5-flash)"),
+  provider: z.enum(GATEWAY_PROVIDERS),
   label: z.string().trim().max(80).default(""),
   inputUsd: usd, cachedInputUsd: usd, cacheWriteUsd: usd, outputUsd: usd,
   markupPercent: markup.default(null),
   defaultMaxOutput: z.number().int().min(1).max(1_000_000).default(8192),
   enabled: z.boolean().default(true),
+  free: z.boolean().default(false),
+  upstreamModel: z.string().trim().regex(MODEL_ID, "id inválido").nullable().default(null),
+}).superRefine((price, issue) => {
+  if (price.free && (price.inputUsd || price.cachedInputUsd || price.cacheWriteUsd || price.outputUsd)) {
+    issue.addIssue({ code: "custom", path: ["free"], message: "modelo gratuito tem todos os preços zerados" });
+  }
+  if (price.free && !freeModelAllowed(price.provider, price.upstreamModel || price.model)) {
+    issue.addIssue({ code: "custom", path: ["upstreamModel"], message: "no OpenRouter, modelo grátis precisa terminar em :free (os outros são cobrados da conta)" });
+  }
+  // The ArkoBot instance lists these providers' models on its OpenRouter engine, which only accepts "vendor/model" ids.
+  if (isOpenAiCompatible(price.provider) && !price.model.includes("/")) {
+    issue.addIssue({ code: "custom", path: ["model"], message: "para este provedor use um id com barra (ex.: gratis/gemini-2.5-flash) e ponha o id do provedor em \"Id no provedor\"" });
+  }
 });
 
 const settingsSchema = z.object({
@@ -32,7 +47,7 @@ export function gatewayRoutes(ctx: AppContext) {
     const [prices, settings, plans] = await Promise.all([
       ctx.db.query(`SELECT p.*, a.email AS updated_by_email FROM model_prices p LEFT JOIN admins a ON a.id = p.updated_by ORDER BY p.provider, p.model`),
       ctx.db.query("SELECT * FROM gateway_settings WHERE id"),
-      ctx.db.query("SELECT code, name, allowed_models FROM plans WHERE active ORDER BY sort_order"),
+      ctx.db.query("SELECT code, name, allowed_models, free_requests_per_day FROM plans WHERE active ORDER BY sort_order"),
     ]);
     return c.json({ prices: prices.rows, settings: settings.rows[0], plans: plans.rows });
   });
@@ -42,15 +57,16 @@ export function gatewayRoutes(ctx: AppContext) {
     const row = await ctx.db.tx(async (q) => {
       const before = (await q.query("SELECT * FROM model_prices WHERE model = $1", [input.model])).rows[0] ?? null;
       const { rows } = await q.query(
-        `INSERT INTO model_prices (model, provider, label, input_usd, cached_input_usd, cache_write_usd, output_usd, markup_percent, default_max_output, enabled, source, updated_by)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'painel', $11)
+        `INSERT INTO model_prices (model, provider, label, input_usd, cached_input_usd, cache_write_usd, output_usd, markup_percent, default_max_output, enabled,
+           free, upstream_model, source, updated_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'painel', $13)
          ON CONFLICT (model) DO UPDATE SET provider = excluded.provider, label = excluded.label, input_usd = excluded.input_usd,
            cached_input_usd = excluded.cached_input_usd, cache_write_usd = excluded.cache_write_usd, output_usd = excluded.output_usd,
            markup_percent = excluded.markup_percent, default_max_output = excluded.default_max_output, enabled = excluded.enabled,
-           source = 'painel', updated_by = excluded.updated_by
+           free = excluded.free, upstream_model = excluded.upstream_model, source = 'painel', updated_by = excluded.updated_by
          RETURNING *`,
         [input.model, input.provider, input.label, input.inputUsd, input.cachedInputUsd, input.cacheWriteUsd, input.outputUsd, input.markupPercent,
-          input.defaultMaxOutput, input.enabled, c.get("admin").id]);
+          input.defaultMaxOutput, input.enabled, input.free, input.upstreamModel || null, c.get("admin").id]);
       await audit(q, actorOf(c), { action: before ? "model_price.updated" : "model_price.created", targetType: "model_price", targetId: input.model,
         data: { before, after: input } });
       return rows[0];

@@ -240,7 +240,7 @@ describe("gateway de IA", () => {
     const price = priceFromRow((await f.ctx.db.query<PriceRow>("SELECT * FROM model_prices WHERE model = 'claude-haiku-4-5'")).rows[0]!);
     const caller = (await resolveGatewayToken(f.ctx.db, f.token, f.ctx.now()))!;
     const record: UsageRecord = { caller, requestId: "dup-1", provider: "anthropic", model: price.model, endpoint: "v1/messages", company: null, bot: null,
-      providerKeyId: null, httpStatus: 200, durationMs: 1 };
+      providerKeyId: null, upstreamModel: null, httpStatus: 200, durationMs: 1 };
     const settings = { markupPercent: 30, usdBrlRate: 5.5, overdraftCredits: 0, rateLimitPerMinute: 100, reservationMinutes: 30 };
     const usage = { input: 10_000, output: 1000, cacheRead: 0, cacheWrite: 0 };
     const results = await Promise.all([1, 2, 3].map(() => settleRequest(f.ctx.db, { record, usage, price, settings, estimated: false, now: f.ctx.now() })));

@@ -6,6 +6,7 @@ import { audit } from "../../audit.ts";
 import type { AppContext } from "../../context.ts";
 import { DomainError, setOrganizationStatus } from "../../domain/lifecycle.ts";
 import { adjustCredits, createOrganization } from "../../domain/organizations.ts";
+import { freeRequestsToday } from "../../gateway/accounting.ts";
 import { issueGatewayToken, revokeGatewayToken } from "../../gateway/tokens.ts";
 import { actorOf, body, param, reason, router } from "../http.ts";
 
@@ -22,7 +23,7 @@ const createSchema = z.object({
 });
 
 const SUBSCRIPTION_SQL = `
-  SELECT s.*, p.name AS plan_name, p.code AS plan_code, p.free AS plan_free, p.billing_cycle, ga.email AS courtesy_granted_by_email,
+  SELECT s.*, p.name AS plan_name, p.code AS plan_code, p.free AS plan_free, p.billing_cycle, p.free_requests_per_day, ga.email AS courtesy_granted_by_email,
     (s.price_cents + COALESCE((SELECT SUM(a.quantity * a.unit_price_cents) FROM subscription_addons a WHERE a.subscription_id = s.id), 0))::int AS total_cents
   FROM subscriptions s JOIN plans p ON p.id = s.plan_id LEFT JOIN admins ga ON ga.id = s.courtesy_granted_by`;
 
@@ -81,7 +82,7 @@ export function clientRoutes(ctx: AppContext) {
     const id = param(c, "id");
     const org = (await ctx.db.query("SELECT * FROM organizations WHERE id = $1", [id])).rows[0];
     if (!org) throw new DomainError("Cliente não encontrado", 404);
-    const [members, subscription, wallet, ledger, payments, instances, auditRows, terms, addons, tokens, usage, deletions] = await Promise.all([
+    const [members, subscription, wallet, ledger, payments, instances, auditRows, terms, addons, tokens, usage, deletions, freeToday] = await Promise.all([
       ctx.db.query(`SELECT a.id, a.email, a.name, a.phone, m.role, m.created_at FROM memberships m JOIN accounts a ON a.id = m.account_id
                     WHERE m.organization_id = $1 ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, a.email`, [id]),
       ctx.db.query(`${SUBSCRIPTION_SQL} WHERE s.organization_id = $1 ORDER BY (s.status = 'canceled'), s.created_at DESC LIMIT 1`, [id]),
@@ -105,12 +106,13 @@ export function clientRoutes(ctx: AppContext) {
                     FROM account_deletion_requests d JOIN accounts a ON a.id = d.account_id LEFT JOIN admins ad ON ad.id = d.resolved_by
                     WHERE d.organization_id = $1 OR d.account_id IN (SELECT account_id FROM memberships WHERE organization_id = $1)
                     ORDER BY d.created_at DESC LIMIT 20`, [id]),
+      freeRequestsToday(ctx.db, id, ctx.now()),
     ]);
     return c.json({
       client: org, members: members.rows, subscription: subscription.rows[0] ?? null, addons: addons.rows,
       wallet: wallet.rows[0] ?? { plan_balance: 0, extra_balance: 0 }, ledger: ledger.rows, payments: payments.rows,
       instances: instances.rows, audit: auditRows.rows, terms: terms.rows, gatewayTokens: tokens.rows, usage30d: usage.rows[0],
-      deletionRequests: deletions.rows,
+      deletionRequests: deletions.rows, freeRequestsToday: freeToday,
     });
   });
 
