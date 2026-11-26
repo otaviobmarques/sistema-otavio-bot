@@ -167,7 +167,7 @@ describe("limite de espaço de ponta a ponta", () => {
     const appFetch = ((input: RequestInfo | URL, init?: RequestInit) => app.request(String(input), init, { incoming: { socket: { remoteAddress: "198.51.100.9" } } })) as typeof fetch;
     const docker = new FakeDocker();
     const agent = createAgent({
-      adminUrl: TEST_URL, token: created.data.token, socketPath: "/nao/usado", network: "arkobot-instances", entrypoint: "websecure", certResolver: "letsencrypt",
+      adminUrl: TEST_URL, token: created.data.token, socketPath: "/nao/usado", network: "arkobot-instances", proxyContainer: null, entrypoint: "websecure", certResolver: "letsencrypt",
       trustedProxies: null, registryAuth: null,
     }, { docker, fetch: appFetch, log: () => undefined, now: () => f.ctx.now().getTime() });
     const instanceRow = async () => (await f.ctx.db.query<Row>("SELECT * FROM instances WHERE organization_id = $1", [signup.data.organization.id])).rows[0]!;
