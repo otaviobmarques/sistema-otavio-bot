@@ -15,8 +15,7 @@ import { MANAGED_ENDPOINT_PHONES_UNUSED } from "./companion-endpoint-need.mjs";
 
 export { managedEndpointNeed, PHONE_UNUSED_RELEASE_MS } from "./companion-endpoint-need.mjs";
 
-/** Security: ArkoBot runs no account control plane, so none is used unless OMB_CONTROL_PLANE_URL names one; the original
- * project's is never contacted. */
+/** ArkoBot runs no account control plane: none is used unless OMB_CONTROL_PLANE_URL names one. */
 export const DEFAULT_COMPANION_CONTROL_PLANE_URL = "";
 
 export const COMPANION_CLIENT_INSTANCE_FIELD = "companionClientInstanceId";
