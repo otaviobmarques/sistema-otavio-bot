@@ -3,7 +3,9 @@ import type { AppContext } from "../../context.ts";
 import { applyStatusReport, desiredStateFor, sweepProvisioning } from "../../provisioning/instances.ts";
 import { nodeForToken } from "../../provisioning/nodes.ts";
 import { statusReportSchema } from "../../provisioning/protocol.ts";
-import { router } from "../http.ts";
+import { router, type Ctx } from "../http.ts";
+import { hit } from "../../auth/rate-limit.ts";
+import { enrollMachine } from "../../computers/provisioning.ts";
 
 /**
  * The node agents' API (/api/agent/v1/*), on the Admin's host only. A node's bearer token is its only credential:
@@ -41,4 +43,22 @@ export function agentRoutes(ctx: AppContext) {
   });
 
   return app;
+}
+
+const ENROLL_LIMIT = { windowMs: 60 * 60_000, max: 60 };
+
+/** POST /api/agent/v1/enroll: the first-boot script of a customer VPS trades its enrollment token for a node token. */
+export function enrollRoute(ctx: AppContext) {
+  return async (c: Ctx) => {
+    if (!(await hit(ctx.db, `enroll:${c.get("ip")}`, ENROLL_LIMIT, ctx.now()))) return c.json({ error: "muitas tentativas" }, 429);
+    let raw: { machineId?: unknown; enrollToken?: unknown };
+    try {
+      raw = await c.req.json();
+    } catch {
+      return c.json({ error: "corpo inválido" }, 400);
+    }
+    const answer = await enrollMachine(ctx, { machineId: raw?.machineId, enrollToken: raw?.enrollToken }, c.get("ip"));
+    if (!answer) return c.json({ error: "inscrição recusada" }, 401);
+    return c.json(answer);
+  };
 }

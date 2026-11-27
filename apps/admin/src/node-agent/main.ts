@@ -5,11 +5,12 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { pathToFileURL } from "node:url";
 import { AGENT_API, desiredStateSchema, NODE_TOKEN_PATTERN, type DesiredState, type StatusReport } from "../provisioning/protocol.ts";
 import { createDiskMeter } from "./disk.ts";
+import { DEFAULT_RELAY_IMAGE, reconcileEdges } from "./edges.ts";
 import { DockerClient, type DockerApi } from "./docker.ts";
 import { attachProxy, prepareNetwork, reconcile, type Log } from "./reconcile.ts";
 import type { NodeSettings } from "./spec.ts";
 
-export const AGENT_VERSION = "0.1.0";
+export const AGENT_VERSION = "0.2.0";
 
 export interface AgentConfig {
   adminUrl: string;
@@ -23,6 +24,8 @@ export interface AgentConfig {
   /** OMB_CLOUD_TRUSTED_PROXIES for every instance; null: the instance network's subnet. */
   trustedProxies: string | null;
   registryAuth: string | null;
+  /** The image the edge relays run (this agent's own image, which ships relay.mjs). */
+  relayImage?: string;
 }
 
 export function agentConfig(env: NodeJS.ProcessEnv): AgentConfig {
@@ -48,6 +51,7 @@ export function agentConfig(env: NodeJS.ProcessEnv): AgentConfig {
     entrypoint: env.ARKO_TRAEFIK_ENTRYPOINT?.trim() || "websecure",
     certResolver: env.ARKO_TRAEFIK_CERTRESOLVER?.trim() || "letsencrypt",
     trustedProxies: env.ARKO_TRUSTED_PROXIES?.trim() || null,
+    relayImage: env.ARKO_RELAY_IMAGE?.trim() || DEFAULT_RELAY_IMAGE,
     registryAuth: user && password
       ? Buffer.from(JSON.stringify({ username: user, password, serveraddress: env.ARKO_REGISTRY_SERVER?.trim() || "ghcr.io" })).toString("base64url")
       : null,
@@ -101,6 +105,8 @@ export function createAgent(config: AgentConfig, deps: { docker?: DockerApi; fet
           trustedProxies: config.trustedProxies ?? subnet,
         };
         report = await reconcile(docker, node, desired, AGENT_VERSION, log);
+        const edgeProblem = await reconcileEdges(docker, node, desired.edges, config.relayImage ?? DEFAULT_RELAY_IMAGE, log);
+        if (edgeProblem) report = { ...report, error: edgeProblem };
         await disk.attach(report, desired.node.id);
       } catch (error) {
         const message = (error as Error).message.slice(0, 500);

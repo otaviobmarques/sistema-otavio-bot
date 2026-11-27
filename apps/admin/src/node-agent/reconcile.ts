@@ -4,14 +4,14 @@
 import { LABEL_AGENT_CONFIG, agentConfigHash, containerName, containerSpec, managedLabels, STOP_TIMEOUT_S, volumeName, type NodeSettings } from "./spec.ts";
 import type { ContainerDetails, ContainerSummary, DockerApi } from "./docker.ts";
 import {
-  LABEL_INSTANCE, LABEL_MANAGED, LABEL_NODE, LABEL_REVISION, type DesiredInstance, type DesiredState, type ObservedInstance, type StatusReport,
+  LABEL_EDGE, LABEL_INSTANCE, LABEL_MANAGED, LABEL_NODE, LABEL_REVISION, type DesiredInstance, type DesiredState, type ObservedInstance, type StatusReport,
 } from "../provisioning/protocol.ts";
 
 export type Log = (line: string) => void;
 
 /** Whether this container is one this agent may touch: ours, and this node's. Checked again before every change. */
 export function isOurs(labels: Record<string, string> | null | undefined, nodeId: string): boolean {
-  return labels?.[LABEL_MANAGED] === "true" && labels?.[LABEL_NODE] === nodeId && typeof labels?.[LABEL_INSTANCE] === "string";
+  return labels?.[LABEL_MANAGED] === "true" && labels?.[LABEL_NODE] === nodeId && typeof labels?.[LABEL_INSTANCE] === "string" && labels?.[LABEL_EDGE] !== "true";
 }
 
 function observe(details: ContainerDetails, revision: string | null): Omit<ObservedInstance, "id"> {

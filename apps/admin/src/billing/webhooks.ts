@@ -4,6 +4,7 @@ import type { Queryable } from "../db/db.ts";
 import { grantPlanPeriod, postLedger, reversePaymentCredits } from "../credits/ledger.ts";
 import { applySubscriptionSignal, type SubscriptionRow } from "../domain/lifecycle.ts";
 import { enqueue } from "../jobs/queue.ts";
+import { queueComputerSync } from "../computers/queue.ts";
 import { safeEqual } from "../security/crypto.ts";
 import { billingAccount, webhookTokenContext } from "./accounts.ts";
 import { normalizeAsaasEvent } from "./asaas.ts";
@@ -141,6 +142,7 @@ async function onPaid(ctx: AppContext, q: Queryable, row: PaymentRow, payment: N
     );
   }
   await applySubscriptionSignal(q, WEBHOOK, sub.id, "payment_paid", now, "pagamento confirmado");
+  await queueComputerSync(q, row.organization_id, now);
   return granted ? `cota de ${Number(sub.credits_per_month).toLocaleString("pt-BR")} créditos do plano creditada` : "cota do período já creditada";
 }
 

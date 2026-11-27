@@ -135,7 +135,7 @@ describe("provisionamento automático", () => {
     // Reported healthy: ready, and the instance learns its plan.
     const ready = (await instanceOf(f.ctx, orgId))!;
     expect(ready).toMatchObject({ state: "ready", observed_state: "running", observed_health: "healthy" });
-    expect((await f.ctx.db.query<Row>("SELECT last_seen_at, agent_version FROM nodes WHERE id = $1", [node.id])).rows[0]!.agent_version).toBe("0.1.0");
+    expect((await f.ctx.db.query<Row>("SELECT last_seen_at, agent_version FROM nodes WHERE id = $1", [node.id])).rows[0]!.agent_version).toBe("0.2.0");
     await tick(f.ctx);
     expect(seen).toEqual([{ host: "padaria-pao-quente.arkobot.com.br", path: "/api/cloud/plan", body: { v: 1, tier: "inicial" } }]);
     expect((await instanceOf(f.ctx, orgId))!.plan_tier_synced).toBe("inicial");

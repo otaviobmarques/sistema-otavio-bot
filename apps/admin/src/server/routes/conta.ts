@@ -5,6 +5,7 @@ import {
   CUSTOMER_COOKIE, CUSTOMER_SESSION_TTL_MS, customerSessionFor, requestCustomerOtp, revokeCustomerSession, verifyCustomerOtp,
 } from "../../customer/auth.ts";
 import { arkobotView, openArkoBot } from "../../customer/arkobot.ts";
+import { computersView } from "../../customer/computers.ts";
 import { CUSTOMER_BILLING_TYPES, MAX_EXTRA_COMPUTERS, type CreditPackageId } from "../../customer/catalog.ts";
 import {
   buyCredits, cancelOwnSubscription, completeOnboarding, customerState, dashboard, exportData, planCatalog, requestDeletion, setExtraComputers,
@@ -124,6 +125,7 @@ export function contaRoutes(ctx: AppContext) {
 
   authed.get("/arkobot", async (c) => c.json(await arkobotView(ctx, request(c))));
   authed.post("/arkobot/abrir", async (c) => c.json(await openArkoBot(ctx, request(c))));
+  authed.get("/computadores", async (c) => c.json(await computersView(ctx, request(c))));
 
   authed.post("/creditos", async (c) => {
     const input = await body(c, z.object({ package: z.string().trim().max(20), billingType }));

@@ -14,6 +14,8 @@ RUN node apps/admin/scripts/build-node-agent.mjs
 FROM node:24-slim
 WORKDIR /app
 COPY --from=build /src/apps/admin/dist/node-agent/agent.mjs ./agent.mjs
+# O repasse de borda (contêineres arkoedge-*): mesma imagem, outro comando.
+COPY --from=build /src/apps/admin/dist/node-agent/relay.mjs ./relay.mjs
 ENV NODE_ENV=production
 # Roda como root só para falar com /var/run/docker.sock (que é do root). Não abre porta nenhuma.
 CMD ["node", "agent.mjs"]
