@@ -19,6 +19,8 @@ export interface AdminConfig {
   /** A header the edge in front of the Admin overwrites with the client IP (x-real-ip on Vercel). */
   clientIpHeader?: string;
   mailFrom: string;
+  /** ADMIN_ALERT_EMAIL: who gets the operational alerts (node down, instance broken); unset: every active owner. */
+  alertEmails?: string[];
   /** Resend API key. Without it e-mails (login codes included) only go to the log. */
   resendApiKey?: string;
   /** Development and tests only: send every Asaas call to this base URL (a fake server). */
@@ -58,6 +60,13 @@ function hostOf(url: string): string | null {
   }
 }
 
+function alertEmails(raw: string | undefined): string[] | undefined {
+  const list = (raw ?? "").split(",").map((email) => email.trim().toLowerCase()).filter(Boolean);
+  const bad = list.find((email) => !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email));
+  if (bad) throw new ConfigError(`ADMIN_ALERT_EMAIL: "${bad}" não é um e-mail`);
+  return list.length ? list : undefined;
+}
+
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AdminConfig {
   const production = env.NODE_ENV === "production";
   const publicUrl = (env.ADMIN_PUBLIC_URL?.trim() || "http://localhost:5190").replace(/\/+$/, "");
@@ -89,6 +98,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AdminConfig {
     cronSecret: env.CRON_SECRET?.trim() || undefined,
     clientIpHeader: env.ADMIN_CLIENT_IP_HEADER?.trim().toLowerCase() || (env.VERCEL ? "x-real-ip" : undefined),
     mailFrom: env.ADMIN_MAIL_FROM?.trim() || "ArkoBot Admin <admin@arkobot.com.br>",
+    alertEmails: alertEmails(env.ADMIN_ALERT_EMAIL),
     resendApiKey: env.RESEND_API_KEY?.trim() || undefined,
     asaasBaseUrlOverride: env.ASAAS_API_BASE_URL?.trim() || undefined,
     dunning: {

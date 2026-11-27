@@ -1,10 +1,11 @@
-import { Bot, ExternalLink } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Bot, ExternalLink, Moon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import type { ArkoBotStatus, ArkoBotView } from "../../customer/arkobot.ts";
-import { api, useApi } from "../../web/api.ts";
+import { useApi } from "../../web/api.ts";
 import { Button, Card, Spinner, cx, useToast } from "../../web/ui.tsx";
 import { WhatsAppButton } from "../shared.tsx";
 import { DiskUsageBar } from "./DiskUsageBar.tsx";
+import { openArkoBotIn } from "./open-arkobot.ts";
 
 const COPY: Record<Exclude<ArkoBotStatus, "none">, { title: string; text: string; tone: string }> = {
   preparing: { title: "Preparando…", tone: "bg-cyan-soft text-navy-900",
@@ -19,6 +20,10 @@ const COPY: Record<Exclude<ArkoBotStatus, "none">, { title: string; text: string
     text: "Seu ArkoBot está pausado e os seus dados continuam guardados. Fale com a gente para ligá-lo de novo." },
   failed: { title: "Com problema", tone: "bg-red-50 text-red-700",
     text: "Algo deu errado ao ligar o seu ArkoBot. Nossa equipe já foi avisada; se quiser, fale com a gente." },
+  sleeping: { title: "Dormindo", tone: "bg-indigo-50 text-indigo-900",
+    text: "Seu ArkoBot dorme depois de 30 minutos sem uso, para economizar, e acorda sozinho para as rotinas. Ao abrir, ele acorda em alguns segundos." },
+  waking: { title: "Acordando…", tone: "bg-cyan-soft text-navy-900",
+    text: "Seu ArkoBot está acordando. Em alguns segundos ele abre." },
 };
 
 /** "Meu ArkoBot": the instance's state and a button that opens it, already signed in, in a new tab. */
@@ -26,14 +31,20 @@ export function MeuArkoBotCard() {
   const { data, reload } = useApi<ArkoBotView>("/api/conta/arkobot");
   const toast = useToast();
   const [opening, setOpening] = useState(false);
-  const waiting = data?.status === "preparing";
+  const [waking, setWaking] = useState(false);
+  const gone = useRef(false);
+  useEffect(() => {
+    gone.current = false;
+    return () => { gone.current = true; };
+  }, []);
+  const waiting = data?.status === "preparing" || data?.status === "waking";
   useEffect(() => {
     if (!waiting) return;
     const timer = setInterval(reload, 10_000);
     return () => clearInterval(timer);
   }, [waiting, reload]);
   if (!data || data.status === "none") return null;
-  const copy = COPY[data.status];
+  const copy = COPY[waking ? "waking" : data.status];
 
   const open = async () => {
     // The tab opens from the click itself (no pop-up blocker), cut off from this page; it gets its address after.
@@ -41,9 +52,8 @@ export function MeuArkoBotCard() {
     if (tab) tab.opener = null;
     setOpening(true);
     try {
-      const { url } = await api<{ url: string }>("/api/conta/arkobot/abrir", { method: "POST", body: {} });
-      if (tab) tab.location.replace(url);
-      else window.location.assign(url);
+      await openArkoBotIn(tab, { waking: setWaking, cancelled: () => gone.current });
+      reload();
     } catch (error) {
       tab?.close();
       toast((error as Error).message, "error");
@@ -56,7 +66,9 @@ export function MeuArkoBotCard() {
   return (
     <Card title={<span className="flex items-center gap-2"><Bot className="h-4 w-4 text-cyan-ink" /> Meu ArkoBot</span>}>
       <div className={cx("rounded-xl p-4", copy.tone)}>
-        <div className="flex items-center gap-2 font-semibold">{waiting ? <Spinner /> : null}{copy.title}</div>
+        <div className="flex items-center gap-2 font-semibold">
+          {waiting || waking ? <Spinner /> : data.status === "sleeping" ? <Moon className="h-4 w-4" /> : null}{copy.title}
+        </div>
         <p className="mt-1 text-sm">{copy.text}</p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {data.canOpen ? (
@@ -65,7 +77,7 @@ export function MeuArkoBotCard() {
           {data.status === "failed" || data.status === "paused" ? <WhatsAppButton message="Olá! Meu ArkoBot está parado, podem me ajudar?">Falar com a gente</WhatsAppButton> : null}
         </div>
         {data.disk ? <DiskUsageBar disk={data.disk} /> : null}
-        {data.url && data.status !== "preparing" ? <p className="mt-2 text-xs opacity-80">Endereço: {data.url.replace(/^https:\/\//, "")}</p> : null}
+        {data.url && data.status !== "preparing" && !waking ? <p className="mt-2 text-xs opacity-80">Endereço: {data.url.replace(/^https:\/\//, "")}</p> : null}
         {!data.canManage && (data.status === "ready" || data.status === "payment_pending")
           ? <p className="mt-2 text-xs opacity-80">Quem abre o ArkoBot por aqui é o responsável pela conta da empresa.</p> : null}
       </div>

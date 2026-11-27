@@ -8,6 +8,8 @@ import { expireReservations } from "../gateway/accounting.ts";
 import { provisionForOrganization, sweepProvisioning, syncInstancePlan, type ProvisioningSweep } from "../provisioning/instances.ts";
 import { PROVISION_INSTANCE_JOB, STORAGE_MAIL_JOB, SYNC_INSTANCE_PLAN_JOB, SYNC_INSTANCE_STORAGE_JOB } from "../provisioning/queue.ts";
 import { sendStorageMail, syncInstanceStorage } from "../provisioning/storage.ts";
+import { ALERT_MAIL_JOB, checkHealthAlerts, sendAlertMail, type AlertSweep } from "../provisioning/health-alerts.ts";
+import { checkIdleInstances, wakeDueInstances, type IdleSweep } from "../provisioning/sleep.ts";
 import { SYSTEM } from "../audit.ts";
 import { runJobs, type JobHandler, type RunSummary } from "./queue.ts";
 
@@ -34,6 +36,9 @@ export const JOB_HANDLERS: Record<string, JobHandler> = {
   [SYNC_INSTANCE_STORAGE_JOB]: async (ctx, payload) => {
     await syncInstanceStorage(ctx, String(payload.instanceId));
   },
+  [ALERT_MAIL_JOB]: async (ctx, payload) => {
+    await sendAlertMail(ctx, { subject: String(payload.subject), text: String(payload.text) });
+  },
 };
 
 export interface TickSummary {
@@ -43,6 +48,9 @@ export interface TickSummary {
   scheduledCancellations: number;
   expiredReservations: number;
   provisioning: ProvisioningSweep;
+  /** Instances of plans that sleep: woken for their next routine, and the awake ones asked whether they are idle. */
+  sleep: IdleSweep & { woken: number };
+  alerts: AlertSweep;
 }
 
 /** One cron tick: the overdue ladder, the courtesies and the cancellations due at the end of a paid period, then the queue. Safe to run concurrently and as often as wanted. */
@@ -50,13 +58,17 @@ export async function tick(ctx: AppContext, limit = 50): Promise<TickSummary> {
   const dunning = await runDunning(ctx);
   const courtesy = await renewCourtesies(ctx);
   const scheduledCancellations = await endScheduledCancellations(ctx);
+  // Before the queue, so an alert's e-mail goes out on this same tick.
+  const alerts = await checkHealthAlerts(ctx);
   const jobs = await runJobs(ctx, JOB_HANDLERS, { limit });
   const provisioning = await sweepProvisioning(ctx);
+  const woken = await wakeDueInstances(ctx, { poke: true });
+  const idle = await checkIdleInstances(ctx);
   await sweepRateLimits(ctx.db, ctx.now());
   const expiredReservations = await expireReservations(ctx.db, ctx.now());
   const weekAgo = new Date(ctx.now().getTime() - 7 * 24 * 60 * 60_000);
   await ctx.db.query("DELETE FROM admin_sessions WHERE expires_at < $1", [weekAgo]);
   await ctx.db.query("DELETE FROM account_sessions WHERE expires_at < $1", [weekAgo]);
   await ctx.db.query("DELETE FROM account_otps WHERE expires_at < $1", [ctx.now()]);
-  return { jobs, dunning, courtesy, scheduledCancellations, expiredReservations, provisioning };
+  return { jobs, dunning, courtesy, scheduledCancellations, expiredReservations, provisioning, sleep: { ...idle, woken }, alerts };
 }

@@ -86,7 +86,7 @@ export function createCloudSignedRoutes(deps: {
       if (!verdict.ok) { console.warn(`cloud power read refused from ${source}: ${verdict.error}`); json(res, verdict.status, { error: verdict.error }); return true; }
       const minutes = url.searchParams.get("idleMinutes");
       const window = minutes !== null && /^\d{1,4}$/.test(minutes) && Number(minutes) >= 1 && Number(minutes) <= 24 * 60 ? Number(minutes) * 60_000 : CLOUD_IDLE_ACTIVITY_MS;
-      json(res, 200, power.report(window));
+      json(res, 200, power.report(window, url.searchParams.get("browsers") === "1"));
       return true;
     }
     if (power) {
@@ -99,7 +99,7 @@ export function createCloudSignedRoutes(deps: {
       try { parsed = body.length ? JSON.parse(body.toString("utf8")) : {}; } catch { json(res, 400, { error: "invalid_body" }); return true; }
       const minutes = (parsed as { idleMinutes?: unknown } | null)?.idleMinutes;
       if (minutes !== undefined && !(Number.isInteger(minutes) && (minutes as number) >= 1 && (minutes as number) <= 24 * 60)) { json(res, 400, { error: "invalid_idle_minutes" }); return true; }
-      const answer = power.prepareSleep(minutes === undefined ? CLOUD_IDLE_ACTIVITY_MS : (minutes as number) * 60_000);
+      const answer = power.prepareSleep(minutes === undefined ? CLOUD_IDLE_ACTIVITY_MS : (minutes as number) * 60_000, (parsed as { browsers?: unknown } | null)?.browsers === true);
       json(res, answer.ok ? 200 : 409, answer);
       return true;
     }
