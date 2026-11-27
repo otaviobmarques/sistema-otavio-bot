@@ -6,6 +6,7 @@ import {
 } from "../../provisioning/instances.ts";
 import { createNode, rotateNodeToken, setNodeStatus } from "../../provisioning/nodes.ts";
 import { NODE_STALE_MS, provisioningSettings } from "../../provisioning/settings.ts";
+import { powerStateOf } from "../../provisioning/sleep.ts";
 import { actorOf, body, param, reason, router, type Ctx } from "../http.ts";
 
 const nodeSchema = z.object({
@@ -30,7 +31,8 @@ export function instanceRoutes(ctx: AppContext) {
         `SELECT i.id, i.organization_id, o.name AS organization_name, i.slug, i.public_url, i.mode, i.state, i.state_reason, i.node_id, n.name AS node_name,
            i.operator_stopped, i.decommissioned_at, i.observed_state, i.observed_health, i.observed_error, i.observed_at, i.ready_at, i.generation,
            i.plan_tier_synced, i.created_at, p.code AS plan_code, p.name AS plan_name,
-           i.disk_used_bytes, i.disk_quota_bytes, i.disk_state, i.disk_measured_at
+           i.disk_used_bytes, i.disk_quota_bytes, i.disk_state, i.disk_measured_at,
+           i.sleeping_since, i.wake_at, i.woke_at, i.power_busy, i.power_checked_at, i.unhealthy_since, i.unhealthy_alerted_at, p.idle_sleep_minutes
          FROM instances i JOIN organizations o ON o.id = i.organization_id LEFT JOIN nodes n ON n.id = i.node_id
          LEFT JOIN LATERAL (SELECT s.plan_id FROM subscriptions s WHERE s.organization_id = i.organization_id
                             ORDER BY (s.status <> 'canceled') DESC, s.created_at DESC LIMIT 1) s ON true
@@ -38,14 +40,14 @@ export function instanceRoutes(ctx: AppContext) {
          ORDER BY (i.decommissioned_at IS NULL) DESC, i.created_at DESC LIMIT 500`),
       ctx.db.query(
         `SELECT n.id, n.name, n.kind, n.public_ip, n.capacity_instances, n.capacity_ram_mb, n.status, n.last_seen_at, n.agent_version, n.last_error,
-           n.orphan_containers, n.created_at, (n.agent_token_hash IS NOT NULL) AS has_token,
+           n.orphan_containers, n.created_at, n.down_alerted_at, (n.agent_token_hash IS NOT NULL) AS has_token,
            (SELECT count(*)::int FROM instances i WHERE i.node_id = n.id AND i.decommissioned_at IS NULL) AS instances
          FROM nodes n ORDER BY n.created_at`),
     ]);
     const now = ctx.now().getTime();
     return c.json({
       settings: provisioningSettings(ctx.config),
-      instances: instances.rows.map((row) => ({ ...row, desired: desiredOf(row as never) })),
+      instances: instances.rows.map((row) => ({ ...row, desired: desiredOf(row as never), power: powerStateOf(row as never, ctx.now()) })),
       nodes: nodes.rows.map((row) => ({ ...row, online: row.last_seen_at ? now - new Date(row.last_seen_at as string).getTime() < NODE_STALE_MS : false })),
     });
   });

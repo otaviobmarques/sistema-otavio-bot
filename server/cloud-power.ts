@@ -11,7 +11,7 @@ import { join } from "node:path";
 import { writeFileAtomic } from "./atomic.ts";
 
 /** Why a home is not idle, as fixed codes (the Admin keeps the latest one for its operator page). */
-export type CloudPowerBusy = "turn" | "run" | "handoff" | "live-call" | "computer" | "maintenance" | "recent-activity" | "recent-work" | "just-woke" | "due-soon";
+export type CloudPowerBusy = "turn" | "run" | "handoff" | "live-call" | "computer" | "maintenance" | "recent-activity" | "recent-work" | "just-woke" | "due-soon" | "browser";
 
 export interface CloudPowerReport {
   v: 1; at: number; bootedAt: number; wokeAt: number;
@@ -22,6 +22,9 @@ export interface CloudPowerReport {
   nextDueAt: number | null;
   /** The home said yes to a sleep request and has not been used or woken since. */
   sleeping: boolean;
+  /** Signed-in pages with their event stream open now (additive). An Admin that asks (`browsers`) never lets a home
+   * sleep under one: its read and its sleep request then count each as busy (`browser`). */
+  browsers: number;
   /** What the first request after its last wake (or boot) was, if one came within WOKE_BY_MS: a fixed code for its kind
    * (`wakeCode`) and whether it was a background one. The Admin logs it for a wake by Fly's proxy: what woke it. */
   wokeBy: { by: string; background: boolean } | null;
@@ -115,7 +118,7 @@ export function createCloudPower(options: {
   let wokeAt = bootedAt, lastActivityAt: number | null = null, lastWorkAt: number | null = null;
   /** The first request since `wokeAt` (`arrived`), and whether one came. */
   let wokeBy: CloudPowerReport["wokeBy"] = null, wokeSeen = false;
-  let sleepingSince: number | null = null, inFlight = 0;
+  let sleepingSince: number | null = null, inFlight = 0, streams = 0;
   let sleepAbort = new AbortController();
   let lastTick = now();
 
@@ -160,9 +163,10 @@ export function createCloudPower(options: {
   const timer = setInterval(tick, TICK_MS);
   timer.unref?.();
 
-  const busyNow = (activityMs: number): CloudPowerBusy[] => {
+  const busyNow = (activityMs: number, browsers: boolean): CloudPowerBusy[] => {
     tick();
     const at = now(), busy = working(), workingNow = busy.length > 0;
+    if (browsers && streams > 0) busy.push("browser");
     if (lastActivityAt !== null && at - lastActivityAt < activityMs) busy.push("recent-activity");
     if (!workingNow && lastWorkAt !== null && at - lastWorkAt < CLOUD_IDLE_WORK_MS) busy.push("recent-work");
     if (at - wokeAt < CLOUD_IDLE_AWAKE_MS) busy.push("just-woke");
@@ -201,15 +205,20 @@ export function createCloudPower(options: {
     request(path: string, headers: IncomingHttpHeaders, res: Pick<ServerResponse, "once">) {
       if (countsAsActivity(path, headers)) noteActivity();
       res.once("close", begin(path));
+      if (path === "/api/events") {
+        streams += 1;
+        res.once("close", () => { streams -= 1; });
+      }
     },
-    report(activityMs = CLOUD_IDLE_ACTIVITY_MS): CloudPowerReport {
-      const busy = busyNow(activityMs);
-      return { v: 1, at: now(), bootedAt, wokeAt, idle: busy.length === 0, busy, lastActivityAt, lastWorkAt, nextDueAt: options.probes.nextDueAt(), sleeping: sleeping(), wokeBy };
+    /** `browsers`: an open page (its event stream) counts as busy (`browser`), for an Admin that never sleeps a home under one. */
+    report(activityMs = CLOUD_IDLE_ACTIVITY_MS, browsers = false): CloudPowerReport {
+      const busy = busyNow(activityMs, browsers);
+      return { v: 1, at: now(), bootedAt, wokeAt, idle: busy.length === 0, busy, lastActivityAt, lastWorkAt, nextDueAt: options.probes.nextDueAt(), sleeping: sleeping(), wokeBy, browsers: streams };
     },
     /** The Admin is about to suspend or stop this machine: yes only when idle now. From here until a resume, someone's
      * use or CLOUD_SLEEP_PENDING_MS, held polls answer "asleep" and new ones are refused (`sleeping`). */
-    prepareSleep(activityMs = CLOUD_IDLE_ACTIVITY_MS): { ok: true; nextDueAt: number | null } | { ok: false; busy: CloudPowerBusy[] } {
-      const busy = busyNow(activityMs);
+    prepareSleep(activityMs = CLOUD_IDLE_ACTIVITY_MS, browsers = false): { ok: true; nextDueAt: number | null } | { ok: false; busy: CloudPowerBusy[] } {
+      const busy = busyNow(activityMs, browsers);
       if (busy.length) return { ok: false, busy };
       sleepingSince = now();
       try { writeFileAtomic(join(options.dataDir, MARKER), JSON.stringify({ at: sleepingSince })); }

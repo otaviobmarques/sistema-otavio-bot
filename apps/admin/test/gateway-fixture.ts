@@ -35,6 +35,12 @@ export async function gatewayFixture(options: { planCode?: string; credits?: num
   const billing = (await ctx.db.query<{ id: string }>(
     `INSERT INTO billing_accounts (label, holder_type, holder_name, holder_document, environment, api_key_enc, api_key_fingerprint, webhook_token_enc)
      VALUES ($1, 'pf', 'Otávio', $2, 'sandbox', 'x', 'x', 'x') RETURNING id`, [`PF ${seq}`, cpf("123456789")])).rows[0]!.id;
+  if ((options.planCode ?? "essencial") === "essencial") {
+    // These tests price their answers against the three models 0003 gave the Essencial; 0011 moved the real plans to the
+    // 5.x generation (test/plan-models.test.ts).
+    await ctx.db.query("UPDATE plans SET allowed_models = $1, default_model = $2 WHERE code = 'essencial'",
+      [["claude-haiku-4-5", "gpt-5-mini", "google/gemini-2.5-flash"], "claude-haiku-4-5"]);
+  }
   const plan = (await ctx.db.query<{ id: string; price_cents: number; credits_per_month: number }>(
     "SELECT id, price_cents, credits_per_month FROM plans WHERE code = $1", [options.planCode ?? "essencial"])).rows[0]!;
   const subscription = (await ctx.db.query<{ id: string }>(

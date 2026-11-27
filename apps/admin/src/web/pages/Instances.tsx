@@ -4,6 +4,7 @@ import { Link } from "react-router";
 import { canWrite, useMe } from "../App.tsx";
 import { api, useApi } from "../api.ts";
 import { dateTime, INSTANCE_STATE, type Tone } from "../format.ts";
+import { HealthAlerts, PowerCell } from "./instance-power.tsx";
 import { diskUsageCopy, diskUsageOf } from "../../customer/disk-usage.ts";
 import { Badge, Button, Card, Empty, ErrorNote, Field, Input, Loading, Modal, Mono, PageHeader, StatusBadge, Table, td, Textarea, useToast } from "../ui.tsx";
 
@@ -13,11 +14,14 @@ interface InstanceItem {
   observed_state: string | null; observed_health: string | null; observed_error: string | null; observed_at: string | null; ready_at: string | null;
   generation: number; plan_tier_synced: string | null; plan_code: string | null; plan_name: string | null; desired: "running" | "stopped" | "absent";
   disk_used_bytes: number | string | null; disk_quota_bytes: number | string | null; disk_state: string | null; disk_measured_at: string | null;
+  power: "asleep" | "waking" | "awake"; sleeping_since: string | null; wake_at: string | null; power_busy: string | null; power_checked_at: string | null;
+  idle_sleep_minutes: number | null; unhealthy_since: string | null; unhealthy_alerted_at: string | null;
 }
 
 interface NodeItem {
   id: string; name: string; kind: string; public_ip: string | null; capacity_instances: number | null; status: string; last_seen_at: string | null;
   agent_version: string | null; last_error: string | null; orphan_containers: number; instances: number; online: boolean;
+  down_alerted_at: string | null;
 }
 
 interface Data {
@@ -89,6 +93,8 @@ export function InstancesPage() {
       <PageHeader title="Instâncias" subtitle={<>Um ArkoBot por cliente com assinatura ativa, em <Mono>{`<slug>.${data.settings.baseDomain}`}</Mono>. Imagem <Mono>{data.settings.image}</Mono>.</>}
         actions={me.role === "owner" ? <Button onClick={() => setNewNode(true)}><Plus className="h-4 w-4" /> Cadastrar servidor</Button> : null} />
 
+      <HealthAlerts nodes={data.nodes} instances={data.instances} />
+
       <Card title={<span className="flex items-center gap-2"><ServerCog className="h-4 w-4" /> Servidores</span>} padded={false}>
         {data.nodes.length === 0 ? (
           <Empty icon={<ServerCog className="h-6 w-6" />} title="Nenhum servidor cadastrado">Cadastre a VPS e rode o agente nela (README, “Provisionamento”). Até lá, as instâncias ficam aguardando vaga.</Empty>
@@ -97,7 +103,8 @@ export function InstancesPage() {
             {data.nodes.map((node) => (
               <tr key={node.id}>
                 <td className={td}><div className="font-medium">{node.name}</div><div className="text-xs text-slate-500">{node.public_ip ?? "—"} · {node.kind === "dedicated" ? "dedicado" : "compartilhado"}</div></td>
-                <td className={td}><StatusBadge map={NODE_STATUS} value={node.status} /> {node.online ? <Badge tone="green">online</Badge> : <Badge tone="red">sem contato</Badge>}</td>
+                <td className={td}><StatusBadge map={NODE_STATUS} value={node.status} /> {node.online ? <Badge tone="green">online</Badge> : <Badge tone="red">sem contato</Badge>}
+                  {node.down_alerted_at ? <div className="text-xs text-red-600">aviso enviado {dateTime(node.down_alerted_at)}</div> : null}</td>
                 <td className={td}>{node.agent_version ?? "—"}{node.last_error ? <div className="max-w-xs truncate text-xs text-red-600" title={node.last_error}>{node.last_error}</div> : null}
                   {node.orphan_containers ? <div className="text-xs text-amber-700">{node.orphan_containers} contêiner(es) sem instância</div> : null}</td>
                 <td className={`${td} tabular`}>{node.instances}{node.capacity_instances ? ` / ${node.capacity_instances}` : ""}</td>
@@ -121,6 +128,7 @@ export function InstancesPage() {
               <td className={td}>
                 {instance.decommissioned_at ? <Badge tone="slate">Desativada</Badge> : <StatusBadge map={INSTANCE_STATE} value={instance.state} />}
                 {instance.operator_stopped ? <Badge tone="amber">parada pelo operador</Badge> : null}
+                <PowerCell instance={instance} />
                 {instance.state_reason ? <div className="text-xs text-slate-500">{instance.state_reason}</div> : null}
               </td>
               <td className={td}>

@@ -47,6 +47,14 @@ export interface InstanceRow {
   disk_measured_at: Date | null;
   disk_notified_percent: number;
   disk_state_synced: string | null;
+  /** Asleep (sleep.ts): the agent keeps the container stopped until someone opens it or wake_at comes. */
+  sleeping_since: Date | null;
+  wake_at: Date | null;
+  woke_at: Date | null;
+  power_checked_at: Date | null;
+  power_busy: string | null;
+  unhealthy_since: Date | null;
+  unhealthy_alerted_at: Date | null;
   created_at: Date;
 }
 
@@ -169,15 +177,15 @@ export async function sweepProvisioning(ctx: AppContext, limit = 10): Promise<Pr
 }
 
 /**
- * What the node should be doing with this instance.
- * TODO(inicial-sleep): the Inicial plan sleeps after plans.idle_sleep_minutes (30) idle. The instance already answers the
- * signed power read and sleep handshake (GET /api/cloud/power, POST /api/cloud/power/sleep, docs/cloud-pro.md), but on
- * Docker nothing wakes a stopped container on the next request (Fly does that natively). Needs a waking proxy (e.g.
- * Sablier on Traefik) or a start on "Abrir meu ArkoBot" plus routine wake-ups at nextDueAt; until then it stays running.
+ * What the node should be doing with this instance. A sleeping one (sleep.ts: a plan with idle_sleep_minutes, idle that
+ * long) is stopped too; the node agent's waking page, "Abrir meu ArkoBot" and its next routine wake it again.
  */
-export function desiredOf(row: Pick<InstanceRow, "decommissioned_at" | "operator_stopped" | "state">): DesiredInstance["desired"] {
+export function desiredOf(
+  row: Pick<InstanceRow, "decommissioned_at" | "operator_stopped" | "state"> & { sleeping_since?: Date | string | null },
+): DesiredInstance["desired"] {
   if (row.decommissioned_at) return "absent";
   if (row.operator_stopped || row.state === "stopped" || row.state === "failed") return "stopped";
+  if (row.sleeping_since && (row.state === "ready" || row.state === "payment_problem")) return "stopped";
   return "running";
 }
 
@@ -206,7 +214,9 @@ function desiredInstance(ctx: AppContext, row: DesiredRow): DesiredInstance {
   const revision = createHash("sha256")
     .update(JSON.stringify({ image: settings.image, host, resources, generation: row.generation, env: Object.entries(env).sort(([a], [b]) => a.localeCompare(b)) }))
     .digest("hex").slice(0, 32);
-  return { id: row.id, slug: row.slug, desired: desiredOf(row), host, image: settings.image, revision, env, resources };
+  const desired = desiredOf(row);
+  const sleeping = desired === "stopped" && desiredOf({ ...row, sleeping_since: null }) === "running";
+  return { id: row.id, slug: row.slug, desired, sleeping, host, image: settings.image, revision, env, resources };
 }
 
 /** The node's desired state. A removed instance stays listed (as absent) until its agent reports the container gone. */
@@ -241,10 +251,13 @@ export async function applyStatusReport(ctx: AppContext, node: Pick<NodeRow, "id
       const row = (await q.query<Pick<InstanceRow, "id" | "state" | "organization_id" | "slug" | "decommissioned_at">>(
         "SELECT id, state, organization_id, slug, decommissioned_at FROM instances WHERE id = $1 AND node_id = $2 FOR UPDATE", [seen.id, node.id])).rows[0];
       if (!row) continue;
+      // unhealthy_since: how long it has looked broken (health-alerts.ts mails the operators after 10 minutes).
+      const broken = seen.state === "error" || seen.health === "unhealthy";
       await q.query(
         `UPDATE instances SET observed_state = $2, observed_health = $3, observed_error = $4, observed_revision = $5, observed_at = $6,
-           container_id = COALESCE($7, CASE WHEN $2 = 'absent' THEN NULL ELSE container_id END) WHERE id = $1`,
-        [row.id, seen.state, seen.health, seen.error, seen.revision, now, seen.containerId]);
+           container_id = COALESCE($7, CASE WHEN $2 = 'absent' THEN NULL ELSE container_id END),
+           unhealthy_since = CASE WHEN $8::boolean THEN COALESCE(unhealthy_since, $6) ELSE NULL END WHERE id = $1`,
+        [row.id, seen.state, seen.health, seen.error, seen.revision, now, seen.containerId, broken]);
       if (seen.disk && !row.decommissioned_at) await recordDiskUsage(q, row.id, seen.disk, now);
       const healthy = seen.state === "running" && (seen.health === "healthy" || seen.health === "none" || seen.health === null);
       if (!row.decommissioned_at && row.state === "setting_up" && healthy) {
@@ -280,7 +293,7 @@ export async function startInstance(ctx: AppContext, actor: Actor, id: string): 
   await ctx.db.tx(async (q) => {
     const row = await lockInstance(q, id);
     await q.query(
-      `UPDATE instances SET operator_stopped = false,
+      `UPDATE instances SET operator_stopped = false, sleeping_since = NULL, wake_at = NULL,
          state = CASE WHEN state IN ('ready', 'failed') THEN 'setting_up' ELSE state END,
          state_reason = CASE WHEN state IN ('ready', 'failed') THEN 'ligada pelo operador' ELSE state_reason END
        WHERE id = $1`, [id]);
@@ -293,7 +306,7 @@ export async function reprovisionInstance(ctx: AppContext, actor: Actor, id: str
   await ctx.db.tx(async (q) => {
     const row = await lockInstance(q, id);
     await q.query(
-      `UPDATE instances SET generation = generation + 1, observed_error = NULL,
+      `UPDATE instances SET generation = generation + 1, observed_error = NULL, sleeping_since = NULL, wake_at = NULL,
          state = CASE WHEN state IN ('ready', 'failed') THEN 'setting_up' ELSE state END,
          state_reason = CASE WHEN state IN ('ready', 'failed') THEN 'recriando o contêiner' ELSE state_reason END
        WHERE id = $1`, [id]);
@@ -331,7 +344,8 @@ export async function livePlanCode(q: Queryable, organizationId: string): Promis
  */
 export async function syncInstancePlan(ctx: AppContext, instanceId: string): Promise<boolean> {
   const row = (await ctx.db.query<InstanceRow>("SELECT * FROM instances WHERE id = $1", [instanceId])).rows[0];
-  if (!row || row.decommissioned_at || !row.public_url || !row.bootstrap_secret_enc) return false;
+  // Asleep: nothing to tell it now; waking queues this again (sleep.ts).
+  if (!row || row.decommissioned_at || row.sleeping_since || !row.public_url || !row.bootstrap_secret_enc) return false;
   if (row.state !== "ready" && row.state !== "payment_problem") return false;
   const code = await livePlanCode(ctx.db, row.organization_id);
   if (!code || !CLOUD_TIER.test(code)) return false;
