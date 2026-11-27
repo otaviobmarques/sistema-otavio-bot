@@ -86,7 +86,7 @@ export function Heroi() {
             </BotaoContato>
           </div>
           <p className="mt-4 text-sm text-cinza">
-            IAs inclusas no plano, ou conecte a sua própria conta de IA. A partir de R$ 159 por mês, sem fidelidade.
+            IA inclusa no plano, ou conecte a sua própria conta de IA. A partir de R$ 39 por mês, com 7 dias grátis no Inicial, sem fidelidade.
           </p>
         </div>
 

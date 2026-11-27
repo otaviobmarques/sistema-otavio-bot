@@ -327,7 +327,7 @@ export function Recursos() {
       <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Bloco
           titulo="Escolha a IA de cada bot"
-          texto="ChatGPT, Claude, Gemini, Grok, Kimi, DeepSeek e outras inclusas no plano, ou conecte a sua própria conta de IA. Troque o modelo no meio da conversa."
+          texto="Nos planos pagos, o Claude, da Anthropic, vem incluso (GPT e Gemini em breve). No Inicial, IA gratuita com limite diário. Ou conecte a sua própria conta de IA: ChatGPT, Gemini, Grok, Kimi e outras. Troque o modelo no meio da conversa."
         >
           <MockIA />
         </Bloco>
