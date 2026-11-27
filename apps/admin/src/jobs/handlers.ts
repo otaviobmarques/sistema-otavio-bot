@@ -5,7 +5,8 @@ import { sweepRateLimits } from "../auth/rate-limit.ts";
 import type { AppContext } from "../context.ts";
 import { expireReservations } from "../gateway/accounting.ts";
 import { provisionForOrganization, sweepProvisioning, syncInstancePlan, type ProvisioningSweep } from "../provisioning/instances.ts";
-import { PROVISION_INSTANCE_JOB, SYNC_INSTANCE_PLAN_JOB } from "../provisioning/queue.ts";
+import { PROVISION_INSTANCE_JOB, STORAGE_MAIL_JOB, SYNC_INSTANCE_PLAN_JOB, SYNC_INSTANCE_STORAGE_JOB } from "../provisioning/queue.ts";
+import { sendStorageMail, syncInstanceStorage } from "../provisioning/storage.ts";
 import { SYSTEM } from "../audit.ts";
 import { runJobs, type JobHandler, type RunSummary } from "./queue.ts";
 
@@ -25,6 +26,12 @@ export const JOB_HANDLERS: Record<string, JobHandler> = {
   },
   [SYNC_INSTANCE_PLAN_JOB]: async (ctx, payload) => {
     await syncInstancePlan(ctx, String(payload.instanceId));
+  },
+  [STORAGE_MAIL_JOB]: async (ctx, payload) => {
+    await sendStorageMail(ctx, String(payload.instanceId), payload.level === 100 ? 100 : 80);
+  },
+  [SYNC_INSTANCE_STORAGE_JOB]: async (ctx, payload) => {
+    await syncInstanceStorage(ctx, String(payload.instanceId));
   },
 };
 

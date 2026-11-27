@@ -5,6 +5,7 @@ import type { AppContext } from "../context.ts";
 import { DomainError } from "../domain/lifecycle.ts";
 import { browserSignInUrl, InstanceUnreachable } from "../provisioning/cloud-request.ts";
 import { bootstrapContext, livePlanCode, provisionForOrganization, syncInstancePlan, type InstanceRow } from "../provisioning/instances.ts";
+import { diskUsageOf, type DiskUsageView } from "./disk-usage.ts";
 import type { CustomerRequest } from "./service.ts";
 
 /** What the card shows. `preparing` covers a new instance and one starting again; `paused_payment` a stop for billing. */
@@ -16,6 +17,8 @@ export interface ArkoBotView {
   canOpen: boolean;
   /** The customer may open it: owner or admin of the organisation (the instance's owner scope). */
   canManage: boolean;
+  /** The instance's space against the plan, as last measured; null until measured or when the plan sets no limit. */
+  disk: DiskUsageView | null;
 }
 
 const OPEN_LIMIT = { windowMs: 60_000, max: 6 };
@@ -59,7 +62,8 @@ export async function arkobotView(ctx: AppContext, req: CustomerRequest): Promis
   }
   const status = statusOf(instance, org.status, entitled);
   const canManage = membership.role !== "member";
-  return { status, url: instance?.public_url ?? null, canOpen: canManage && (status === "ready" || status === "payment_pending"), canManage };
+  return { status, url: instance?.public_url ?? null, canOpen: canManage && (status === "ready" || status === "payment_pending"), canManage,
+    disk: status === "none" || status === "preparing" ? null : diskUsageOf(instance) };
 }
 
 /**

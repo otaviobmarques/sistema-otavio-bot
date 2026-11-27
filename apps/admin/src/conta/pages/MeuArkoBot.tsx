@@ -4,6 +4,7 @@ import type { ArkoBotStatus, ArkoBotView } from "../../customer/arkobot.ts";
 import { api, useApi } from "../../web/api.ts";
 import { Button, Card, Spinner, cx, useToast } from "../../web/ui.tsx";
 import { WhatsAppButton } from "../shared.tsx";
+import { DiskUsageBar } from "./DiskUsageBar.tsx";
 
 const COPY: Record<Exclude<ArkoBotStatus, "none">, { title: string; text: string; tone: string }> = {
   preparing: { title: "Preparando…", tone: "bg-cyan-soft text-navy-900",
@@ -63,6 +64,7 @@ export function MeuArkoBotCard() {
           ) : null}
           {data.status === "failed" || data.status === "paused" ? <WhatsAppButton message="Olá! Meu ArkoBot está parado, podem me ajudar?">Falar com a gente</WhatsAppButton> : null}
         </div>
+        {data.disk ? <DiskUsageBar disk={data.disk} /> : null}
         {data.url && data.status !== "preparing" ? <p className="mt-2 text-xs opacity-80">Endereço: {data.url.replace(/^https:\/\//, "")}</p> : null}
         {!data.canManage && (data.status === "ready" || data.status === "payment_pending")
           ? <p className="mt-2 text-xs opacity-80">Quem abre o ArkoBot por aqui é o responsável pela conta da empresa.</p> : null}

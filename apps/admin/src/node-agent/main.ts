@@ -4,6 +4,7 @@
 import { setTimeout as sleep } from "node:timers/promises";
 import { pathToFileURL } from "node:url";
 import { AGENT_API, desiredStateSchema, NODE_TOKEN_PATTERN, type DesiredState, type StatusReport } from "../provisioning/protocol.ts";
+import { createDiskMeter } from "./disk.ts";
 import { DockerClient, type DockerApi } from "./docker.ts";
 import { attachProxy, prepareNetwork, reconcile, type Log } from "./reconcile.ts";
 import type { NodeSettings } from "./spec.ts";
@@ -70,10 +71,11 @@ export interface AgentLoop {
   once(): Promise<number>;
 }
 
-export function createAgent(config: AgentConfig, deps: { docker?: DockerApi; fetch?: typeof fetch; log?: Log } = {}): AgentLoop {
+export function createAgent(config: AgentConfig, deps: { docker?: DockerApi; fetch?: typeof fetch; log?: Log; now?: () => number } = {}): AgentLoop {
   const docker = deps.docker ?? new DockerClient({ socketPath: config.socketPath, registryAuth: config.registryAuth });
   const fetcher = deps.fetch ?? globalThis.fetch;
   const log = deps.log ?? ((line) => console.log(`[arkobot-agent] ${line}`));
+  const disk = createDiskMeter(docker, { log, now: deps.now });
   let failures = 0;
   let subnet: string | null | undefined;
   return {
@@ -99,6 +101,7 @@ export function createAgent(config: AgentConfig, deps: { docker?: DockerApi; fet
           trustedProxies: config.trustedProxies ?? subnet,
         };
         report = await reconcile(docker, node, desired, AGENT_VERSION, log);
+        await disk.attach(report, desired.node.id);
       } catch (error) {
         const message = (error as Error).message.slice(0, 500);
         log(`Docker: ${message}`);

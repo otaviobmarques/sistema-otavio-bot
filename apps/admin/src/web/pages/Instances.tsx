@@ -4,6 +4,7 @@ import { Link } from "react-router";
 import { canWrite, useMe } from "../App.tsx";
 import { api, useApi } from "../api.ts";
 import { dateTime, INSTANCE_STATE, type Tone } from "../format.ts";
+import { diskUsageCopy, diskUsageOf } from "../../customer/disk-usage.ts";
 import { Badge, Button, Card, Empty, ErrorNote, Field, Input, Loading, Modal, Mono, PageHeader, StatusBadge, Table, td, Textarea, useToast } from "../ui.tsx";
 
 interface InstanceItem {
@@ -11,6 +12,7 @@ interface InstanceItem {
   state_reason: string | null; node_id: string | null; node_name: string | null; operator_stopped: boolean; decommissioned_at: string | null;
   observed_state: string | null; observed_health: string | null; observed_error: string | null; observed_at: string | null; ready_at: string | null;
   generation: number; plan_tier_synced: string | null; plan_code: string | null; plan_name: string | null; desired: "running" | "stopped" | "absent";
+  disk_used_bytes: number | string | null; disk_quota_bytes: number | string | null; disk_state: string | null; disk_measured_at: string | null;
 }
 
 interface NodeItem {
@@ -27,6 +29,26 @@ interface Data {
 const OBSERVED: Record<string, [string, Tone]> = {
   running: ["Rodando", "green"], starting: ["Ligando", "cyan"], stopped: ["Parado", "slate"], absent: ["Sem contêiner", "slate"], error: ["Erro", "red"],
 };
+const DISK_STATE: Record<string, [string, Tone]> = { ok: ["ok", "green"], warning: ["≥ 80%", "amber"], full: ["cheio", "red"], over: ["acima de 110%", "red"] };
+
+/** Space used against the plan, as the node agent last measured it. */
+function DiskCell({ instance }: { instance: InstanceItem }) {
+  const disk = diskUsageOf(instance);
+  if (!disk) {
+    return instance.disk_used_bytes !== null
+      ? <span className="tabular text-xs text-slate-600">{(Number(instance.disk_used_bytes) / 1024 ** 3).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} GB (sem limite)</span>
+      : <span className="text-slate-400">—</span>;
+  }
+  const copy = diskUsageCopy(disk);
+  return (
+    <>
+      <div className="tabular whitespace-nowrap text-xs">{copy.line.replace(" usados", "")} · {copy.percent}%</div>
+      <StatusBadge map={DISK_STATE} value={disk.state} />
+      <div className="text-xs text-slate-500">{dateTime(disk.measuredAt)}</div>
+    </>
+  );
+}
+
 const NODE_STATUS: Record<string, [string, Tone]> = { active: ["Ativo", "green"], draining: ["Esvaziando", "amber"], offline: ["Desligado", "slate"] };
 
 type Action = { kind: "stop" | "reprovision" | "decommission"; instance: InstanceItem };
@@ -88,7 +110,7 @@ export function InstancesPage() {
       </Card>
 
       <Card title={<span className="flex items-center gap-2"><Boxes className="h-4 w-4" /> Instâncias ({live.length})</span>} padded={false}>
-        <Table head={["Cliente", "Endereço", "Plano", "Servidor", "Situação", "No servidor", ""]} empty="Nenhuma instância ainda: elas nascem sozinhas quando uma assinatura fica ativa.">
+        <Table head={["Cliente", "Endereço", "Plano", "Servidor", "Situação", "No servidor", "Disco", ""]} empty="Nenhuma instância ainda: elas nascem sozinhas quando uma assinatura fica ativa.">
           {data.instances.map((instance) => (
             <tr key={instance.id} className={instance.decommissioned_at ? "opacity-50" : undefined}>
               <td className={td}><Link to={`/clientes/${instance.organization_id}`} className="font-medium hover:underline">{instance.organization_name}</Link></td>
@@ -107,6 +129,7 @@ export function InstancesPage() {
                 {instance.observed_error ? <div className="max-w-xs truncate text-xs text-red-600" title={instance.observed_error}>{instance.observed_error}</div> : null}
                 <div className="text-xs text-slate-500">{dateTime(instance.observed_at)}</div>
               </td>
+              <td className={td}><DiskCell instance={instance} /></td>
               <td className={`${td} whitespace-nowrap text-right`}>
                 {writable && !instance.decommissioned_at ? (
                   <>

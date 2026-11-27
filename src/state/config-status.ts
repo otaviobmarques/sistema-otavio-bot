@@ -68,6 +68,8 @@ export interface ConfigStatus {
   awakeLimit?: number;
   /** Bots paused for the plan's limit: kept, but taking no turns. */
   pausedBots?: string[];
+  /** How full this Cloud's disk is against its plan, as the Admin last said; absent when it never said. At `over` uploads are refused. */
+  cloudStorage?: { state: "ok" | "warning" | "full" | "over"; usedBytes: number; quotaBytes: number | null };
   threads?: { maxConcurrentPerBot: number; eventLogMaxBytes?: number; eventLogRetentionDays?: number };
   automaticRecovery?: { enabled: boolean; backup?: ModelSelection };
   /** Prompt-cache keep-warm for idle Claude threads. Absent from older servers. */

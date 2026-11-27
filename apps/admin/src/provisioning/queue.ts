@@ -13,3 +13,15 @@ export async function queueProvisioning(q: Queryable, organizationId: string, ru
 export async function queuePlanSync(q: Queryable, instanceId: string, runAt?: Date): Promise<void> {
   await enqueue(q, SYNC_INSTANCE_PLAN_JOB, { instanceId }, { dedupeKey: `${SYNC_INSTANCE_PLAN_JOB}:${instanceId}`, maxAttempts: 6, runAt });
 }
+
+export const STORAGE_MAIL_JOB = "instance.storage_mail";
+export const SYNC_INSTANCE_STORAGE_JOB = "instance.sync_storage";
+
+/** One e-mail per threshold crossed (80 or 100); the dedupe key keeps a second measurement from queueing it twice. */
+export async function queueStorageMail(q: Queryable, instanceId: string, level: 80 | 100, runAt?: Date): Promise<void> {
+  await enqueue(q, STORAGE_MAIL_JOB, { instanceId, level }, { dedupeKey: `${STORAGE_MAIL_JOB}:${instanceId}:${level}`, maxAttempts: 5, runAt });
+}
+
+export async function queueStorageSync(q: Queryable, instanceId: string, runAt?: Date): Promise<void> {
+  await enqueue(q, SYNC_INSTANCE_STORAGE_JOB, { instanceId }, { dedupeKey: `${SYNC_INSTANCE_STORAGE_JOB}:${instanceId}`, maxAttempts: 6, runAt });
+}

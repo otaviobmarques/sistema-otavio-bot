@@ -12,7 +12,8 @@ import { CLOUD_TIER, signedCloudRequest } from "./cloud-request.ts";
 import type { NodeRow } from "./nodes.ts";
 import { AGENT_POLL_SECONDS, baseSlug, planResources, provisioningSettings, slugCandidate } from "./settings.ts";
 import type { DesiredInstance, DesiredState, StatusReport } from "./protocol.ts";
-import { queuePlanSync } from "./queue.ts";
+import { queuePlanSync, queueStorageSync } from "./queue.ts";
+import { recordDiskUsage } from "./storage.ts";
 
 export interface InstanceRow {
   id: string;
@@ -39,6 +40,13 @@ export interface InstanceRow {
   container_id: string | null;
   ready_at: Date | null;
   plan_tier_synced: string | null;
+  /** The data volume as last measured (storage.ts); bigint columns, so a string from some drivers. */
+  disk_used_bytes: number | string | null;
+  disk_quota_bytes: number | string | null;
+  disk_state: "ok" | "warning" | "full" | "over" | null;
+  disk_measured_at: Date | null;
+  disk_notified_percent: number;
+  disk_state_synced: string | null;
   created_at: Date;
 }
 
@@ -237,11 +245,13 @@ export async function applyStatusReport(ctx: AppContext, node: Pick<NodeRow, "id
         `UPDATE instances SET observed_state = $2, observed_health = $3, observed_error = $4, observed_revision = $5, observed_at = $6,
            container_id = COALESCE($7, CASE WHEN $2 = 'absent' THEN NULL ELSE container_id END) WHERE id = $1`,
         [row.id, seen.state, seen.health, seen.error, seen.revision, now, seen.containerId]);
+      if (seen.disk && !row.decommissioned_at) await recordDiskUsage(q, row.id, seen.disk, now);
       const healthy = seen.state === "running" && (seen.health === "healthy" || seen.health === "none" || seen.health === null);
       if (!row.decommissioned_at && row.state === "setting_up" && healthy) {
         await q.query("UPDATE instances SET state = 'ready', state_reason = NULL, ready_at = $2 WHERE id = $1", [row.id, now]);
         await audit(q, SYSTEM, { action: "instance.ready", targetType: "instance", targetId: row.id, organizationId: row.organization_id, data: { slug: row.slug } });
         await queuePlanSync(q, row.id, now);
+        await queueStorageSync(q, row.id, now);
         ready.push(row.id);
       }
     }

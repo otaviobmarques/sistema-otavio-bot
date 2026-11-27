@@ -26,6 +26,8 @@ export interface CloudSignedHostDeps {
   plan?: (cancelled: boolean) => void;
   /** Which plan this Cloud is on now (the Admin's signed request). */
   planTier?: (tier: string) => void;
+  /** How full this Cloud's disk is (the Admin's signed request); false when the body is not a storage state. */
+  storage?: (status: unknown) => boolean;
 }
 
 export function createCloudSignedHost(deps: CloudSignedHostDeps): { cloudHealth: CloudHealth | null; cloudSigned: ReturnType<typeof createCloudSignedRoutes> | null } {
@@ -33,7 +35,8 @@ export function createCloudSignedHost(deps: CloudSignedHostDeps): { cloudHealth:
   const cloudSigned = deps.cloudHome && cloudHealth
     ? createCloudSignedRoutes({ secret: deps.cloudHome.bootstrapSecret, sessions: deps.sessions, team: deps.cloudHome.team, health: cloudHealth, power: deps.power, box: deps.box,
       ...(deps.cloudHome.team && deps.teamAdmin ? { teamAdmin: deps.teamAdmin } : {}),
-      ...(deps.cloudHome.team && deps.memberLeft ? { memberLeft: deps.memberLeft } : {}), ...(deps.cloudHome.team && deps.policyChanged ? { policyChanged: deps.policyChanged } : {}), ...(deps.plan ? { plan: deps.plan } : {}), ...(deps.planTier ? { planTier: deps.planTier } : {}) })
+      ...(deps.cloudHome.team && deps.memberLeft ? { memberLeft: deps.memberLeft } : {}), ...(deps.cloudHome.team && deps.policyChanged ? { policyChanged: deps.policyChanged } : {}), ...(deps.plan ? { plan: deps.plan } : {}), ...(deps.planTier ? { planTier: deps.planTier } : {}),
+      ...(deps.storage ? { storage: deps.storage } : {}) })
     : null;
   return { cloudHealth, cloudSigned };
 }

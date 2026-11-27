@@ -32,6 +32,7 @@ import { RequiredUpdateScreen } from "@/components/RequiredUpdateScreen";
 import { AppNotices } from "@/components/AppNotices";
 import { BotLimitPopup } from "@/components/BotLimitPopup";
 import { CloudAsleepStrip } from "@/components/CloudAsleepStrip";
+import { CloudStorageStrip } from "@/components/CloudStorageStrip";
 import { LiveConnectionStrip } from "@/components/LiveConnectionStrip";
 import { CloudSendStrip } from "@/components/CloudSendStrip";
 import { HomeLine } from "@/components/HomeLine";
@@ -316,6 +317,7 @@ function Shell({ viewer }: { viewer: WelcomeViewer | null }) {
   const strips = <>
     <UpdateBanner sidebarIndicator={framed || (!calendarFocus && (sidebarInline || drawerOpen))} />
     <CloudAsleepStrip />
+    <CloudStorageStrip />
     <LiveConnectionStrip connected={state.connected} hydrated={state.hydrated === true} />
     <CloudSendStrip cloudHome={state.config?.cloudHome === true} />
     <HomeLine />

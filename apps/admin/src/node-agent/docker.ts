@@ -23,6 +23,13 @@ export interface NetworkDetails {
   Containers?: Record<string, { Name?: string }> | null;
 }
 
+/** One volume of GET /system/df?type=volume. UsageData.Size is -1 when the daemon could not measure it. */
+export interface VolumeUsage {
+  Name: string;
+  Labels: Record<string, string> | null;
+  UsageData?: { Size: number; RefCount: number } | null;
+}
+
 export class DockerError extends Error {
   readonly status: number;
   constructor(status: number, message: string) {
@@ -47,6 +54,8 @@ export interface DockerApi {
   stopContainer(id: string, timeoutSeconds: number): Promise<void>;
   /** Removes the container only: volumes are never removed (`v=false`). */
   removeContainer(id: string): Promise<void>;
+  /** Every volume's size (GET /system/df?type=volume): slow on a busy node, so the agent asks rarely (disk.ts). */
+  volumeUsage(): Promise<VolumeUsage[]>;
 }
 
 /** `ghcr.io/owner/repo:tag` → fromImage and tag for POST /images/create. A digest stays in fromImage. */
@@ -154,6 +163,12 @@ export class DockerClient implements DockerApi {
 
   async removeContainer(id: string) {
     await this.#json("DELETE", `/containers/${encodeURIComponent(id)}?v=false&force=false`, undefined, [204, 404]);
+  }
+
+  async volumeUsage() {
+    const { status, text } = await this.#call("GET", "/system/df?type=volume", undefined, {}, 5 * 60_000);
+    if (status !== 200) throw new DockerError(status, `Docker GET /system/df: ${status} ${messageOf(text)}`);
+    return (JSON.parse(text) as { Volumes?: VolumeUsage[] | null }).Volumes ?? [];
   }
 }
 
