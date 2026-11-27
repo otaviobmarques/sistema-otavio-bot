@@ -1,6 +1,6 @@
 # Termos de Uso do ArkoBot
 
-**Versão 1.0, em vigor a partir de 25/11/2026**
+**Versão 1.1, em vigor a partir de 25/11/2026. Última atualização: 27 de novembro de 2026**
 
 Estes Termos de Uso ("Termos") regulam o uso do ArkoBot, oferecido pela Domma Tecnologia. Leia com atenção. Ao criar uma conta, contratar um plano ou usar o ArkoBot, você declara que leu, entendeu e aceita estes Termos, a [Política de Privacidade](politica-de-privacidade.md) e a [Política de Cookies](politica-de-cookies.md), que fazem parte deles.
 
@@ -12,9 +12,12 @@ Este resumo não substitui o texto completo, mas mostra o essencial:
 
 - O ArkoBot é uma plataforma de bots de IA que trabalham para você. Você dá as instruções, aprova o que for sensível e responde pelo uso que faz deles.
 - **A IA pode errar.** Revise o que os bots produzem e fazem antes de confiar nos resultados.
-- Os planos são pagos, mensais e sem fidelidade, com créditos ArkoBot inclusos. Você também pode conectar a sua própria conta ou chave de IA, cujo uso não consome créditos. Preços e limites estão na página de planos.
+- Os planos são pagos, mensais e sem fidelidade: **Inicial** (R$ 39, com 7 dias grátis e IA gratuita com limite diário), **Essencial** (R$ 159), **Profissional** (R$ 599) e **Empresa** (R$ 999). Os planos a partir do Essencial incluem créditos de IA. Você também pode conectar a sua própria conta ou chave de IA, cujo uso não consome créditos. Detalhes na seção 5 e na página de planos.
+- No teste grátis do Inicial não pedimos cartão. **Cancele antes do fim dos 7 dias e nada será cobrado.**
+- Cada plano tem um limite de espaço. Avisamos por e-mail ao chegar a 80% e a 100%; acima de 110%, novos arquivos são recusados. **Nada é apagado automaticamente enquanto a assinatura estiver ativa.**
+- Se um pagamento atrasar, o seu ArkoBot pode ser pausado, mas os dados são mantidos (seção 7).
 - **Se você é consumidor (pessoa física que contrata para uso próprio) e contratou pela internet, pode desistir em até 7 dias** e receber de volta o que pagou.
-- Os conteúdos que você envia aos bots são processados por provedores de IA fora do Brasil (Anthropic, OpenAI, Google e OpenRouter).
+- Os conteúdos que você envia aos bots são processados por provedores de IA, em geral fora do Brasil. Hoje, os planos pagos usam os modelos Claude, da Anthropic (GPT e Gemini virão em breve). A IA gratuita do Inicial usa os planos gratuitos de provedores como Groq, Google (Gemini), NVIDIA e OpenRouter, que podem ficar lentos ou indisponíveis e ter regras de uso de dados diferentes (seção 13).
 - É proibido usar o ArkoBot para spam, disparo em massa no WhatsApp, fraude, conteúdo ilegal, ataques e mineração de criptomoedas, entre outros usos listados na seção 10.
 - A conexão com o WhatsApp funciona como o WhatsApp Web, sem a API oficial da Meta, e o número usado pode ser bloqueado pelo WhatsApp.
 - Para os dados que você coloca nos bots (de seus clientes, por exemplo), você é o controlador e a Domma é a operadora. As regras estão no Anexo I.
@@ -86,6 +89,8 @@ Nestes Termos:
 
 3.4. O ArkoBot é uma ferramenta. A Domma não presta, por meio dele, serviços de consultoria jurídica, contábil, médica, financeira ou de outra profissão regulamentada, e os Resultados não substituem o trabalho de um profissional habilitado.
 
+3.5. **Onde o seu ArkoBot roda.** Cada Cliente tem o seu próprio ArkoBot (a sua "instância"), que roda nos servidores usados pela Domma e tem um endereço próprio, no formato **nome.arkobot.com.br**. Você abre o seu ArkoBot pela área do cliente do site. O que os bots fazem e guardam fica nessa instância, sujeito ao limite de espaço do seu plano (seção 5.11).
+
 ## 4. Cadastro, elegibilidade e conta
 
 4.1. **Quem pode usar.** Podem criar conta:
@@ -107,7 +112,16 @@ O ArkoBot não é destinado a menores de 18 anos. Se identificarmos conta de men
 
 5.1. **Página de planos.** As características de cada plano (recursos, limites, quantidade de bots, créditos incluídos, preços e formas de pagamento) estão descritas na página de planos do site e no app, na versão vigente no momento da contratação. Antes de concluir a contratação, você vê um resumo com essas condições, como exige o Decreto nº 7.962/2013, e recebe a confirmação por e-mail.
 
-5.2. **Sem plano gratuito.** O ArkoBot não tem plano gratuito. Todos os planos são pagos, mensais e sem fidelidade, e o direito de arrependimento da seção 8.3 continua valendo.
+5.2. **Planos atuais.** O ArkoBot não tem plano gratuito: todos os planos são pagos, mensais, cobrados em reais e sem fidelidade, e o direito de arrependimento da seção 8.3 continua valendo. Na data desta versão, os planos são:
+
+| Plano | Preço por mês | O que inclui |
+| --- | --- | --- |
+| **Inicial** | R$ 39,00 | 7 dias grátis na primeira assinatura (seção 5.10); 1 bot; IA gratuita com limite diário, sem precisar de conta de IA (seção 5.9); servidor compartilhado, com repouso após 30 minutos sem uso (seção 5.12) |
+| **Essencial** | R$ 159,00 | Até 3 bots; rotinas agendadas e aprovações pelo WhatsApp; 4.000 Créditos por mês |
+| **Profissional** | R$ 599,00 | Até 10 bots; 20.000 Créditos por mês; 1 computador próprio (VPS) incluído |
+| **Empresa** | R$ 999,00 | Bots ilimitados (uso justo); 40.000 Créditos por mês; 2 computadores (VPS) incluídos; várias empresas na mesma conta |
+
+Em qualquer plano você pode contratar computadores (VPS) adicionais por **R$ 159,00 por mês cada** (seção 12) e conectar a sua própria conta ou chave de IA (seção 11.9). A lista completa de recursos e limites de cada plano está na página de planos e prevalece sobre este resumo em caso de diferença.
 
 5.3. **Créditos ArkoBot.** O consumo do Serviço é medido em Créditos. Cada ação consome Créditos de acordo com a tabela de consumo publicada no app e no site, que considera, entre outros fatores, o modelo de IA escolhido, a quantidade de texto processada (tokens), o tempo de uso do computador do bot e os recursos usados (como voz, imagem e transcrição). O app mostra o seu saldo e o histórico de consumo.
 
@@ -126,13 +140,36 @@ O ArkoBot não é destinado a menores de 18 anos. Se identificarmos conta de men
 
 5.8. **Erros de medição.** Se houver erro na medição de consumo, corrigimos o saldo. Créditos debitados por falha comprovada do Serviço são devolvidos ao saldo.
 
+5.9. **IA gratuita do plano Inicial.** O plano Inicial não inclui Créditos. Em vez disso, ele usa a **IA gratuita do ArkoBot**, que não exige que você tenha conta em nenhum provedor de IA. Ela funciona com modelos oferecidos nos **planos gratuitos de provedores terceiros** (seção 13.2) e, por isso:
+
+- a) tem **limite diário de uso**, hoje de cerca de **200 pedidos por dia** (dia de Brasília), que pode mudar conforme os limites dos próprios provedores;
+- b) pode ser **mais lenta** que os modelos pagos e ficar **temporariamente indisponível** quando os provedores atingem os seus limites ou mudam as suas ofertas;
+- c) pode passar de um provedor ou modelo para outro automaticamente, sem aviso, para continuar respondendo; e
+- d) não tem garantia de qualidade, velocidade ou disponibilidade. Se precisar de mais, você pode conectar a sua própria conta de IA ou mudar para um plano com Créditos.
+
+5.10. **Teste grátis.** O plano Inicial tem **7 (sete) dias grátis** na primeira assinatura. Funciona assim:
+
+- a) o teste vale **uma vez por CPF/CNPJ e por conta**, e não vale para quem já pagou uma assinatura do ArkoBot;
+- b) **não pedimos cartão para começar o teste**. Você escolhe a forma de pagamento (Pix, boleto ou cartão de crédito), e a **primeira cobrança vence no fim do teste**;
+- c) **para não ser cobrado, cancele antes do fim dos 7 dias**, pela área do cliente ou pelos canais da seção 1.2. Cancelando durante o teste, a assinatura termina e nenhum valor é cobrado; e
+- d) se você não cancelar, a assinatura continua e a primeira mensalidade passa a ser devida no fim do teste. Se ela não for paga, aplica-se a seção 7.
+
+5.11. **Limite de espaço.** Cada plano tem um limite de espaço para os arquivos e dados guardados no seu ArkoBot. Na data desta versão: **Inicial, 5 GB; Essencial, 20 GB; Profissional, 50 GB; Empresa, 100 GB**. O valor vigente aparece na página de planos e na área do cliente. Medimos o uso periodicamente e:
+
+- a) ao chegar a **80%** do limite, avisamos você por e-mail;
+- b) ao chegar a **100%**, avisamos de novo por e-mail;
+- c) acima de **110%**, o ArkoBot **recusa novos arquivos** até que você libere espaço ou mude para um plano com limite maior; e
+- d) **enquanto a assinatura estiver ativa, nenhum dado é apagado automaticamente** por causa do limite de espaço. Você decide o que apagar.
+
+5.12. **Servidor compartilhado do plano Inicial.** No plano Inicial, o seu ArkoBot roda em servidor compartilhado com outros clientes, com recursos limitados. Para economizar recursos, ele pode **entrar em repouso depois de 30 minutos sem uso** e volta a funcionar quando você o abre de novo; o primeiro acesso depois do repouso pode levar alguns instantes. Durante o repouso, o bot não executa tarefas.
+
 ## 6. Preços, pagamento e reajuste
 
 6.1. **Preços.** Os preços dos planos, dos pacotes de Créditos, da tabela de consumo e dos VPS adicionais estão no site e no app, em reais, com os tributos incluídos, salvo indicação em contrário.
 
 6.2. **Pagamento pelo Asaas.** Os pagamentos são processados pelo **Asaas**, instituição de pagamento parceira, por **Pix, boleto ou cartão de crédito**, conforme as opções disponíveis no momento. Os dados de pagamento são informados diretamente ao Asaas. **A Domma não armazena o número completo do cartão nem o código de segurança**; recebemos apenas informações como o status do pagamento, a bandeira e os últimos dígitos do cartão. O uso do Asaas também está sujeito aos termos e à política de privacidade dele.
 
-6.3. **Cobrança recorrente.** Planos com mensalidade ou anuidade são renovados e cobrados automaticamente ao fim de cada período, pelo mesmo meio de pagamento, até que você cancele (seção 8). Avisamos sobre a renovação de planos anuais com pelo menos 7 dias de antecedência.
+6.3. **Cobrança recorrente.** Os planos são renovados a cada mês e cobrados pelo Asaas, na forma de pagamento que você escolheu, até que você cancele (seção 8). No cartão de crédito, os dados são digitados na página de pagamento do próprio Asaas, nunca no ArkoBot. No Pix e no boleto, a cobrança de cada mês é gerada para você pagar até o vencimento. Se no futuro houver planos anuais, avisaremos sobre a renovação com pelo menos 7 dias de antecedência.
 
 6.4. **Nota fiscal.** A nota fiscal é emitida com os dados cadastrais informados por você, que responde pela correção deles.
 
@@ -147,23 +184,23 @@ O ArkoBot não é destinado a menores de 18 anos. Se identificarmos conta de men
 
 ## 7. Inadimplência e suspensão por falta de pagamento
 
-7.1. Se um pagamento não for confirmado no vencimento, avisaremos você por e-mail e no app.
+7.1. **Pagamento em atraso.** Se uma mensalidade não for paga até o vencimento (inclusive a primeira cobrança depois do teste grátis), a assinatura passa a constar como em atraso e avisaremos você por e-mail ou na área do cliente. Nessa fase, o seu ArkoBot continua funcionando.
 
-7.2. Sobre valores em atraso podem incidir **multa de 2% (dois por cento)** e **juros de mora de 1% (um por cento) ao mês**, proporcionais aos dias de atraso, além de correção monetária pelo IPCA.
+7.2. **Encargos.** Sobre valores em atraso podem incidir **multa de 2% (dois por cento)** e **juros de mora de 1% (um por cento) ao mês**, proporcionais aos dias de atraso, quando aplicados na cobrança emitida pelo Asaas.
 
-7.3. Se o atraso passar de **10 (dez) dias** após o aviso, o plano pago pode ser **suspenso**: os bots param de executar tarefas que consomem recursos pagos, mas você continua conseguindo entrar na conta, ver e exportar os seus dados e regularizar o pagamento.
+7.3. **Pausa.** Se o atraso continuar, hoje por **7 (sete) dias**, o plano é **suspenso**: o seu ArkoBot é **pausado** (desligado), os bots param de trabalhar e as rotinas não rodam. **Os seus dados são mantidos**, e a área do cliente continua acessível para você regularizar o pagamento.
 
-7.4. Se o atraso passar de **60 (sessenta) dias**, o contrato do plano pago pode ser encerrado, com aviso prévio de pelo menos 15 dias por e-mail. Os VPS adicionais em atraso seguem a regra da seção 12.6. Depois do encerramento, os dados seguem o prazo de exclusão da seção 8.8.
+7.4. **Cancelamento por falta de pagamento.** Se o atraso chegar, hoje, a **30 (trinta) dias**, a assinatura e a conta são canceladas e a cobrança recorrente no Asaas é encerrada. O ArkoBot continua desligado e os dados **não são apagados automaticamente**: eles seguem a seção 8.8. Para voltar a usar, fale conosco para contratar de novo.
 
-7.5. Regularizado o pagamento, o acesso é restabelecido em até 2 dias úteis após a confirmação.
+7.5. **Regularização.** Se o pagamento for confirmado antes do cancelamento do item 7.4, a assinatura volta ao normal e o seu ArkoBot é religado automaticamente assim que o Asaas confirma o pagamento.
 
-7.6. A Domma pode cobrar os valores devidos pelos meios legais. A inscrição em cadastros de proteção ao crédito, quando ocorrer, será precedida da comunicação exigida pelo art. 43, § 2º, do CDC.
+7.6. Os prazos dos itens 7.3 e 7.4 podem mudar; se ficarem menores, avisaremos com antecedência, nos termos da seção 20. A Domma pode cobrar os valores devidos pelos meios legais. A inscrição em cadastros de proteção ao crédito, quando ocorrer, será precedida da comunicação exigida pelo art. 43, § 2º, do CDC.
 
 ## 8. Cancelamento, direito de arrependimento e reembolsos
 
 8.1. **Cancelar quando quiser.** Você pode cancelar o plano pago a qualquer momento, sem multa, pela área de conta do app ou pelo e-mail [contato@arkobot.com.br](mailto:contato@arkobot.com.br) ou pelo [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290), pelo mesmo meio usado para contratar. Confirmamos o recebimento do pedido imediatamente.
 
-8.2. **Efeito do cancelamento.** Salvo no caso de arrependimento (8.3), o cancelamento vale ao fim do período já pago: você continua com acesso ao plano até lá e não há nova cobrança. Não há devolução proporcional de período já iniciado, exceto nos casos dos itens 8.3, 8.5 e 8.6.
+8.2. **Efeito do cancelamento.** Hoje, o cancelamento tem **efeito imediato**: a assinatura termina e o seu ArkoBot é desligado na hora, mesmo que ainda restem dias do mês já pago. Por isso, copie o que precisar antes de cancelar (os dados continuam guardados, como diz a seção 8.8). Salvo no caso de arrependimento (8.3), não há nova cobrança depois do cancelamento e não há devolução proporcional de período já iniciado, exceto nos casos dos itens 8.3, 8.5 e 8.6. Se você cancelar durante o teste grátis, nada é cobrado (seção 5.10).
 
 8.3. **Direito de arrependimento (Consumidor).** Se você é **Consumidor** e contratou pela internet, pode **desistir da contratação em até 7 (sete) dias** contados da contratação ou do primeiro pagamento, o que ocorrer por último, sem precisar justificar (art. 49 do CDC e art. 5º do Decreto nº 7.962/2013). Isso vale para a assinatura de plano pago, para a compra de pacotes de Créditos e para a contratação de VPS adicional. Nesse caso:
 
@@ -190,13 +227,14 @@ O reembolso considera o preço efetivamente pago por Crédito, sem incluir Créd
 
 8.7. **Créditos depois do cancelamento.** Se você cancelar o plano mas mantiver a conta, os Créditos comprados avulsos continuam válidos até o vencimento e podem ser usados se você voltar a contratar um plano dentro desse prazo.
 
-8.8. **Exclusão da conta e exportação.** Você pode pedir a exclusão da conta a qualquer momento. Depois do encerramento da conta, por qualquer motivo:
+8.8. **O que acontece com os dados depois do cancelamento.** Hoje, o ArkoBot não apaga dados automaticamente por prazo. Depois do cancelamento da assinatura, por qualquer motivo:
 
-- a) você tem **30 (trinta) dias** para exportar os seus dados pelas ferramentas do app ou pedindo pelo e-mail [contato@arkobot.com.br](mailto:contato@arkobot.com.br) ou pelo [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290);
-- b) passado esse prazo, o Conteúdo do Cliente é excluído dos sistemas ativos em até mais 30 dias, e as cópias de segurança são apagadas no ciclo normal de rotação dos backups; e
-- c) guardamos apenas o que a lei exige ou permite guardar, como registros de acesso e dados fiscais, pelos prazos indicados na Política de Privacidade.
+- a) o seu ArkoBot fica desligado, e os dados continuam guardados **enquanto a conta existir**;
+- b) você pode pedir a **exportação** dos seus dados pela área do cliente ou pelos canais da seção 1.2;
+- c) você pode pedir a **exclusão** da conta e dos dados a qualquer momento; e
+- d) a Domma pode excluir os dados de contas canceladas **depois de avisar você por e-mail**, com prazo para exportação indicado no aviso.
 
-Se você pedir a exclusão imediata, sem prazo de exportação, os dados são excluídos a partir do pedido, nos mesmos prazos de (b).
+Excluídos os dados, as cópias de segurança são apagadas no ciclo normal de rotação dos backups. Guardamos apenas o que a lei exige ou permite guardar, como registros de acesso e dados fiscais, pelos prazos indicados na Política de Privacidade.
 
 ## 9. Como os bots agem e as suas responsabilidades
 
@@ -225,7 +263,7 @@ Se você pedir a exclusão imediata, sem prazo de exportação, os dados são ex
 - d) **ataques e invasões**: acessar sistemas, contas ou dados sem autorização; testes de invasão sem autorização escrita do dono do sistema; distribuir malware; fazer ataques de negação de serviço; burlar autenticação, captchas ou limites de terceiros de forma ilícita; ou explorar vulnerabilidades do próprio ArkoBot (falhas devem ser reportadas conforme o item 10.4);
 - e) **mineração e abuso de recursos**: minerar criptomoedas, rodar proxies abertos, redes de bots, ou usar os recursos de forma que prejudique a infraestrutura ou outros clientes;
 - f) **coleta abusiva de dados**: raspar sites em desrespeito aos termos deles ou à lei, montar bases de dados pessoais sem base legal, ou monitorar pessoas sem autorização;
-- g) **violar os termos dos Provedores de IA**: em especial as políticas de uso da Anthropic, da OpenAI, do Google e do OpenRouter, que proíbem, entre outros, usos para armas, vigilância ilegal, manipulação eleitoral, desinformação e ataques cibernéticos;
+- g) **violar os termos dos Provedores de IA**: em especial as políticas de uso dos provedores dos modelos em uso (como Anthropic, Google, Groq, NVIDIA e OpenRouter), que proíbem, entre outros, usos para armas, vigilância ilegal, manipulação eleitoral, desinformação e ataques cibernéticos;
 - h) **violar os termos do WhatsApp e de outras plataformas** conectadas, inclusive as regras de mensagens comerciais e de automação do WhatsApp;
 - i) **atividades reguladas sem autorização**: exercer profissão regulamentada sem habilitação, oferecer serviços financeiros, de saúde ou jurídicos em desacordo com as normas, ou intermediar produtos e serviços proibidos;
 - j) **tratar dados pessoais de forma ilícita**, inclusive dados sensíveis e de crianças e adolescentes sem a base legal adequada;
@@ -267,7 +305,7 @@ Se você pedir a exclusão imediata, sem prazo de exportação, os dados são ex
 
 ## 12. Computadores individuais (VPS adicionais)
 
-12.1. Você pode contratar **VPS adicionais**, servidores virtuais individuais dedicados aos seus bots, com a configuração e a localização informadas na contratação. O preço vigente é de **R$ 159,00 (cento e cinquenta e nove reais) por mês por bot**, conforme a página de planos; alguns planos já incluem computadores individuais. Eles são fornecidos por meio de provedores de infraestrutura contratados pela Domma.
+12.1. Você pode contratar **VPS adicionais**, servidores virtuais individuais dedicados aos seus bots, com a configuração e a localização informadas na contratação. O preço vigente é de **R$ 159,00 (cento e cinquenta e nove reais) por mês por computador**, em qualquer plano, conforme a página de planos; os planos Profissional e Empresa já incluem 1 e 2 computadores, respectivamente. Eles são fornecidos por meio de provedores de infraestrutura contratados pela Domma.
 
 12.2. **O que roda no VPS é responsabilidade sua.** Você (e os bots sob suas instruções) decide quais programas, arquivos e serviços rodam no VPS adicional. Você responde pelo conteúdo, pelas licenças do software que instalar, pelos acessos que abrir, pela segurança das credenciais e pelo cumprimento da lei e destes Termos, em especial da seção 10.
 
@@ -277,15 +315,15 @@ Se você pedir a exclusão imediata, sem prazo de exportação, os dados são ex
 
 12.5. **Dados no VPS.** Para os dados pessoais guardados no VPS adicional, você é o controlador e a Domma atua como operadora, nos termos do Anexo I.
 
-12.6. **Fim do VPS.** Ao fim da contratação (por cancelamento, inadimplência por mais de 30 dias ou encerramento da conta), o VPS é desligado e, após **15 (quinze) dias**, seus dados são apagados de forma definitiva. Avisamos antes por e-mail.
+12.6. **Fim do VPS.** Ao fim da contratação (por cancelamento, inadimplência por mais de 30 dias ou encerramento da conta), o VPS é desligado. Antes de apagar os dados dele de forma definitiva, avisamos você por e-mail, com prazo para copiar o que precisar.
 
 ## 13. Provedores de inteligência artificial
 
-13.1. A IA do ArkoBot é fornecida pela Domma por meio de APIs de terceiros, que podem incluir: **Anthropic** (modelos Claude), **OpenAI** (modelos GPT e outros), **Google** (modelos Gemini) e **OpenRouter**, que encaminha pedidos a modelos de diversos outros desenvolvedores. O app mostra quais modelos estão disponíveis em cada plano.
+13.1. **Planos pagos.** Nos planos com Créditos (Essencial, Profissional e Empresa), a IA é fornecida pela Domma por meio de APIs de terceiros. **Hoje, esses planos usam os modelos Claude, da Anthropic.** Modelos da **OpenAI** (GPT) e do **Google** (Gemini) estão previstos e serão liberados no app quando estiverem disponíveis; até lá, não fazem parte dos planos. O app mostra quais modelos estão disponíveis em cada plano.
 
-13.2. Para que os bots funcionem, **as instruções, mensagens, arquivos e demais conteúdos que você envia aos bots, e o que eles coletam ao trabalhar, são enviados a esses provedores para processamento**, inclusive em servidores fora do Brasil. As regras de proteção de dados dessa transferência estão na Política de Privacidade e no Anexo I.
+13.2. **IA gratuita do plano Inicial.** A IA gratuita do plano Inicial (seção 5.9) usa modelos oferecidos nos **planos gratuitos** de provedores terceiros, como **Groq** (modelos abertos), **Google** (Gemini, pelo plano gratuito da API), **NVIDIA** e **OpenRouter** (modelos marcados como gratuitos). A lista pode mudar conforme as ofertas desses provedores. Os planos gratuitos têm limites próprios, podem ser alterados ou encerrados pelos provedores a qualquer momento e **podem ter regras de uso de dados menos protetivas que as dos planos pagos**, inclusive permitir que o provedor use o conteúdo enviado para melhorar os seus modelos. Por isso, **evite enviar dados sensíveis, sigilosos ou de terceiros pela IA gratuita**; para esses usos, prefira um plano com Créditos ou a sua própria conta de IA.
 
-13.3. A Domma contrata os Provedores de IA em modalidades de uso por API voltadas a empresas. A Domma não usa o Conteúdo do Cliente para treinar modelos de IA próprios ou de terceiros, e adota as configurações disponíveis para que os provedores não o usem para treinar os seus modelos.
+13.3. **Envio do conteúdo aos provedores.** Para que os bots funcionem, **as instruções, mensagens, arquivos e demais conteúdos que você envia aos bots, e o que eles coletam ao trabalhar, são enviados ao provedor do modelo em uso para processamento**, inclusive em servidores fora do Brasil. As regras de proteção de dados dessa transferência estão na Política de Privacidade e no Anexo I. A Domma não usa o Conteúdo do Cliente para treinar modelos de IA próprios ou de terceiros. Nos planos pagos, a Domma contrata os provedores em modalidades de API voltadas a empresas e adota as configurações disponíveis para que eles não usem o conteúdo para treinar os seus modelos; na IA gratuita, vale o item 13.2.
 
 13.4. Os Provedores de IA podem mudar, limitar ou descontinuar modelos. A Domma pode, por isso, substituir um modelo por outro equivalente, avisando no app. Indisponibilidades dos Provedores de IA podem afetar o ArkoBot (seção 17).
 
@@ -326,7 +364,7 @@ Se você pedir a exclusão imediata, sem prazo de exportação, os dados são ex
 
 ## 17. Disponibilidade, manutenção e suporte
 
-17.1. A Domma se esforça para manter o ArkoBot disponível 24 horas por dia, 7 dias por semana, mas **não garante funcionamento ininterrupto ou livre de erros**. O Serviço depende de internet, de provedores de infraestrutura, dos Provedores de IA e das Integrações, que podem falhar.
+17.1. A Domma se esforça para manter o ArkoBot disponível 24 horas por dia, 7 dias por semana, mas **não garante funcionamento ininterrupto ou livre de erros**. O Serviço depende de internet, de provedores de infraestrutura, dos Provedores de IA e das Integrações, que podem falhar. No plano Inicial, valem também as limitações das seções 5.9 e 5.12 (IA gratuita com limite diário e servidor compartilhado com repouso).
 
 17.2. **Manutenções programadas** são feitas, sempre que possível, em horários de menor uso e avisadas com antecedência no app. Manutenções de emergência podem ocorrer sem aviso prévio.
 
@@ -418,7 +456,7 @@ I.1.2. **Finalidade:** prestar o Serviço ao Cliente: armazenar, processar e tra
 
 I.1.3. **Titulares e dados:** definidos pelo Cliente; podem incluir, por exemplo, clientes, contatos, fornecedores, funcionários do Cliente e participantes de reuniões, com dados de identificação, contato, comunicações, documentos e outros que o Cliente decida incluir.
 
-I.1.4. **Duração:** enquanto durar a contratação, acrescida dos prazos de exclusão da seção 8.8 dos Termos.
+I.1.4. **Duração:** enquanto durar a contratação e, depois dela, enquanto os dados forem mantidos conforme a seção 8.8 dos Termos.
 
 ### I.2. Obrigações do Cliente (controlador)
 
@@ -461,13 +499,13 @@ I.5.2. Cabe ao Cliente, como controlador, avaliar e fazer a comunicação à ANP
 
 I.6.1. O Cliente reconhece que o funcionamento dos bots exige o envio dos Dados do Cliente aos Provedores de IA e a outros suboperadores localizados no exterior (principalmente nos Estados Unidos), e **instrui a Domma a realizar essa transferência**.
 
-I.6.2. A Domma realiza a transferência com base nos mecanismos do art. 33 da LGPD e da Resolução CD/ANPD nº 19/2024, adotando, sempre que o suboperador permitir, as **cláusulas-padrão contratuais aprovadas pela ANPD** ou garantias equivalentes, e escolhendo provedores que se comprometem contratualmente com sigilo, segurança e não uso dos dados para treinamento de modelos.
+I.6.2. A Domma realiza a transferência com base nos mecanismos do art. 33 da LGPD e da Resolução CD/ANPD nº 19/2024, adotando, sempre que o suboperador permitir, as **cláusulas-padrão contratuais aprovadas pela ANPD** ou garantias equivalentes, e, nos planos pagos, escolhendo provedores que se comprometem contratualmente com sigilo, segurança e não uso dos dados para treinamento de modelos. Na IA gratuita do plano Inicial, valem as condições dos planos gratuitos dos provedores, descritas na seção 13.2 dos Termos.
 
 I.6.3. Cabe ao Cliente, como controlador, verificar se a transferência é compatível com as suas obrigações perante os titulares.
 
 ### I.7. Fim do tratamento
 
-Ao fim da contratação, a Domma disponibiliza os Dados do Cliente para exportação e depois os elimina, nos prazos da seção 8.8 dos Termos, salvo a guarda exigida por lei (art. 16 da LGPD). A pedido, a Domma confirma a eliminação por escrito.
+Ao fim da contratação, a Domma disponibiliza os Dados do Cliente para exportação e os elimina a pedido do Cliente ou depois de avisá-lo, conforme a seção 8.8 dos Termos, salvo a guarda exigida por lei (art. 16 da LGPD). A pedido, a Domma confirma a eliminação por escrito.
 
 ### I.8. Verificação
 

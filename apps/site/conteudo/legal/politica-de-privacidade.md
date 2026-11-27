@@ -1,6 +1,6 @@
 # Política de Privacidade do ArkoBot
 
-**Versão 1.0, em vigor a partir de 25/11/2026**
+**Versão 1.1, em vigor a partir de 25/11/2026. Última atualização: 27 de novembro de 2026**
 
 Esta Política explica, de forma clara, quais dados pessoais o ArkoBot trata, para quê, com quem compartilha, por quanto tempo guarda e como você exerce os seus direitos. Ela segue a Lei Geral de Proteção de Dados Pessoais (Lei nº 13.709/2018, "LGPD"), o Marco Civil da Internet (Lei nº 12.965/2014) e o seu regulamento (Decreto nº 8.771/2016), o Código de Defesa do Consumidor e o Decreto nº 7.962/2013.
 
@@ -10,7 +10,7 @@ Ela complementa os [Termos de Uso](termos-de-uso.md) e a [Política de Cookies](
 
 - **Dados da sua conta** (cadastro, cobrança, atendimento, registros de acesso): a Domma decide como usa. Ela é a **controladora**.
 - **Dados que você coloca nos bots** (por exemplo, de seus clientes e contatos): você decide. Você é o **controlador** e a Domma é a **operadora**, que trata esses dados só para executar o serviço.
-- Para os bots funcionarem, o que você envia a eles é processado por **provedores de IA nos Estados Unidos** (Anthropic, OpenAI, Google e OpenRouter). Escolhemos modalidades em que esses dados não são usados para treinar modelos.
+- Para os bots funcionarem, o que você envia a eles é processado por **provedores de IA, em geral nos Estados Unidos**. Nos planos pagos (hoje, modelos Claude, da Anthropic), escolhemos modalidades em que esses dados não são usados para treinar modelos. A **IA gratuita do plano Inicial** usa planos gratuitos de provedores como Groq, Google, NVIDIA e OpenRouter, que **podem usar o conteúdo para melhorar os seus modelos**: evite enviar dados sensíveis por ela.
 - Pagamentos são feitos pelo **Asaas**. **Não guardamos o número do seu cartão.**
 - **Não vendemos dados pessoais** e não usamos o seu conteúdo para publicidade.
 - Guardamos os registros de acesso por **6 meses**, como exige o Marco Civil da Internet.
@@ -139,13 +139,15 @@ Quando usamos o **legítimo interesse**, avaliamos se ele não se sobrepõe aos 
 
 7.1. Quando você conversa com um bot ou ele executa uma tarefa, o texto, os arquivos e os demais dados necessários para aquela tarefa são enviados ao **Provedor de IA** do modelo escolhido, que devolve a resposta. Os Provedores de IA usados pelo ArkoBot estão no Anexo. O OpenRouter encaminha pedidos a modelos de diversos desenvolvedores, conforme o modelo escolhido.
 
-7.2. A Domma contrata os Provedores de IA em modalidades de API para empresas cujos termos, na data desta Política, preveem que **os dados enviados não são usados para treinar os modelos** por padrão. No OpenRouter, a Domma configura o roteamento para não usar provedores que retenham dados para treinamento.
+7.2. **Planos pagos.** Nos planos com Créditos, a Domma contrata os Provedores de IA em modalidades de API para empresas cujos termos, na data desta Política, preveem que **os dados enviados não são usados para treinar os modelos** por padrão. Hoje, esses planos usam os modelos Claude, da Anthropic; modelos da OpenAI e do Google serão incluídos quando estiverem disponíveis, e esta Política será atualizada se as condições deles forem diferentes.
 
-7.3. Os Provedores de IA podem guardar os dados por um período limitado (em regra, até 30 dias) para monitorar abuso e cumprir a lei, conforme os seus próprios termos, e podem aplicar filtros de segurança que recusam pedidos.
+7.3. **IA gratuita do plano Inicial.** A IA gratuita do plano Inicial usa os **planos gratuitos** de provedores como Groq, Google (Gemini), NVIDIA e OpenRouter (modelos gratuitos), e pode passar de um para outro automaticamente. Os termos desses planos gratuitos **podem permitir que o provedor guarde e use o conteúdo enviado para melhorar os seus modelos**, e a Domma não consegue impedir isso. Por isso, recomendamos não enviar dados pessoais sensíveis, sigilosos ou de terceiros pela IA gratuita; para esses usos, prefira um plano com Créditos ou conecte a sua própria conta de IA.
 
-7.4. Transcrição de áudio e voz sintética, quando você usa esses recursos, também são processadas por provedores especializados indicados no Anexo.
+7.4. Os Provedores de IA podem guardar os dados por um período limitado (em regra, até 30 dias; nos planos gratuitos usados pela IA gratuita do Inicial, os prazos e usos podem ser maiores, como diz o item 7.3) para monitorar abuso e cumprir a lei, conforme os seus próprios termos, e podem aplicar filtros de segurança que recusam pedidos.
 
-7.5. A IA pode errar (seção 9.2 dos Termos de Uso). Revise os Resultados, sobretudo quando envolverem dados de pessoas.
+7.5. Transcrição de áudio e voz sintética, quando você usa esses recursos, também são processadas por provedores especializados indicados no Anexo.
+
+7.6. A IA pode errar (seção 9.2 dos Termos de Uso). Revise os Resultados, sobretudo quando envolverem dados de pessoas.
 
 ## 8. Compartilhamento de dados
 
@@ -162,14 +164,14 @@ Quando usamos o **legítimo interesse**, avaliamos se ele não se sobrepõe aos 
 
 ## 9. Transferência internacional de dados
 
-9.1. **Para onde vão os dados.** Parte dos suboperadores fica fora do Brasil, principalmente nos **Estados Unidos**: os Provedores de IA (Anthropic, OpenAI, Google, OpenRouter e os desenvolvedores de modelos para os quais o OpenRouter encaminha pedidos) e a Vercel (site). A infraestrutura de servidores da Hostinger usada pelo ArkoBot fica em Brasil e Estados Unidos. A lista e os países estão no Anexo.
+9.1. **Para onde vão os dados.** Parte dos suboperadores fica fora do Brasil, principalmente nos **Estados Unidos**: os Provedores de IA (Anthropic e, quando disponíveis, OpenAI e Google nos planos pagos; Groq, Google, NVIDIA, OpenRouter e os desenvolvedores de modelos para os quais o OpenRouter encaminha pedidos, na IA gratuita do plano Inicial) e a Vercel (site). A infraestrutura de servidores da Hostinger usada pelo ArkoBot fica em Brasil e Estados Unidos. A lista e os países estão no Anexo.
 
 9.2. **Base legal.** A transferência internacional é feita com base no art. 33 da LGPD e na Resolução CD/ANPD nº 19/2024:
 
 - a) **para os dados de que a Domma é controladora**, a transferência é necessária para executar o contrato com você (art. 33, IX, combinado com o art. 7º, V, da LGPD), já que os serviços de site, IA e infraestrutura que formam o ArkoBot são prestados por esses provedores; e
 - b) **para o Conteúdo do Cliente**, a transferência acontece **por instrução do Cliente** (controlador), que a autoriza no Anexo I dos Termos de Uso, cabendo a ele a base legal perante os titulares.
 
-9.3. **Salvaguardas.** Em ambos os casos, a Domma: adota as **cláusulas-padrão contratuais aprovadas pela ANPD** sempre que o provedor permitir, ou garantias contratuais equivalentes de sigilo, segurança e limitação de finalidade; escolhe provedores com programas reconhecidos de segurança da informação; envia aos provedores apenas o necessário para a tarefa; e usa modalidades em que os dados não são usados para treinar modelos.
+9.3. **Salvaguardas.** Em ambos os casos, a Domma: adota as **cláusulas-padrão contratuais aprovadas pela ANPD** sempre que o provedor permitir, ou garantias contratuais equivalentes de sigilo, segurança e limitação de finalidade; escolhe provedores com programas reconhecidos de segurança da informação; envia aos provedores apenas o necessário para a tarefa; e, nos planos pagos, usa modalidades em que os dados não são usados para treinar modelos (na IA gratuita, vale o item 7.3).
 
 9.4. Você pode pedir mais informações sobre as salvaguardas adotadas pelo e-mail [contato@arkobot.com.br](mailto:contato@arkobot.com.br) ou pelo [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290).
 
@@ -184,10 +186,10 @@ Guardamos os dados pelo tempo necessário para as finalidades desta Política ou
 | Registros de acesso (IP, data e hora) | **6 meses** (art. 15 do Marco Civil), ou mais se houver pedido de autoridade nos termos do art. 15, § 2º |
 | Registros de segurança e de uso proibido | Até **1 ano**, salvo se forem necessários por mais tempo para investigação ou processo |
 | Atendimento | **5 anos** após o encerramento do atendimento |
-| Conteúdo do Cliente (bots, conversas, memórias, arquivos, logins salvos, sessões) | Enquanto a conta existir ou até o Cliente apagar. Após o encerramento da conta: **30 dias** para exportação e exclusão em até mais **30 dias** (seção 8.8 dos Termos) |
+| Conteúdo do Cliente (bots, conversas, memórias, arquivos, logins salvos, sessões) | Enquanto a conta existir ou até o Cliente apagar. Depois do cancelamento da assinatura, os dados continuam guardados enquanto a conta existir e são excluídos a pedido do Cliente ou depois de aviso prévio por e-mail (seção 8.8 dos Termos). Nada é apagado automaticamente por causa do limite de espaço do plano |
 | Cópias de segurança (backups) | Feitas diariamente e guardadas por **14 dias**, em rotação; dados excluídos somem dos backups ao fim desse ciclo |
 | Sessão do WhatsApp | Até o Cliente desconectar ou a sessão ser encerrada pelo celular, quando é apagada |
-| VPS adicional | Até **15 dias** após o fim da contratação (seção 12.6 dos Termos) |
+| VPS adicional | Até a exclusão, feita depois de aviso prévio por e-mail após o fim da contratação (seção 12.6 dos Termos) |
 | Comunicações de marketing | Até você retirar o consentimento |
 | Consumo de Créditos | Enquanto a conta existir e pelo prazo fiscal aplicável aos valores cobrados |
 
@@ -286,9 +288,11 @@ Esta lista mostra as empresas que tratam dados pessoais para que o ArkoBot funci
 | Hostinger | Servidores (VPS) que rodam o ArkoBot, os computadores dos bots, os backups e os VPS adicionais | Todos os dados do Serviço | Brasil e Estados Unidos |
 | Vercel | Hospedagem e entrega do site arkobot.com.br | Registros de acesso ao site (IP, navegador, página, data e hora) | Estados Unidos (com rede de entrega global) |
 | Asaas | Processamento de pagamentos (Pix, boleto e cartão) e cobrança | Dados de cobrança e de pagamento | Brasil |
-| Anthropic | Modelos de IA Claude | Conteúdo enviado aos bots que usam esses modelos | Estados Unidos |
-| OpenAI | Modelos de IA GPT e outros, transcrição e voz, quando usados | Conteúdo enviado aos bots que usam esses modelos ou recursos | Estados Unidos |
-| Google | Modelos de IA Gemini e voz, quando usados | Conteúdo enviado aos bots que usam esses modelos ou recursos | Estados Unidos |
-| OpenRouter | Roteamento de pedidos para modelos de IA de diversos desenvolvedores | Conteúdo enviado aos bots que usam esses modelos | Estados Unidos (e o país do desenvolvedor do modelo escolhido) |
+| Anthropic | Modelos de IA Claude (planos pagos) | Conteúdo enviado aos bots que usam esses modelos | Estados Unidos |
+| OpenAI | Modelos de IA GPT (previstos nos planos pagos), transcrição e voz, quando usados | Conteúdo enviado aos bots que usam esses modelos ou recursos | Estados Unidos |
+| Google | Modelos de IA Gemini: no plano gratuito da API, para a IA gratuita do Inicial, e previstos nos planos pagos; voz, quando usada | Conteúdo enviado aos bots que usam esses modelos ou recursos | Estados Unidos |
+| Groq | Modelos de IA abertos, pelo plano gratuito, para a IA gratuita do Inicial | Conteúdo enviado aos bots que usam a IA gratuita | Estados Unidos |
+| NVIDIA | Modelos de IA, pelo plano gratuito da API, para a IA gratuita do Inicial | Conteúdo enviado aos bots que usam a IA gratuita | Estados Unidos |
+| OpenRouter | Roteamento de pedidos para modelos de IA gratuitos de diversos desenvolvedores, para a IA gratuita do Inicial | Conteúdo enviado aos bots que usam esses modelos | Estados Unidos (e o país do desenvolvedor do modelo escolhido) |
 
 **Não são suboperadores da Domma** os serviços que o Cliente escolhe conectar (WhatsApp, provedores de e-mail, aplicativos conectados, servidores MCP, sites acessados pelos bots, contas próprias de IA). Eles tratam os dados conforme as próprias políticas.
