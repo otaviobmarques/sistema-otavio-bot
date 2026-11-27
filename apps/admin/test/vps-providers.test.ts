@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { ContaboProvider } from "../src/computers/contabo.ts";
 import { HetznerProvider } from "../src/computers/hetzner.ts";
 import { HostingerProvider } from "../src/computers/hostinger.ts";
-import { AGENT_IMAGE, postInstallScript } from "../src/computers/post-install.ts";
+import { AGENT_IMAGE, postInstallScript, WAKE_LABELS } from "../src/computers/post-install.ts";
 import { VpsProviderError } from "../src/computers/provider.ts";
 import { relayTarget } from "../src/node-agent/relay.ts";
 
@@ -143,6 +143,19 @@ describe("script de primeira inicialização", () => {
     const compose = readFileSync(new URL("../deploy/node-agent.vps.compose.yml", import.meta.url), "utf8");
     expect(compose).toContain(`image: ${AGENT_IMAGE}`);
     expect(postInstallScript(base)).toContain("/var/run/docker.sock:/var/run/docker.sock\n");
+  });
+
+  it("o agente da VPS do cliente tem a mesma página de despertar (roteador do Traefik) que o compose do agente", () => {
+    const compose = readFileSync(new URL("../deploy/node-agent.vps.compose.yml", import.meta.url), "utf8");
+    const labels = compose.split("\n").filter((line) => /^\s+traefik\./.test(line)).map((line) => line.trim());
+    expect(labels.length).toBeGreaterThan(5);
+    expect(labels).toEqual([...WAKE_LABELS]);
+    const script = postInstallScript(base);
+    for (const label of labels) expect(script).toContain(`      ${label}\n`);
+    expect(script).toContain("    networks: [instances]\n");
+    expect(script).toContain("    name: ${ARKO_INSTANCE_NETWORK:-arkobot-instances}\n    external: true\n");
+    // The heredoc is quoted ('YAML'): the shell leaves each $ for compose.
+    expect(script).toContain("<<'YAML'\nname: arkobot-node-agent\n");
   });
 
   it("recusa valores que quebrariam o shell", () => {

@@ -22,6 +22,8 @@ export const desiredInstanceSchema = z.object({
   slug: z.string().regex(SLUG),
   /** running: create or start it; stopped: stop it; absent: remove the container (never the volume). */
   desired: z.enum(["running", "stopped", "absent"]),
+  /** Stopped because it sleeps (a plan that sleeps when idle): a visit to its address wakes it (the agent's waking page). */
+  sleeping: z.boolean().default(false),
   host: z.string().min(3).max(253),
   image: z.string().min(3).max(300),
   /** Changes whenever anything below (or the generation) changes: the agent then recreates the container. */
@@ -72,3 +74,11 @@ export const statusReportSchema = z.object({
   error: z.string().max(2000).nullable().default(null),
 });
 export type StatusReport = z.infer<typeof statusReportSchema>;
+
+/** The Admin's nudge to a node's waking page after it woke an instance there: a visit that always wakes. */
+export const WAKE_POKE_HEADER = "x-arkobot-wake";
+
+/** The agent's waking page asks the Admin to wake a sleeping instance someone just visited. */
+export const wakeRequestSchema = z.object({ instanceId: z.uuid() });
+export const wakeAnswerSchema = z.object({ ok: z.boolean(), state: z.enum(["waking", "awake", "not_sleeping", "unknown"]) });
+export type WakeAnswer = z.infer<typeof wakeAnswerSchema>;

@@ -77,6 +77,7 @@ Postgres rápido com Docker: `docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=ar
 | `CRON_SECRET` | sim em produção | Protege `GET /api/cron/tick` (`Authorization: Bearer …`). A Vercel envia esse cabeçalho sozinha. |
 | `ADMIN_CLIENT_IP_HEADER` | não | Cabeçalho com o IP real, escrito pela borda. Na Vercel já é `x-real-ip`. |
 | `ADMIN_MAIL_FROM` | não | Remetente dos e-mails. |
+| `ADMIN_ALERT_EMAIL` | não | Quem recebe os avisos de operação (servidor sem contato, instância com erro); um ou mais, separados por vírgula. Sem ela, todos os donos (`owner`) ativos do painel. |
 | `RESEND_API_KEY` | sim em produção | Chave do [Resend](https://resend.com) (só envio, domínio `arkobot.com.br`). Sem ela os e-mails, inclusive os códigos de login, só vão para o log. |
 | `DUNNING_SUSPEND_AFTER_DAYS` / `DUNNING_CANCEL_AFTER_DAYS` | não | Régua de inadimplência: 7 e 30 dias por padrão. |
 | `ASAAS_API_BASE_URL` | não | Só desenvolvimento/testes: aponta o Asaas para um servidor falso. Recusado em produção. |
@@ -339,6 +340,8 @@ GATEWAY_DOMAIN=ia.arkobot.com.br docker compose -f gateway.compose.yml up -d --b
 
 A imagem (`Dockerfile.gateway`) leva só o gateway empacotado num arquivo (`pnpm --filter admin build:gateway` → `dist/gateway/gateway.mjs`) e o Node 24. Use a conexão direta ou o *Session pooler* do Supabase (processo longo). Sem Docker: `node dist/gateway/gateway.mjs` atrás de qualquer proxy HTTPS que não faça buffer de `text/event-stream`. Ao receber SIGTERM o gateway espera os streams em andamento liquidarem antes de sair.
 
+**Modelos pagos só com chave.** Um modelo pago só aparece no catálogo (`/v1/models`) e só é atendido (senão `403 model_unavailable`, antes de reservar crédito) quando o provedor dele (`model_prices.provider`) tem uma chave **ativa** em **Integrações**. Por isso a `0011` já pôs GPT e Gemini nos planos — Essencial: `claude-haiku-5-5`, `gpt-5.4-mini`, `google/gemini-2.5-flash`; Profissional: esses + `claude-sonnet-5`, `gpt-5.4`, `google/gemini-3.1-pro-preview`; Empresa: esses + `claude-opus-5`, `gpt-5.5`, `x-ai/grok-4.7` —, e eles aparecem sozinhos quando o dono cadastrar as chaves da OpenAI e do OpenRouter. Os modelos grátis seguem a regra deles (chaves de Integrações ou do ambiente).
+
 Depois: cadastre as chaves da Domma em **Integrações** (Anthropic, OpenAI, OpenRouter e, para a IA gratuita, Groq, Google AI Studio, NVIDIA; ou as variáveis `*_API_KEY` do `gateway.env`), confira a **Tabela de preços** e os `allowed_models` dos **Planos**, e emita um token na ficha do cliente.
 
 ### Lado da instância
@@ -387,10 +390,29 @@ Cliente ── conta.arkobot.com.br ── "Abrir" ──► Admin assina POST /
 - A instância recebe o estado por `POST /api/cloud/storage` assinado (job `instance.sync_storage`). Em `over` ela recusa uploads novos (anexos e arquivos no chat) com "Seu espaço acabou: apague arquivos ou mude de plano"; a partir de `full` mostra uma faixa. Ler, apagar e conversar nunca são bloqueados e nada é apagado.
 - O cartão "Meu ArkoBot" mostra "X GB de Y GB usados" com barra e aviso a partir de 80%; o painel mostra o uso na coluna **Disco** de Instâncias.
 
+### Dormir quando ociosa (Inicial)
+
+Um plano com `plans.idle_sleep_minutes` (o Inicial: 30, migração `0011`) dorme quando fica esse tempo sem uso e acorda quando alguém o usa (`src/provisioning/sleep.ts`).
+
+- **Quem decide se está ociosa é a instância** (`server/cloud-power.ts`): nenhum bot respondendo, nenhuma rotina rodando ou para começar, nenhuma tarefa entre bots, chamada ao vivo, computador ligado ou manutenção, ninguém usando há 30 min, acordada há pelo menos 2 min, próxima rotina a mais de 5 min — e, a pedido do Admin (`browsers=1`), **nenhuma página aberta** (o stream de eventos de uma aba conta). Uma imagem antiga, sem essa contagem, nunca dorme.
+- **O Admin pergunta** no máximo uma vez por minuto por instância (`GET /api/cloud/power?idleMinutes=30&browsers=1`, assinado), a cada relatório do agente (15 s) e no cron. Ociosa → `POST /api/cloud/power/sleep {"v":1,"idleMinutes":30,"browsers":true}`; com o "sim" grava `instances.sleeping_since` e `wake_at` (a próxima rotina menos 3 min). O motivo de ficar acordada fica em `power_busy` (Instâncias mostra).
+- **Dormir = contêiner parado** pelo agente no próximo ciclo (estado desejado `stopped`, com `sleeping: true`); o volume fica e `instances.state` não muda, então cobrança e operador não veem parada nenhuma. Parada por pagamento ou pelo operador manda mais que o sono. Na Área do cliente aparece **Dormindo**; no painel, um selo **Dormindo** com quando acorda.
+- **Acorda** (auditoria `instance.woke`, com `via`): **Abrir meu ArkoBot** (o cartão mostra **Acordando…**, espera a instância responder e abre já logado); **visita direta** a `https://<slug>.arkobot.com.br` (a página de despertar do agente, abaixo); **a próxima rotina** (`wake_at`, conferido a cada consulta do agente e no cron); e se o plano deixar de dormir. Ao acordar, o Admin manda um pedido ao endereço da instância (`x-arkobot-wake: 1`): a página de despertar o recebe e o agente consulta o Admin na hora, em vez de esperar os 15 s; enquanto o contêiner liga, o agente consulta a cada 3 s. Um contêiner parado volta em ~20 s.
+- **Página de despertar** (`src/node-agent/wake-server.ts`, porta 8790 do agente, `ARKO_WAKE_PORT`): o compose do agente tem um roteador do Traefik de **prioridade 1** (`HostRegexp` de qualquer `<slug>.arkobot.com.br`, `websecure`, `letsencrypt`) que só pega o que nenhuma instância atende — como a de uma instância que dorme, cujo roteador some junto com o contêiner. Para uma instância que dorme: 503 com "Seu ArkoBot está acordando…", recarrega sozinha a cada 3 s e pede ao Admin para acordá-la (`POST /api/agent/v1/wake`, no máximo a cada 10 s por instância). Parada por pagamento/operador: "Este ArkoBot está pausado". Endereço desconhecido: 404. O certificado de cada `<slug>` continua no `acme.json` do Traefik e é servido pelo SNI.
+- **Webhooks** que chegam com a instância dormindo recebem 503 (e a acordam); WhatsApp e Telegram repetem a entrega.
+
+### Avisos de operação
+
+`src/provisioning/health-alerts.ts`, no cron (`/api/cron/tick`; precisa rodar a cada 5 min — Vercel Pro ou um cron na VPS):
+
+- **Servidor sem contato**: um nó `active` cujo agente não fala com o Admin há mais de **5 min** → e-mail uma vez (`nodes.down_alerted_at`) e outro quando ele volta. Um nó posto em *Esvaziando*/*Desligado* não gera aviso.
+- **Instância com erro**: vista em `error` pelo agente, ou com o health check falhando, por mais de **10 min** (`instances.unhealthy_since`) → e-mail uma vez (`unhealthy_alerted_at`) e outro quando volta ao normal. Só para instâncias num servidor que responde.
+- Destinatários: `ADMIN_ALERT_EMAIL` ou os donos ativos. A página **Instâncias** mostra uma faixa vermelha enquanto durar.
+
 ### Ainda não feito
 
-- **Dormir depois de 30 min parado (Inicial)**: a instância já sabe dizer se está ociosa e aceitar dormir (`GET /api/cloud/power`, `POST /api/cloud/power/sleep`, em `docs/cloud-pro.md`), mas acordar sozinha depende de algo que segure o primeiro pedido e ligue o contêiner (no Fly é nativo; aqui seria um plugin como o Sablier no Traefik, ou o agente ligando no "Abrir"). Por ora as instâncias do Inicial ficam ligadas (TODO em `desiredOf`, `src/provisioning/instances.ts`).
-- Cota de disco imposta pelo sistema de arquivos (hoje é medida e só recusa uploads novos), troca de plano aplicada sem reprovisionar à mão (o limite de bots já muda no próximo "Abrir"), equipes (`role=team`), backup dos volumes, alerta quando um servidor fica sem contato, e apagar o volume de uma instância desativada (hoje só à mão: `docker volume rm arkoinst-<id>-data`).
+- Cota de disco imposta pelo sistema de arquivos (hoje é medida e só recusa uploads novos), troca de plano aplicada sem reprovisionar à mão (o limite de bots já muda no próximo "Abrir"), equipes (`role=team`), backup dos volumes, e apagar o volume de uma instância desativada (hoje só à mão: `docker volume rm arkoinst-<id>-data`).
+- Dormir: o app desktop ainda não pede ao Admin para acordar a instância (o `POST /api/cloud/desktop/wake` do `docs/cloud-pro.md` é do Admin antigo); se o Admin estiver fora do ar, a página de despertar não consegue acordar ninguém (só mostra "acordando" e tenta de novo).
 
 ## Computadores próprios (VPS)
 
@@ -409,7 +431,8 @@ Navegador ─► *.arkobot.com.br (VPS compartilhada, Traefik) ─► contêiner
 - **A compra sai uma vez**: a troca `requested → ordering` é condicional; uma resposta incerta do provedor (sem resposta, erro 5xx) vira falha "[compra incerta]" que **nunca** é repetida sozinha: confira no painel do provedor e descarte ou resolva à mão. Uma recusa clara (ex.: cartão recusado) pode ser tentada de novo.
 - **Instalação** (`src/computers/post-install.ts`): o mesmo script nos três provedores (post-install script na Hostinger; `user_data`/cloud-init na Hetzner e na Contabo). Instala Docker se faltar, as chaves SSH do operador, troca o **token de inscrição** (uso curto, só o hash no banco, aceito só do IP da VPS) pelo token do nó, sobe o Traefik (`traefik:v3.6.2`, certificado Let's Encrypt por TLS-ALPN) e o agente (`node-agent.vps.compose.yml`), e fecha a porta 443 para tudo que não seja a VPS compartilhada (regra na cadeia `DOCKER-USER`, porque portas do Docker passam por fora do ufw). O token do nó nunca fica no provedor.
 - **Pronto**: quando o agente da VPS manda o primeiro relatório, a máquina fica "No ar" e a instância do cliente vai para lá: **cliente novo** (instância que nunca subiu) muda sozinho; **cliente com dados** fica com "dados a copiar" até o operador copiar o volume e clicar **Mover ArkoBot** (abaixo). Na mudança, o servidor antigo remove o contêiner (o volume fica lá) e a VPS compartilhada passa o endereço adiante.
-- **DNS**: nada muda. O curinga `*.arkobot.com.br` continua apontando para a VPS compartilhada (o DNS da HostGator não tem API); o agente dela cria um contêiner `arkoedge-<slug>` (a própria imagem do agente, `relay.mjs`) com um roteador TCP do Traefik `HostSNI(<slug>.arkobot.com.br)` e `tls.passthrough`: o TLS só abre na VPS do cliente. Atualize o agente da VPS compartilhada para a versão 0.2.0 antes do primeiro cliente dedicado.
+- **DNS**: nada muda. O curinga `*.arkobot.com.br` continua apontando para a VPS compartilhada (o DNS da HostGator não tem API); o agente dela cria um contêiner `arkoedge-<slug>` (a própria imagem do agente, `relay.mjs`) com um roteador TCP do Traefik `HostSNI(<slug>.arkobot.com.br)` e `tls.passthrough`: o TLS só abre na VPS do cliente. Atualize o agente da VPS compartilhada para a versão 0.3.0 antes do primeiro cliente dedicado.
+- **Dormir numa VPS do cliente**: o roteador TCP da borda vale para o endereço esteja a instância acordada ou não (os roteadores TCP `HostSNI` passam na frente do catch-all HTTP da página de despertar da VPS compartilhada). Na VPS do cliente, o compose do agente gerado pelo script de instalação tem o mesmo roteador de despertar (prioridade 1, porta 8790) que `node-agent.vps.compose.yml` (um teste mantém os dois iguais), então a página "acordando…" aparece lá, e o agente de lá pede ao Admin para acordá-la com o token do próprio nó. A regra padrão é `*.arkobot.com.br`; com outro domínio, defina `ARKO_WAKE_RULE` no `.env` do agente.
 - **Encerrar** (só o dono, com motivo; recusado enquanto o ArkoBot do cliente roda na VPS — mova ou desative a instância antes): Hostinger desliga a renovação (a VPS e os dados somem no fim do período pago); Contabo cancela no fim do período; **Hetzner apaga a VPS na hora, com o disco** (a cobrança é por hora). O cliente deixa de pagar pelo Asaas quando o adicional é reduzido ou a assinatura acaba; a máquina fica "Encerrar no provedor" até o operador agir: nenhum dado é apagado sem ação explícita.
 - **Área do cliente**: o cartão **Meus computadores** mostra cada computador (preparando, pronto, encerrando), sem IP nem provedor; **Alterar** muda a quantidade do adicional (o novo valor vale na próxima cobrança, e a compra espera esse pagamento).
 
@@ -446,7 +469,7 @@ Por unidade, R$ 159/mês de receita contra cerca de R$ 26 (Hetzner `cx23`, ajust
 
 ## Próximas partes
 
-- **Instâncias**: dormir quando ociosa (Inicial) e backup dos volumes (veja [Provisionamento automático](#provisionamento-automático-instâncias-dos-clientes)).
+- **Instâncias**: backup dos volumes (veja [Provisionamento automático](#provisionamento-automático-instâncias-dos-clientes)).
 - **Gateway**: e-mail dos avisos de 50/80/100% (`UsageAlertNotifier`), preços por faixa de contexto longo.
 - **Computadores (VPS)**: os computadores extras ligados aos bots (o backend "VPS própria" do app, por SSH), cópia automática do volume ao mudar de servidor, e PROXY protocol na borda (hoje a instância vê o IP da VPS compartilhada).
 - Troca de plano com pró-rata (também na Área do cliente), emissão de NFS-e quando a conta PJ estiver ativa, convites de membros para a organização.

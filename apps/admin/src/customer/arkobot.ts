@@ -5,11 +5,15 @@ import type { AppContext } from "../context.ts";
 import { DomainError } from "../domain/lifecycle.ts";
 import { browserSignInUrl, InstanceUnreachable } from "../provisioning/cloud-request.ts";
 import { bootstrapContext, livePlanCode, provisionForOrganization, syncInstancePlan, type InstanceRow } from "../provisioning/instances.ts";
+import { pokeWakingPage, powerStateOf, wakeInstance } from "../provisioning/sleep.ts";
 import { diskUsageOf, type DiskUsageView } from "./disk-usage.ts";
 import type { CustomerRequest } from "./service.ts";
 
-/** What the card shows. `preparing` covers a new instance and one starting again; `paused_payment` a stop for billing. */
-export type ArkoBotStatus = "none" | "preparing" | "ready" | "payment_pending" | "paused_payment" | "paused" | "failed";
+/**
+ * What the card shows. `preparing` covers a new instance and one starting again; `paused_payment` a stop for billing;
+ * `sleeping` an instance of a plan that sleeps when idle (it wakes when opened) and `waking` one woken a moment ago.
+ */
+export type ArkoBotStatus = "none" | "preparing" | "ready" | "payment_pending" | "paused_payment" | "paused" | "failed" | "sleeping" | "waking";
 
 export interface ArkoBotView {
   status: ArkoBotStatus;
@@ -22,6 +26,11 @@ export interface ArkoBotView {
 }
 
 const OPEN_LIMIT = { windowMs: 60_000, max: 6 };
+/** Opening a sleeping or waking one wakes it and answers `waking`; the card then waits for it and opens it. */
+const OPENABLE = new Set<ArkoBotStatus>(["ready", "payment_pending", "sleeping", "waking"]);
+
+/** "Abrir meu ArkoBot": a sign-in link, or `waking` while a sleeping instance starts (the card asks again once it is up). */
+export type OpenResult = { url: string } | { waking: true };
 
 async function membershipOf(ctx: AppContext, accountId: string) {
   const { rows } = await ctx.db.query<{ organization_id: string; role: "owner" | "admin" | "member" }>(
@@ -36,8 +45,11 @@ async function liveInstance(ctx: AppContext, organizationId: string): Promise<In
   return rows[0] ?? null;
 }
 
-function statusOf(instance: InstanceRow | null, orgStatus: string, entitled: boolean): ArkoBotStatus {
+function statusOf(instance: InstanceRow | null, orgStatus: string, entitled: boolean, now: Date): ArkoBotStatus {
   if (!instance) return entitled ? "preparing" : "none";
+  const power = powerStateOf(instance, now);
+  if (power === "asleep") return "sleeping";
+  if (power === "waking") return "waking";
   const running = instance.observed_state === "running";
   if (instance.state === "stopped") return orgStatus === "suspended" || orgStatus === "canceled" ? "paused_payment" : "paused";
   if (instance.operator_stopped) return "paused";
@@ -60,9 +72,9 @@ export async function arkobotView(ctx: AppContext, req: CustomerRequest): Promis
         return null;
       }))?.instance ?? null;
   }
-  const status = statusOf(instance, org.status, entitled);
+  const status = statusOf(instance, org.status, entitled, ctx.now());
   const canManage = membership.role !== "member";
-  return { status, url: instance?.public_url ?? null, canOpen: canManage && (status === "ready" || status === "payment_pending"), canManage,
+  return { status, url: instance?.public_url ?? null, canOpen: canManage && OPENABLE.has(status), canManage,
     disk: status === "none" || status === "preparing" ? null : diskUsageOf(instance) };
 }
 
@@ -71,7 +83,7 @@ export async function arkobotView(ctx: AppContext, req: CustomerRequest): Promis
  * e-mail (two minutes at most) and hands back /pair#signin=… on the instance's own address. Also tells the instance
  * its plan first, if it does not know it yet, so the bot limit holds from the first visit.
  */
-export async function openArkoBot(ctx: AppContext, req: CustomerRequest): Promise<{ url: string }> {
+export async function openArkoBot(ctx: AppContext, req: CustomerRequest): Promise<OpenResult> {
   const membership = await membershipOf(ctx, req.session.accountId);
   if (membership.role === "member") throw new DomainError("Só o responsável pela conta da empresa abre o ArkoBot por aqui", 403);
   if (!(await hit(ctx.db, `conta-abrir:${req.session.accountId}`, OPEN_LIMIT, ctx.now()))) {
@@ -82,6 +94,14 @@ export async function openArkoBot(ctx: AppContext, req: CustomerRequest): Promis
   if (!instance || !view.canOpen || !instance.public_url || !instance.bootstrap_secret_enc) {
     throw new DomainError("Seu ArkoBot ainda está sendo preparado. Tente de novo em instantes.", 409);
   }
+  const actor = { type: "customer" as const, id: req.session.accountId, label: req.session.email, ip: req.ip };
+  if (view.status === "sleeping") {
+    const woke = await wakeInstance(ctx, actor, instance.id, "cliente");
+    // Fast path: the node's agent hears of it now instead of at its next poll.
+    if (woke.woke) await pokeWakingPage(ctx, woke.publicUrl);
+    return { waking: true };
+  }
+  if (view.status === "waking") return { waking: true };
   await syncInstancePlan(ctx, instance.id).catch((error) => console.warn(`[conta] plano da instância ${instance.slug}: ${(error as Error).message}`));
   const secret = ctx.box.decrypt(instance.bootstrap_secret_enc, bootstrapContext(instance.id));
   let url: string;
@@ -89,12 +109,14 @@ export async function openArkoBot(ctx: AppContext, req: CustomerRequest): Promis
     url = await browserSignInUrl(ctx, { publicUrl: instance.public_url, secret }, req.session.email);
   } catch (error) {
     if (error instanceof InstanceUnreachable) {
+      // Just woken and its server still starting (the node's waking page answered): keep waiting.
+      if (instance.woke_at && ctx.now().getTime() - new Date(instance.woke_at).getTime() < 5 * 60_000) return { waking: true };
       console.warn(`[conta] abrir ${instance.slug}: ${error.message}`);
       throw new DomainError("Seu ArkoBot está ligando. Tente de novo em alguns segundos.", 503);
     }
     throw error;
   }
-  await audit(ctx.db, { type: "customer", id: req.session.accountId, label: req.session.email, ip: req.ip },
+  await audit(ctx.db, actor,
     { action: "instance.opened", targetType: "instance", targetId: instance.id, organizationId: membership.organization_id });
   return { url };
 }

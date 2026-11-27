@@ -98,7 +98,7 @@ export const CLOUD_STORAGE_PATH = "/api/cloud/storage";
 export async function syncInstanceStorage(ctx: AppContext, instanceId: string): Promise<boolean> {
   const row = (await ctx.db.query<InstanceRow>(
     "SELECT * FROM instances WHERE id = $1", [instanceId])).rows[0];
-  if (!row || row.decommissioned_at || !row.public_url || !row.bootstrap_secret_enc) return false;
+  if (!row || row.decommissioned_at || row.sleeping_since || !row.public_url || !row.bootstrap_secret_enc) return false;
   if (row.state !== "ready" && row.state !== "payment_problem") return false;
   const state = row.disk_state ?? "ok";
   if (state === (row.disk_state_synced ?? "ok")) return true;

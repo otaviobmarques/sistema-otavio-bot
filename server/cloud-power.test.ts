@@ -1,3 +1,4 @@
+import { EventEmitter } from "node:events";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { tmpdir } from "node:os";
@@ -93,6 +94,19 @@ describe("the home's idle verdict", () => {
     expect(h.power.report().busy).toEqual(["maintenance"]);
     done(); done();
     expect(h.power.report().busy).toEqual(["recent-work"]);
+  });
+
+  it("counts open pages (their event stream) and, only when the Admin asks, keeps the home awake for them", () => {
+    const h = home();
+    h.pass(CLOUD_IDLE_AWAKE_MS);
+    const tab = new EventEmitter();
+    h.power.request("/api/events", { "x-omb-background": "1" }, tab as unknown as ServerResponse);
+    expect(h.power.report()).toMatchObject({ idle: true, browsers: 1 });
+    expect(h.power.report(CLOUD_IDLE_ACTIVITY_MS, true)).toMatchObject({ idle: false, busy: ["browser"], browsers: 1 });
+    expect(h.power.prepareSleep(CLOUD_IDLE_ACTIVITY_MS, true)).toEqual({ ok: false, busy: ["browser"] });
+    tab.emit("close");
+    expect(h.power.report(CLOUD_IDLE_ACTIVITY_MS, true)).toMatchObject({ idle: true, browsers: 0 });
+    expect(h.power.prepareSleep(CLOUD_IDLE_ACTIVITY_MS, true)).toMatchObject({ ok: true });
   });
 });
 
@@ -239,6 +253,14 @@ describe("the Admin's signed power routes", () => {
     expect((await send("GET", CLOUD_POWER_PATH, sign(CLOUD_POWER_PATH))).body).toMatchObject({ v: 1, idle: false, busy: ["recent-activity"] });
     const target = `${CLOUD_POWER_PATH}?idleMinutes=5`;
     expect((await send("GET", target, sign(target))).body).toMatchObject({ idle: true });
+    // An Admin that never sleeps a home under an open page asks for it, on the read and on the sleep request.
+    const tab = new EventEmitter();
+    h.power.request("/api/events", {}, tab as unknown as ServerResponse);
+    const asking = `${CLOUD_POWER_PATH}?idleMinutes=5&browsers=1`;
+    expect((await send("GET", asking, sign(asking))).body).toMatchObject({ idle: false, busy: ["browser"], browsers: 1 });
+    const body = JSON.stringify({ v: 1, idleMinutes: 5, browsers: true });
+    const headers = { ...sign(CLOUD_POWER_SLEEP_PATH, "POST", body), "content-type": "application/json" };
+    expect(await send("POST", CLOUD_POWER_SLEEP_PATH, headers, body)).toEqual({ status: 409, body: { ok: false, busy: ["browser"] } });
   });
 
   it("refuses an unsigned or replayed read, and a wrong method", async () => {

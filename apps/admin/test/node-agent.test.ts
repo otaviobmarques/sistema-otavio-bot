@@ -16,7 +16,7 @@ const TOKEN = `arko_node_${"a".repeat(43)}`;
 function instance(overrides: Partial<DesiredInstance> = {}): DesiredInstance {
   const id = overrides.id ?? randomUUID();
   return {
-    id, slug: "padaria", desired: "running", host: "padaria.arkobot.com.br", image: IMAGE, revision: "a".repeat(32),
+    id, slug: "padaria", desired: "running", sleeping: false, host: "padaria.arkobot.com.br", image: IMAGE, revision: "a".repeat(32),
     env: { OMB_CLOUD_ROLE: "home", OMB_CLOUD_BOOTSTRAP_SECRET: "segredo-que-nunca-aparece-no-log" }, resources: { memoryMb: 1024, cpus: 0.5, pids: 512 },
     ...overrides,
   };

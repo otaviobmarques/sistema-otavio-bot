@@ -9,6 +9,24 @@ export const TRAEFIK_IMAGE = "traefik:v3.6.2";
 export const DEDICATED_TRAEFIK_CONTAINER = "arkobot-traefik";
 export const INSTANCE_NETWORK = "arkobot-instances";
 
+/**
+ * The waking page's Traefik router: the same labels as apps/admin/deploy/node-agent.vps.compose.yml (a test keeps them
+ * equal). A sleeping instance on this VPS is still reached through the shared edge's SNI passthrough; it lands on this
+ * VPS's own Traefik with no instance router left, and the catch-all (priority 1) sends it to this node's agent (8790).
+ * Compose fills the ${...} from the project's .env (the defaults match this script's Traefik); `$$` is a literal `$`.
+ */
+export const WAKE_LABELS = [
+  'traefik.enable: "true"',
+  "traefik.docker.network: ${ARKO_INSTANCE_NETWORK:-arkobot-instances}",
+  "traefik.http.routers.arkobot-wake.rule: ${ARKO_WAKE_RULE:-HostRegexp(`^[a-z0-9][a-z0-9-]*\\.arkobot\\.com\\.br$$`)}",
+  'traefik.http.routers.arkobot-wake.priority: "1"',
+  "traefik.http.routers.arkobot-wake.entrypoints: ${ARKO_TRAEFIK_ENTRYPOINT:-websecure}",
+  'traefik.http.routers.arkobot-wake.tls: "true"',
+  "traefik.http.routers.arkobot-wake.tls.certresolver: ${ARKO_TRAEFIK_CERTRESOLVER:-letsencrypt}",
+  "traefik.http.routers.arkobot-wake.service: arkobot-wake",
+  "traefik.http.services.arkobot-wake.loadbalancer.server.port: ${ARKO_WAKE_PORT:-8790}",
+] as const;
+
 export interface PostInstallInput {
   adminUrl: string;
   machineId: string;
@@ -111,8 +129,15 @@ services:
     env_file: .env
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+    networks: [instances]
+    labels:
+${WAKE_LABELS.map((line) => `      ${line}`).join("\n")}
     mem_limit: 256m
     logging: { driver: json-file, options: { max-size: "10m", max-file: "3" } }
+networks:
+  instances:
+    name: \${ARKO_INSTANCE_NETWORK:-${INSTANCE_NETWORK}}
+    external: true
 YAML
 
 umask 077

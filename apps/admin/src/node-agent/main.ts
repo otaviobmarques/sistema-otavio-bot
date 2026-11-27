@@ -3,14 +3,23 @@
 // changes nothing: the instances keep running under Docker's restart policy. It never logs a secret.
 import { setTimeout as sleep } from "node:timers/promises";
 import { pathToFileURL } from "node:url";
-import { AGENT_API, desiredStateSchema, NODE_TOKEN_PATTERN, type DesiredState, type StatusReport } from "../provisioning/protocol.ts";
+import {
+  AGENT_API, desiredStateSchema, NODE_TOKEN_PATTERN, wakeAnswerSchema, type DesiredState, type StatusReport, type WakeAnswer,
+} from "../provisioning/protocol.ts";
 import { createDiskMeter } from "./disk.ts";
 import { DEFAULT_RELAY_IMAGE, reconcileEdges } from "./edges.ts";
 import { DockerClient, type DockerApi } from "./docker.ts";
 import { attachProxy, prepareNetwork, reconcile, type Log } from "./reconcile.ts";
 import type { NodeSettings } from "./spec.ts";
+import { startWakeServer } from "./wake-server.ts";
 
-export const AGENT_VERSION = "0.2.0";
+export const AGENT_VERSION = "0.3.0";
+/** The waking page's port (ARKO_WAKE_PORT; 0 turns it off). Traefik's catch-all router points here. */
+export const DEFAULT_WAKE_PORT = 8790;
+/** While a container it started is still booting, the agent polls this often, so the panels see it up within seconds. */
+export const STARTING_POLL_SECONDS = 3;
+/** A nudge (the waking page) never makes it poll more often than this. */
+export const NUDGE_MIN_MS = 2_000;
 
 export interface AgentConfig {
   adminUrl: string;
@@ -26,6 +35,8 @@ export interface AgentConfig {
   registryAuth: string | null;
   /** The image the edge relays run (this agent's own image, which ships relay.mjs). */
   relayImage?: string;
+  /** The waking page's port; null: off. */
+  wakePort?: number | null;
 }
 
 export function agentConfig(env: NodeJS.ProcessEnv): AgentConfig {
@@ -52,10 +63,19 @@ export function agentConfig(env: NodeJS.ProcessEnv): AgentConfig {
     certResolver: env.ARKO_TRAEFIK_CERTRESOLVER?.trim() || "letsencrypt",
     trustedProxies: env.ARKO_TRUSTED_PROXIES?.trim() || null,
     relayImage: env.ARKO_RELAY_IMAGE?.trim() || DEFAULT_RELAY_IMAGE,
+    wakePort: wakePort(env.ARKO_WAKE_PORT),
     registryAuth: user && password
       ? Buffer.from(JSON.stringify({ username: user, password, serveraddress: env.ARKO_REGISTRY_SERVER?.trim() || "ghcr.io" })).toString("base64url")
       : null,
   };
+}
+
+function wakePort(raw: string | undefined): number | null {
+  if (raw === undefined || raw.trim() === "") return DEFAULT_WAKE_PORT;
+  const port = Number(raw.trim());
+  if (port === 0) return null;
+  if (!Number.isInteger(port) || port < 1 || port > 65_535) throw new Error("ARKO_WAKE_PORT precisa ser uma porta (ou 0 para desligar a página de despertar)");
+  return port;
 }
 
 async function adminCall(config: AgentConfig, fetcher: typeof fetch, method: "GET" | "POST", path: string, body?: unknown): Promise<unknown> {
@@ -73,6 +93,14 @@ async function adminCall(config: AgentConfig, fetcher: typeof fetch, method: "GE
 export interface AgentLoop {
   /** One poll: desired state, reconcile, report. Returns how long to wait before the next one. */
   once(): Promise<number>;
+  /** The last desired state pulled (the waking page reads it); null before the first. */
+  desired(): DesiredState | null;
+  /** Asks the Admin to wake a sleeping instance of this node (the waking page). */
+  wake(instanceId: string): Promise<WakeAnswer>;
+  /** Poll now rather than at the next interval (at most every NUDGE_MIN_MS). */
+  nudge(): void;
+  /** Whether a nudge is waiting; the main loop checks it while it sleeps. */
+  nudged(): boolean;
 }
 
 export function createAgent(config: AgentConfig, deps: { docker?: DockerApi; fetch?: typeof fetch; log?: Log; now?: () => number } = {}): AgentLoop {
@@ -80,13 +108,33 @@ export function createAgent(config: AgentConfig, deps: { docker?: DockerApi; fet
   const fetcher = deps.fetch ?? globalThis.fetch;
   const log = deps.log ?? ((line) => console.log(`[arkobot-agent] ${line}`));
   const disk = createDiskMeter(docker, { log, now: deps.now });
+  const clock = deps.now ?? Date.now;
   let failures = 0;
   let subnet: string | null | undefined;
+  let last: DesiredState | null = null;
+  let nudgedAt: number | null = null;
+  let polledAt = 0;
   return {
+    desired: () => last,
+    async wake(instanceId) {
+      const answer = await adminCall(config, fetcher, "POST", "/wake", { instanceId }).catch((error: Error) => {
+        // 404: the Admin does not know it on this node any more (an old desired state): nothing to wake.
+        if (/ 404 /.test(error.message)) return { ok: false, state: "unknown" };
+        throw error;
+      });
+      return wakeAnswerSchema.parse(answer);
+    },
+    nudge() {
+      nudgedAt ??= clock();
+    },
+    nudged: () => nudgedAt !== null && clock() - polledAt >= NUDGE_MIN_MS,
     async once() {
+      nudgedAt = null;
+      polledAt = clock();
       let desired: DesiredState;
       try {
         desired = desiredStateSchema.parse(await adminCall(config, fetcher, "GET", "/desired"));
+        last = desired;
       } catch (error) {
         // The Admin is down or refused us: change nothing, try again with a longer wait.
         if (failures++ % 20 === 0) log(`não consegui ler o estado desejado (${(error as Error).message}); nada foi mudado`);
@@ -118,7 +166,8 @@ export function createAgent(config: AgentConfig, deps: { docker?: DockerApi; fet
       } catch (error) {
         log(`não consegui enviar o relatório (${(error as Error).message})`);
       }
-      return desired.pollSeconds;
+      const booting = report.instances.some((instance) => instance.state === "starting" || instance.health === "starting");
+      return booting ? Math.min(desired.pollSeconds, STARTING_POLL_SECONDS) : desired.pollSeconds;
     },
   };
 }
@@ -131,11 +180,16 @@ async function main() {
   process.once("SIGTERM", stop);
   process.once("SIGINT", stop);
   console.log(`[arkobot-agent] ${AGENT_VERSION} falando com ${config.adminUrl}; rede ${config.network}`);
+  const log = (line: string) => console.log(`[arkobot-agent] ${line}`);
+  const wakeServer = config.wakePort ? startWakeServer(config.wakePort, { desired: agent.desired, wake: agent.wake, nudge: agent.nudge, log }) : null;
+  if (wakeServer) log(`página de despertar na porta ${config.wakePort}`);
   while (!stopping) {
     const wait = await agent.once();
-    // Short steps, so a stop is quick; the instances keep running when the agent stops.
-    for (let waited = 0; waited < wait && !stopping; waited++) await sleep(1000);
+    // Short steps, so a stop is quick and a nudge from the waking page is taken within a quarter of a second; the
+    // instances keep running when the agent stops.
+    for (let waited = 0; waited < wait * 1000 && !stopping && !agent.nudged(); waited += 250) await sleep(250);
   }
+  wakeServer?.close();
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
