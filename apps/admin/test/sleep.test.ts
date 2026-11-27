@@ -215,6 +215,24 @@ describe("plano que dorme (Inicial)", () => {
     expect((await instanceOf(f.ctx, essencial.orgId)).power_checked_at).toBeNull();
   });
 
+  it("na VPS própria do cliente (nó dedicado) nunca dorme, e acorda se já estava dormindo", async () => {
+    const homes = fakeHomes(f);
+    homes.power.browsers = 0;
+    const { orgId, agent } = await setup(f);
+    await f.ctx.db.query("UPDATE nodes SET kind = 'dedicated'");
+    await agent.once();
+    advance(f.ctx, POWER_CHECK_MS);
+    await agent.once();
+    const instance = await instanceOf(f.ctx, orgId);
+    expect(instance.observed_state).toBe("running");
+    expect(homes.seen.some((call) => call.target === "/api/cloud/power/sleep")).toBe(false);
+    expect((await instanceOf(f.ctx, orgId)).sleeping_since).toBeNull();
+
+    await f.ctx.db.query("UPDATE instances SET sleeping_since = $2 WHERE id = $1", [instance.id, f.ctx.now()]);
+    await tick(f.ctx);
+    expect((await instanceOf(f.ctx, orgId)).sleeping_since).toBeNull();
+  });
+
   it("parada pelo operador ou por pagamento manda mais que o sono", () => {
     const asleep = { decommissioned_at: null, operator_stopped: false, state: "ready" as const, sleeping_since: new Date() };
     expect(desiredOf(asleep)).toBe("stopped");
