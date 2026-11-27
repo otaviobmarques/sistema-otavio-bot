@@ -28,7 +28,7 @@ export function FaixaLogos() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="rounded-3xl border border-linha bg-cartao px-4 py-6 sm:px-8">
           <h2 id="faixa-titulo" className="text-center text-xs font-semibold uppercase tracking-[0.18em] text-cinza">
-            IAs inclusas no plano, ou conecte a sua própria conta
+            Claude incluso nos planos pagos, IA gratuita no Inicial, ou conecte a sua própria conta
           </h2>
           <div className="relative mt-5 overflow-hidden [mask-image:linear-gradient(90deg,transparent,#000_8%,#000_92%,transparent)]">
             <ul className="flex w-max animate-faixa items-center gap-9 hover:[animation-play-state:paused]">

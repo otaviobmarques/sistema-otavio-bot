@@ -9,6 +9,7 @@ export type BillingSignal =
   | "dunning_suspend"
   | "dunning_cancel"
   | "admin_cancel"
+  | "paid_period_ended"
   | "courtesy_expired";
 
 /**
@@ -29,6 +30,7 @@ export function nextSubscriptionStatus(current: SubscriptionStatus, signal: Bill
       return current === "suspended" ? null : "suspended";
     case "provider_ended":
     case "admin_cancel":
+    case "paid_period_ended":
     case "courtesy_expired":
       return "canceled";
     case "dunning_suspend":

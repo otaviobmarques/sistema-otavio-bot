@@ -8,7 +8,7 @@ import { arkobotView, openArkoBot } from "../../customer/arkobot.ts";
 import { CUSTOMER_BILLING_TYPES, MAX_EXTRA_COMPUTERS, type CreditPackageId } from "../../customer/catalog.ts";
 import {
   buyCredits, cancelOwnSubscription, completeOnboarding, customerState, dashboard, exportData, planCatalog, requestDeletion, setExtraComputers,
-  subscribe, type CustomerRequest,
+  subscribe, undoOwnCancellation, type CustomerRequest,
 } from "../../customer/service.ts";
 import { body, router, type Ctx } from "../http.ts";
 
@@ -118,6 +118,11 @@ export function contaRoutes(ctx: AppContext) {
   authed.post("/assinatura/cancelar", async (c) => {
     const input = await body(c, cancelSchema);
     return c.json({ ok: true, ...(await cancelOwnSubscription(ctx, request(c), input.reason)) });
+  });
+
+  authed.post("/assinatura/desfazer-cancelamento", async (c) => {
+    await undoOwnCancellation(ctx, request(c));
+    return c.json({ ok: true });
   });
 
   authed.get("/painel", async (c) => c.json(await dashboard(ctx, request(c))));
