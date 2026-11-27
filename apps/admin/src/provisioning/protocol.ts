@@ -11,6 +11,8 @@ export const LABEL_INSTANCE = "arkobot.instance";
 export const LABEL_NODE = "arkobot.node";
 export const LABEL_REVISION = "arkobot.revision";
 export const LABEL_SLUG = "arkobot.slug";
+/** On the relay containers of a shared node (edges): kept apart from the instances' containers. */
+export const LABEL_EDGE = "arkobot.edge";
 
 const SLUG = /^[a-z0-9][a-z0-9-]{1,62}$/;
 const ENV_NAME = /^[A-Z][A-Z0-9_]{0,63}$/;
@@ -35,10 +37,20 @@ export const desiredInstanceSchema = z.object({
 });
 export type DesiredInstance = z.infer<typeof desiredInstanceSchema>;
 
+/** An instance that runs on a customer's own VPS: this (shared) node's Traefik passes its TLS connections through to it. */
+export const desiredEdgeSchema = z.object({
+  id: z.uuid(),
+  slug: z.string().regex(SLUG),
+  host: z.string().min(3).max(253),
+  target: z.string().regex(/^(?:\d{1,3}\.){3}\d{1,3}:\d{1,5}$/),
+});
+export type DesiredEdge = z.infer<typeof desiredEdgeSchema>;
+
 export const desiredStateSchema = z.object({
   node: z.object({ id: z.uuid(), name: z.string() }),
   pollSeconds: z.number().int().min(5).max(600),
   instances: z.array(desiredInstanceSchema).max(1000),
+  edges: z.array(desiredEdgeSchema).max(1000).default([]),
 });
 export type DesiredState = z.infer<typeof desiredStateSchema>;
 

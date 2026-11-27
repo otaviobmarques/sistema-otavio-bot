@@ -14,6 +14,7 @@ import { AGENT_POLL_SECONDS, baseSlug, planResources, provisioningSettings, slug
 import type { DesiredInstance, DesiredState, StatusReport } from "./protocol.ts";
 import { queuePlanSync, queueStorageSync } from "./queue.ts";
 import { recordDiskUsage } from "./storage.ts";
+import { dedicatedNodeFor, edgesFor } from "../computers/placement.ts";
 
 export interface InstanceRow {
   id: string;
@@ -78,7 +79,7 @@ export async function pickNode(q: Queryable): Promise<string | null> {
   const load = "(SELECT count(*) FROM instances i WHERE i.node_id = n.id AND i.decommissioned_at IS NULL)";
   const { rows } = await q.query<{ id: string }>(
     `SELECT n.id FROM nodes n
-     WHERE n.status = 'active' AND n.agent_token_hash IS NOT NULL AND (n.capacity_instances IS NULL OR ${load} < n.capacity_instances)
+     WHERE n.status = 'active' AND n.kind <> 'dedicated' AND n.agent_token_hash IS NOT NULL AND (n.capacity_instances IS NULL OR ${load} < n.capacity_instances)
      ORDER BY ${load}, n.created_at LIMIT 1 FOR UPDATE OF n`);
   return rows[0]?.id ?? null;
 }
@@ -108,9 +109,10 @@ export async function provisionForOrganization(ctx: AppContext, actor: Actor, or
 
     const id = randomUUID();
     const slug = await freeSlug(q, baseSlug(org.slug));
-    const nodeId = await pickNode(q);
+    const ownNode = await dedicatedNodeFor(q, org.id);
+    const nodeId = ownNode ?? await pickNode(q);
     const secret = randomToken(32);
-    const mode = sub.cloud_mode === "dedicated" ? "dedicated" : "shared_limited";
+    const mode = ownNode || sub.cloud_mode === "dedicated" ? "dedicated" : "shared_limited";
     await q.query(
       `INSERT INTO instances (id, organization_id, subscription_id, node_id, slug, machine_id, role, mode, bootstrap_secret_enc, state, state_reason, public_url)
        VALUES ($1, $2, $3, $4, $5, $6, 'home', $7, $8, 'setting_up', $9, $10)`,
@@ -129,11 +131,11 @@ export async function provisionForOrganization(ctx: AppContext, actor: Actor, or
 /** Puts instances that waited for room on a node that has it now. */
 export async function assignPendingInstances(ctx: AppContext, limit = 20): Promise<number> {
   let assigned = 0;
-  const { rows } = await ctx.db.query<{ id: string }>(
-    "SELECT id FROM instances WHERE node_id IS NULL AND decommissioned_at IS NULL ORDER BY created_at LIMIT $1", [limit]);
+  const { rows } = await ctx.db.query<{ id: string; organization_id: string }>(
+    "SELECT id, organization_id FROM instances WHERE node_id IS NULL AND decommissioned_at IS NULL ORDER BY created_at LIMIT $1", [limit]);
   for (const row of rows) {
     const done = await ctx.db.tx(async (q) => {
-      const nodeId = await pickNode(q);
+      const nodeId = (await dedicatedNodeFor(q, row.organization_id)) ?? await pickNode(q);
       if (!nodeId) return false;
       const updated = await q.query<{ organization_id: string }>(
         `UPDATE instances SET node_id = $2, state_reason = CASE WHEN state = 'setting_up' THEN 'criando o contêiner' ELSE state_reason END
@@ -226,18 +228,20 @@ export async function desiredStateFor(ctx: AppContext, node: Pick<NodeRow, "id" 
      LEFT JOIN LATERAL (SELECT s.plan_id FROM subscriptions s WHERE s.organization_id = i.organization_id
                         ORDER BY (s.status <> 'canceled') DESC, s.created_at DESC LIMIT 1) s ON true
      LEFT JOIN plans p ON p.id = s.plan_id
-     WHERE i.node_id = $1 AND (i.decommissioned_at IS NULL OR i.observed_state IS DISTINCT FROM 'absent')
+     WHERE (i.node_id = $1 AND (i.decommissioned_at IS NULL OR i.observed_state IS DISTINCT FROM 'absent')) OR i.previous_node_id = $1
      ORDER BY i.created_at`, [node.id]);
   const instances: DesiredInstance[] = [];
   for (const row of rows) {
     try {
-      instances.push(desiredInstance(ctx, row));
+      const desired = desiredInstance(ctx, row);
+      // Moved to another node: this one only removes its container (the volume stays here).
+      instances.push(row.node_id === node.id ? desired : { ...desired, desired: "absent" });
     } catch (error) {
       // A secret that no longer opens (a lost ADMIN_ENCRYPTION_KEY) leaves this one out: the agent then leaves it as it is.
       console.error(`[provisionamento] instância ${row.slug}: ${(error as Error).message}`);
     }
   }
-  return { node: { id: node.id, name: node.name }, pollSeconds: AGENT_POLL_SECONDS, instances };
+  return { node: { id: node.id, name: node.name }, pollSeconds: AGENT_POLL_SECONDS, instances, edges: await edgesFor(ctx.db, node) };
 }
 
 /** Records what the agent saw; an instance being set up becomes ready once its container runs and answers its health check. */
@@ -248,9 +252,14 @@ export async function applyStatusReport(ctx: AppContext, node: Pick<NodeRow, "id
     await q.query("UPDATE nodes SET last_seen_at = $2, agent_version = $3, last_error = $4, orphan_containers = $5 WHERE id = $1",
       [node.id, now, report.agentVersion, report.error, report.orphans.length]);
     for (const seen of report.instances) {
-      const row = (await q.query<Pick<InstanceRow, "id" | "state" | "organization_id" | "slug" | "decommissioned_at">>(
-        "SELECT id, state, organization_id, slug, decommissioned_at FROM instances WHERE id = $1 AND node_id = $2 FOR UPDATE", [seen.id, node.id])).rows[0];
+      const row = (await q.query<Pick<InstanceRow, "id" | "state" | "organization_id" | "slug" | "decommissioned_at" | "node_id">>(
+        "SELECT id, state, organization_id, slug, decommissioned_at, node_id FROM instances WHERE id = $1 AND (node_id = $2 OR previous_node_id = $2) FOR UPDATE",
+        [seen.id, node.id])).rows[0];
       if (!row) continue;
+      if (row.node_id !== node.id) {
+        if (seen.state === "absent") await q.query("UPDATE instances SET previous_node_id = NULL WHERE id = $1 AND previous_node_id = $2", [row.id, node.id]);
+        continue;
+      }
       // unhealthy_since: how long it has looked broken (health-alerts.ts mails the operators after 10 minutes).
       const broken = seen.state === "error" || seen.health === "unhealthy";
       await q.query(

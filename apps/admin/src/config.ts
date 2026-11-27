@@ -35,6 +35,19 @@ export interface AdminConfig {
     /** The AI gateway the instances use (OMB_CLOUD_AI_GATEWAY_URL). */
     gatewayUrl?: string;
   };
+  /** Computadores próprios (src/computers). Never logged. */
+  computers?: {
+    /** Hetzner Cloud project token. Each provider is usable only with its credentials; without them nothing is bought there. */
+    hetznerApiToken?: string;
+    /** Hostinger API token (hPanel → API). */
+    hostingerApiToken?: string;
+    /** Contabo API client and API user (Customer Control Panel → API). */
+    contabo?: { clientId: string; clientSecret: string; apiUser: string; apiPassword: string };
+    /** SSH public keys put on every VPS, for the operator's own access. */
+    sshKeys?: string[];
+    /** Registry login handed to a new VPS at enrollment, when the agent and ArkoBot images are private. */
+    registry?: { user: string; token: string };
+  };
 }
 
 export class ConfigError extends Error {}
@@ -109,6 +122,16 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AdminConfig {
       baseDomain: env.INSTANCES_BASE_DOMAIN?.trim() || undefined,
       image: env.INSTANCE_IMAGE?.trim() || undefined,
       gatewayUrl: env.AI_GATEWAY_PUBLIC_URL?.trim() || undefined,
+    },
+    computers: {
+      hetznerApiToken: env.HETZNER_API_TOKEN?.trim() || undefined,
+      hostingerApiToken: env.HOSTINGER_API_TOKEN?.trim() || undefined,
+      contabo: env.CONTABO_CLIENT_ID?.trim() && env.CONTABO_CLIENT_SECRET?.trim() && env.CONTABO_API_USER?.trim() && env.CONTABO_API_PASSWORD
+        ? { clientId: env.CONTABO_CLIENT_ID.trim(), clientSecret: env.CONTABO_CLIENT_SECRET.trim(), apiUser: env.CONTABO_API_USER.trim(), apiPassword: env.CONTABO_API_PASSWORD }
+        : undefined,
+      sshKeys: (env.VPS_SSH_PUBLIC_KEYS ?? "").split(/\n|;/).map((key) => key.trim()).filter(Boolean),
+      registry: env.NODE_REGISTRY_USER?.trim() && env.NODE_REGISTRY_TOKEN?.trim()
+        ? { user: env.NODE_REGISTRY_USER.trim(), token: env.NODE_REGISTRY_TOKEN.trim() } : undefined,
     },
   };
 }

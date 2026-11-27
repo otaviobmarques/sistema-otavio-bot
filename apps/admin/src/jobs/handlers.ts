@@ -11,6 +11,9 @@ import { sendStorageMail, syncInstanceStorage } from "../provisioning/storage.ts
 import { ALERT_MAIL_JOB, checkHealthAlerts, sendAlertMail, type AlertSweep } from "../provisioning/health-alerts.ts";
 import { checkIdleInstances, wakeDueInstances, type IdleSweep } from "../provisioning/sleep.ts";
 import { SYSTEM } from "../audit.ts";
+import { sweepComputers, syncOrganizationComputers, type SyncResult } from "../computers/machines.ts";
+import { advanceDueMachines, advanceMachine } from "../computers/provisioning.ts";
+import { ADVANCE_COMPUTER_JOB, SYNC_COMPUTERS_JOB } from "../computers/queue.ts";
 import { runJobs, type JobHandler, type RunSummary } from "./queue.ts";
 
 export const JOB_HANDLERS: Record<string, JobHandler> = {
@@ -36,6 +39,12 @@ export const JOB_HANDLERS: Record<string, JobHandler> = {
   [SYNC_INSTANCE_STORAGE_JOB]: async (ctx, payload) => {
     await syncInstanceStorage(ctx, String(payload.instanceId));
   },
+  [SYNC_COMPUTERS_JOB]: async (ctx, payload) => {
+    await syncOrganizationComputers(ctx, String(payload.organizationId));
+  },
+  [ADVANCE_COMPUTER_JOB]: async (ctx, payload) => {
+    await advanceMachine(ctx, String(payload.machineId));
+  },
   [ALERT_MAIL_JOB]: async (ctx, payload) => {
     await sendAlertMail(ctx, { subject: String(payload.subject), text: String(payload.text) });
   },
@@ -48,6 +57,7 @@ export interface TickSummary {
   scheduledCancellations: number;
   expiredReservations: number;
   provisioning: ProvisioningSweep;
+  computers: SyncResult & { advanced: number };
   /** Instances of plans that sleep: woken for their next routine, and the awake ones asked whether they are idle. */
   sleep: IdleSweep & { woken: number };
   alerts: AlertSweep;
@@ -62,6 +72,7 @@ export async function tick(ctx: AppContext, limit = 50): Promise<TickSummary> {
   const alerts = await checkHealthAlerts(ctx);
   const jobs = await runJobs(ctx, JOB_HANDLERS, { limit });
   const provisioning = await sweepProvisioning(ctx);
+  const computers = { ...(await sweepComputers(ctx)), advanced: await advanceDueMachines(ctx) };
   const woken = await wakeDueInstances(ctx, { poke: true });
   const idle = await checkIdleInstances(ctx);
   await sweepRateLimits(ctx.db, ctx.now());
@@ -70,5 +81,5 @@ export async function tick(ctx: AppContext, limit = 50): Promise<TickSummary> {
   await ctx.db.query("DELETE FROM admin_sessions WHERE expires_at < $1", [weekAgo]);
   await ctx.db.query("DELETE FROM account_sessions WHERE expires_at < $1", [weekAgo]);
   await ctx.db.query("DELETE FROM account_otps WHERE expires_at < $1", [ctx.now()]);
-  return { jobs, dunning, courtesy, scheduledCancellations, expiredReservations, provisioning, sleep: { ...idle, woken }, alerts };
+  return { jobs, dunning, courtesy, scheduledCancellations, expiredReservations, provisioning, computers, sleep: { ...idle, woken }, alerts };
 }

@@ -11,7 +11,8 @@ import { bugReportStatus, receiveBugReport, REPORT_LIMITS } from "../reports/int
 import { safeEqual } from "../security/crypto.ts";
 import type { Ctx, Env } from "./http.ts";
 import { AGENT_API } from "../provisioning/protocol.ts";
-import { agentRoutes } from "./routes/agent.ts";
+import { agentRoutes, enrollRoute } from "./routes/agent.ts";
+import { computerRoutes } from "./routes/computers.ts";
 import { authRoutes } from "./routes/auth.ts";
 import { billingRoutes } from "./routes/billing.ts";
 import { clientRoutes } from "./routes/clients.ts";
@@ -87,6 +88,8 @@ export function createApp(ctx: AppContext) {
 
   app.route("/api/auth", authRoutes(ctx));
   app.route("/api/conta", contaRoutes(ctx));
+  // A new customer VPS swaps its enrollment token for its node token (src/computers). Before the node-token gate.
+  app.post(`${AGENT_API}/enroll`, enrollRoute(ctx));
   // Node agents: bearer node token, no cookie (src/provisioning). Before the panel's session gate below.
   app.route(AGENT_API, agentRoutes(ctx));
 
@@ -148,6 +151,7 @@ export function createApp(ctx: AppContext) {
   api.route("/integrations", integrationRoutes(ctx));
   api.route("/gateway", gatewayRoutes(ctx));
   api.route("/instances", instanceRoutes(ctx));
+  api.route("/computers", computerRoutes(ctx));
   api.route("/audit", auditRoutes(ctx));
   api.route("/reports", reportRoutes(ctx));
   api.route("/me", meRoutes(ctx));

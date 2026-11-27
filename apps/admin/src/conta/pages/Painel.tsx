@@ -1,4 +1,4 @@
-import { ArrowUpRight, Coins, Download, ExternalLink, KeyRound, Monitor, ReceiptText, RotateCcw, ShieldAlert, Sparkles, Trash2, XCircle } from "lucide-react";
+import { ArrowUpRight, Coins, Download, ExternalLink, KeyRound, ReceiptText, RotateCcw, ShieldAlert, Sparkles, Trash2, XCircle } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import { cancellationNotice, cancelTiming, lastPaidDay, trialNotice, whatsappLink, type CustomerBillingType } from "../../customer/catalog.ts";
@@ -8,6 +8,7 @@ import { Badge, Button, Card, Empty, ErrorNote, Field, Loading, Modal, StatusBad
 import { CUSTOMER_BILLING_LABEL, CUSTOMER_SUB_STATUS, WhatsAppButton, type CustomerState } from "../shared.tsx";
 import { PaymentChoice, Stepper } from "./Assinar.tsx";
 import { MeuArkoBotCard } from "./MeuArkoBot.tsx";
+import { MeusComputadoresCard } from "./MeusComputadores.tsx";
 
 interface Payment {
   id: string; kind: "subscription" | "credit_purchase"; status: string; billing_type: string | null; value_cents: number; credits: number;
@@ -170,15 +171,8 @@ export function PainelPage({ state, onChanged }: { state: CustomerState; onChang
           <p className="mt-3 text-xs text-slate-500">Usar uma conta de IA sua não gasta créditos.</p>
         </Card>
 
-        <Card title={<span className="flex items-center gap-2"><Monitor className="h-4 w-4 text-cyan-ink" /> Computadores individuais</span>}
-          actions={canManage && live && !live.courtesy && !live.cancel_at && data.extraComputer ? <Button size="sm" variant="secondary" onClick={() => setDialog("computers")}>Alterar</Button> : null}>
-          <div className="font-display text-4xl font-bold tabular">{(live?.included_vps ?? 0) + computers}</div>
-          <div className="mt-1 text-sm text-slate-500">
-            {live?.included_vps ? `${live.included_vps} incluído${live.included_vps > 1 ? "s" : ""} no plano` : "Nenhum incluído no plano"}
-            {computers ? ` + ${computers} adicional${computers > 1 ? "is" : ""}` : ""}
-          </div>
-          {data.extraComputer ? <p className="mt-4 text-sm text-slate-600">Cada computador adicional dá a um bot o seu próprio computador (VPS) por {brl(data.extraComputer.price_cents)}/mês.</p> : null}
-        </Card>
+        <MeusComputadoresCard included={live?.included_vps ?? 0} extras={computers} priceCents={data.extraComputer?.price_cents ?? null}
+          onChange={canManage && live && !live.courtesy && !live.cancel_at && data.extraComputer ? () => setDialog("computers") : null} />
       </div>
 
       {live?.courtesy && data.payments.length === 0 ? null : <Card title={<span className="flex items-center gap-2"><ReceiptText className="h-4 w-4 text-cyan-ink" /> Pagamentos</span>} padded={false}>

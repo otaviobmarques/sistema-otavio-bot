@@ -2,7 +2,7 @@
 
 O painel interno da Domma Tecnologia para operar o ArkoBot como SaaS: clientes (CPF/CNPJ), planos, créditos ArkoBot (1 crédito = R$ 0,01), cobrança pelo Asaas, integrações e auditoria. Roda **separado das instâncias dos clientes**; os limites de uso só valem quando aplicados aqui e no gateway, nunca dentro da instância.
 
-A **Parte 1** fez o painel, a cobrança e os créditos; a **Parte 2** acrescenta o [gateway de IA](#gateway-de-ia-parte-2), que cobra os créditos da IA paga pela Domma. O mesmo deploy também serve a [Área do cliente](#área-do-cliente-contaarkobotcombr) em `conta.arkobot.com.br`. O [provisionamento automático](#provisionamento-automático-instâncias-dos-clientes) sobe o ArkoBot de cada cliente num servidor nosso; os computadores (VPS) vêm nas próximas partes.
+A **Parte 1** fez o painel, a cobrança e os créditos; a **Parte 2** acrescenta o [gateway de IA](#gateway-de-ia-parte-2), que cobra os créditos da IA paga pela Domma. O mesmo deploy também serve a [Área do cliente](#área-do-cliente-contaarkobotcombr) em `conta.arkobot.com.br`. O [provisionamento automático](#provisionamento-automático-instâncias-dos-clientes) sobe o ArkoBot de cada cliente num servidor nosso; os [computadores próprios (VPS)](#computadores-próprios-vps) são comprados num provedor e recebem o ArkoBot do cliente.
 
 ![Visão geral](screenshots/03-visao-geral.png)
 
@@ -81,6 +81,9 @@ Postgres rápido com Docker: `docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=ar
 | `RESEND_API_KEY` | sim em produção | Chave do [Resend](https://resend.com) (só envio, domínio `arkobot.com.br`). Sem ela os e-mails, inclusive os códigos de login, só vão para o log. |
 | `DUNNING_SUSPEND_AFTER_DAYS` / `DUNNING_CANCEL_AFTER_DAYS` | não | Régua de inadimplência: 7 e 30 dias por padrão. |
 | `ASAAS_API_BASE_URL` | não | Só desenvolvimento/testes: aponta o Asaas para um servidor falso. Recusado em produção. |
+| `HETZNER_API_TOKEN` / `HOSTINGER_API_TOKEN` / `CONTABO_CLIENT_ID`, `CONTABO_CLIENT_SECRET`, `CONTABO_API_USER`, `CONTABO_API_PASSWORD` | não | Credenciais dos provedores de [computadores próprios](#computadores-próprios-vps). Sem as do provedor escolhido, nada é comprado. |
+| `VPS_SSH_PUBLIC_KEYS` | não | Chaves SSH públicas do operador (separadas por `;`) postas em cada VPS nova. |
+| `NODE_REGISTRY_USER` / `NODE_REGISTRY_TOKEN` | não | Só se as imagens no GHCR forem privadas: login entregue à VPS nova na inscrição. |
 
 Gerar chaves:
 
@@ -408,12 +411,65 @@ Um plano com `plans.idle_sleep_minutes` (o Inicial: 30, migração `0011`) dorme
 
 ### Ainda não feito
 
-- Cota de disco imposta pelo sistema de arquivos (hoje é medida e só recusa uploads novos), troca de plano aplicada sem reprovisionar à mão (o limite de bots já muda no próximo "Abrir"), nós dedicados e equipes (`role=team`), backup dos volumes, e apagar o volume de uma instância desativada (hoje só à mão: `docker volume rm arkoinst-<id>-data`).
+- Cota de disco imposta pelo sistema de arquivos (hoje é medida e só recusa uploads novos), troca de plano aplicada sem reprovisionar à mão (o limite de bots já muda no próximo "Abrir"), equipes (`role=team`), backup dos volumes, e apagar o volume de uma instância desativada (hoje só à mão: `docker volume rm arkoinst-<id>-data`).
 - Dormir: o app desktop ainda não pede ao Admin para acordar a instância (o `POST /api/cloud/desktop/wake` do `docs/cloud-pro.md` é do Admin antigo); se o Admin estiver fora do ar, a página de despertar não consegue acordar ninguém (só mostra "acordando" e tenta de novo).
+
+## Computadores próprios (VPS)
+
+O que o OpenMausBot vendia como "computador extra (VPS)": R$ 159/mês cada, em qualquer plano; o Profissional inclui 1 e o Empresa 2. Aqui, cada unidade vira uma VPS comprada pelo Admin num provedor, com o mesmo agente do nó. **O primeiro computador de cada cliente recebe o ArkoBot dele** (nó `dedicated`, instância no modo `dedicated`, com a VPS só para ele). As unidades seguintes ficam registradas e no ar como nós do cliente, à espera de serem ligadas aos bots (próxima parte), por isso nunca são compradas sem aprovação.
+
+```
+Asaas (pagamento confirmado) ─► Admin: direito do cliente ─► pedido (vps_machines) ─► [Aprovar e contratar] ─► provedor (Hetzner/Hostinger/Contabo)
+                                                                                                                   │ cria a VPS com o script de 1ª inicialização
+VPS do cliente ── POST /api/agent/v1/enroll (token de inscrição) ─► token do nó ─► Traefik + agente do nó ─► instância do cliente
+Navegador ─► *.arkobot.com.br (VPS compartilhada, Traefik) ─► contêiner arkoedge-<slug> (TCP, TLS sem abrir) ─► VPS do cliente :443
+```
+
+- **Direito** (`src/computers/entitlement.ts`): unidades = `plans.included_vps` + quantidade do adicional `computador-adicional`. **Comprar** só depois de dinheiro: nada durante o teste grátis; unidades do adicional só quando um pagamento confirmado já as cobriu (o valor pago menos o do plano dividido por R$ 159). **Manter** é mais folgado: atraso e suspensão mantêm as máquinas; só o fim da assinatura as libera. A cortesia dá só as incluídas.
+- **Quando**: cada pagamento confirmado, cada mudança de assinatura e de adicional enfileira `computer.sync`; o cron (`/api/cron/tick`) também varre e dá o próximo passo nas compras em andamento.
+- **Compra automática** (Computadores → Configurações, só o dono): **desligada por padrão**. Desligada, cada unidade vira um pedido "Aguardando aprovação" e o operador clica **Aprovar e contratar** (com o custo na confirmação). Ligada, só o computador do ArkoBot é comprado sozinho.
+- **A compra sai uma vez**: a troca `requested → ordering` é condicional; uma resposta incerta do provedor (sem resposta, erro 5xx) vira falha "[compra incerta]" que **nunca** é repetida sozinha: confira no painel do provedor e descarte ou resolva à mão. Uma recusa clara (ex.: cartão recusado) pode ser tentada de novo.
+- **Instalação** (`src/computers/post-install.ts`): o mesmo script nos três provedores (post-install script na Hostinger; `user_data`/cloud-init na Hetzner e na Contabo). Instala Docker se faltar, as chaves SSH do operador, troca o **token de inscrição** (uso curto, só o hash no banco, aceito só do IP da VPS) pelo token do nó, sobe o Traefik (`traefik:v3.6.2`, certificado Let's Encrypt por TLS-ALPN) e o agente (`node-agent.vps.compose.yml`), e fecha a porta 443 para tudo que não seja a VPS compartilhada (regra na cadeia `DOCKER-USER`, porque portas do Docker passam por fora do ufw). O token do nó nunca fica no provedor.
+- **Pronto**: quando o agente da VPS manda o primeiro relatório, a máquina fica "No ar" e a instância do cliente vai para lá: **cliente novo** (instância que nunca subiu) muda sozinho; **cliente com dados** fica com "dados a copiar" até o operador copiar o volume e clicar **Mover ArkoBot** (abaixo). Na mudança, o servidor antigo remove o contêiner (o volume fica lá) e a VPS compartilhada passa o endereço adiante.
+- **DNS**: nada muda. O curinga `*.arkobot.com.br` continua apontando para a VPS compartilhada (o DNS da HostGator não tem API); o agente dela cria um contêiner `arkoedge-<slug>` (a própria imagem do agente, `relay.mjs`) com um roteador TCP do Traefik `HostSNI(<slug>.arkobot.com.br)` e `tls.passthrough`: o TLS só abre na VPS do cliente. Atualize o agente da VPS compartilhada para a versão 0.3.0 antes do primeiro cliente dedicado.
+- **Dormir numa VPS do cliente**: o roteador TCP da borda vale para o endereço esteja a instância acordada ou não (os roteadores TCP `HostSNI` passam na frente do catch-all HTTP da página de despertar da VPS compartilhada). Na VPS do cliente, o compose do agente gerado pelo script de instalação tem o mesmo roteador de despertar (prioridade 1, porta 8790) que `node-agent.vps.compose.yml` (um teste mantém os dois iguais), então a página "acordando…" aparece lá, e o agente de lá pede ao Admin para acordá-la com o token do próprio nó. A regra padrão é `*.arkobot.com.br`; com outro domínio, defina `ARKO_WAKE_RULE` no `.env` do agente.
+- **Encerrar** (só o dono, com motivo; recusado enquanto o ArkoBot do cliente roda na VPS — mova ou desative a instância antes): Hostinger desliga a renovação (a VPS e os dados somem no fim do período pago); Contabo cancela no fim do período; **Hetzner apaga a VPS na hora, com o disco** (a cobrança é por hora). O cliente deixa de pagar pelo Asaas quando o adicional é reduzido ou a assinatura acaba; a máquina fica "Encerrar no provedor" até o operador agir: nenhum dado é apagado sem ação explícita.
+- **Área do cliente**: o cartão **Meus computadores** mostra cada computador (preparando, pronto, encerrando), sem IP nem provedor; **Alterar** muda a quantidade do adicional (o novo valor vale na próxima cobrança, e a compra espera esse pagamento).
+
+### Provedores
+
+| Provedor | Padrão | Cobrança | Observações |
+| --- | --- | --- | --- |
+| **Hetzner Cloud** (padrão) | `cx23` (2 vCPU, 4 GB, 40 GB) em `fsn1` | por hora, com teto mensal; apagar para a cobrança | Melhor custo-benefício (≈ € 3,49 + IPv4). `cx23` só existe na Europa; para ficar mais perto do Brasil use `ash` com `cpx21` (mais caro). Ajuste o custo em reais nas configurações. |
+| **Hostinger** | `hostingercombr-vps-kvm1-brl-1m` (KVM 1: 1 vCPU, 4 GB, 50 GB) | mensal, R$ 87,99 (1º mês R$ 52,99) | Compra pela API de VPS (`POST /api/vps/v1/virtual-machines` com `setup`); 202 = pagamento em processamento, a máquina é achada pela assinatura depois. Modelo "Ubuntu 24.04 with Docker" e data center no Brasil escolhidos sozinhos. |
+| **Contabo** | `V91` em `US-east` | mensal, mas os preços baixos pedem 12/24 meses; alguns produtos cobram instalação | Pode levar horas para instalar (o Admin espera até 72 h). Preço e taxa não vêm pela API: informe nas configurações. **Não serve para revenda mensal.** |
+
+### Colocar no ar
+
+1. Migração `0012_computadores_vps.sql` (`pnpm --filter admin migrate`; só acrescenta).
+2. Variáveis na Vercel: `HETZNER_API_TOKEN` (ou as da Hostinger/Contabo), `VPS_SSH_PUBLIC_KEYS`, e `NODE_REGISTRY_USER`/`NODE_REGISTRY_TOKEN` se as imagens forem privadas.
+3. Publique a imagem nova do agente (`ghcr.io/otaviobmarques/arkobot-node-agent`, com `relay.mjs`) e atualize o agente da VPS compartilhada; confira que o nó compartilhado tem o IP público cadastrado (é o único IP que a VPS do cliente aceita na 443).
+4. Admin → **Computadores → Configurações**: provedor, tipo/local e custo. Deixe a compra automática desligada nas primeiras vendas.
+
+### Mover uma instância com dados
+
+Com a VPS do cliente "No ar" e a instância marcada "dados a copiar": pare a instância (Instâncias → Parar), copie o volume e clique **Mover ArkoBot**:
+
+```bash
+# na VPS compartilhada (troque <id> e o IP da VPS do cliente; a chave do operador já está nela)
+docker run --rm -v arkoinst-<id>-data:/data alpine tar -C /data -czf - . \
+  | ssh root@<ip-do-cliente> 'docker volume create arkoinst-<id>-data >/dev/null && docker run --rm -i -v arkoinst-<id>-data:/data alpine tar -C /data -xzf -'
+```
+
+Depois de mover, ligue a instância de novo. O volume antigo fica na VPS compartilhada até alguém apagá-lo à mão.
+
+### Custo e margem
+
+Por unidade, R$ 159/mês de receita contra cerca de R$ 26 (Hetzner `cx23`, ajuste ao câmbio) ou R$ 87,99 (Hostinger KVM 1). As unidades incluídas no Profissional e no Empresa são custo dentro do preço do plano. O painel mostra o custo mensal somado das máquinas em uso ao lado da receita de referência.
 
 ## Próximas partes
 
-- **Instâncias**: nós dedicados por cliente e backup dos volumes (veja [Provisionamento automático](#provisionamento-automático-instâncias-dos-clientes)).
+- **Instâncias**: backup dos volumes (veja [Provisionamento automático](#provisionamento-automático-instâncias-dos-clientes)).
 - **Gateway**: e-mail dos avisos de 50/80/100% (`UsageAlertNotifier`), preços por faixa de contexto longo.
-- **Computadores (VPS)**: interface `VpsProvider` com a Hostinger primeiro (`vps_machines`, `vps_provider_accounts`).
+- **Computadores (VPS)**: os computadores extras ligados aos bots (o backend "VPS própria" do app, por SSH), cópia automática do volume ao mudar de servidor, e PROXY protocol na borda (hoje a instância vê o IP da VPS compartilhada).
 - Troca de plano com pró-rata (também na Área do cliente), emissão de NFS-e quando a conta PJ estiver ativa, convites de membros para a organização.

@@ -2,6 +2,7 @@ import { audit, type Actor } from "../audit.ts";
 import { nextSubscriptionStatus, type BillingSignal, type SubscriptionStatus } from "../billing/subscription-machine.ts";
 import type { Queryable } from "../db/db.ts";
 import { queueProvisioning } from "../provisioning/queue.ts";
+import { queueComputerSync } from "../computers/queue.ts";
 
 export type OrgStatus = "active" | "suspended" | "canceled";
 export type OrgReasonCode = "manual" | "billing" | "chargeback" | "subscription_ended";
@@ -137,6 +138,7 @@ export async function applySubscriptionSignal(
   });
 
   const org = await lockOrganization(q, sub.organization_id);
+  await queueComputerSync(q, sub.organization_id, now);
   if (next === "active") {
     await setInstancesForBilling(q, sub.organization_id, "recovered", "");
     await queueProvisioning(q, sub.organization_id, now);

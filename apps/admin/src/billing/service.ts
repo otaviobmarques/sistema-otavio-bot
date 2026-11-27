@@ -6,6 +6,7 @@ import { grantPlanPeriod } from "../credits/ledger.ts";
 import { applySubscriptionSignal, DomainError, lockOrganization, type OrganizationRow, type SubscriptionRow } from "../domain/lifecycle.ts";
 import { enqueue } from "../jobs/queue.ts";
 import { queueProvisioning } from "../provisioning/queue.ts";
+import { queueComputerSync } from "../computers/queue.ts";
 import { activeBillingAccount, billingAccount, defaultProviderFactory, type BillingAccountRow, type ProviderFactory } from "./accounts.ts";
 import type { BillingType, PixQrCode } from "./provider.ts";
 import { ProviderError } from "./provider.ts";
@@ -246,6 +247,7 @@ export async function setSubscriptionAddon(
     const value = await subscriptionTotalCents(q, sub.id);
     await audit(q, actor, { action: "subscription.addon_changed", targetType: "subscription", targetId: sub.id, organizationId: sub.organization_id,
       data: { addon: addon.code, quantity, totalCents: value } });
+    await queueComputerSync(q, sub.organization_id, ctx.now());
     return value;
   });
   if (sub.provider_subscription_id && sub.billing_account_id) {
