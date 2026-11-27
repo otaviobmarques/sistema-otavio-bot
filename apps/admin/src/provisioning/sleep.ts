@@ -21,8 +21,13 @@ export const WAKING_MS = 5 * 60_000;
 /** The plan of the organisation's live subscription, as a lateral join on `i` (instances). */
 const LIVE_PLAN = `LEFT JOIN LATERAL (SELECT p.idle_sleep_minutes FROM subscriptions s JOIN plans p ON p.id = s.plan_id
   WHERE s.organization_id = i.organization_id AND s.status IN ('active', 'past_due') ORDER BY s.created_at DESC LIMIT 1) lp ON true`;
-/** Where sleeping makes sense: the instance should be running (not stopped by billing or the operator). */
-const MAY_SLEEP = "i.decommissioned_at IS NULL AND NOT i.operator_stopped AND i.state IN ('ready', 'payment_problem')";
+/**
+ * Where sleeping makes sense: the instance should be running (not stopped by billing or the operator), and on a shared
+ * node. On the customer's own VPS (a dedicated node) the machine is paid for whole, so sleeping saves nothing and only
+ * adds wake-up time; a sleeping instance moved onto one is woken.
+ */
+const MAY_SLEEP = `i.decommissioned_at IS NULL AND NOT i.operator_stopped AND i.state IN ('ready', 'payment_problem')
+  AND NOT EXISTS (SELECT 1 FROM nodes dn WHERE dn.id = i.node_id AND dn.kind = 'dedicated')`;
 
 export type PowerState = "asleep" | "waking" | "awake";
 
