@@ -211,6 +211,7 @@ async function handleSubscriptionEvent(ctx: AppContext, q: Queryable, accountId:
   if (event.type !== "SUBSCRIPTION_DELETED" && event.type !== "SUBSCRIPTION_INACTIVATED") return { status: "ignored", note: `evento ${event.type} sem efeito` };
   const sub = await subscriptionByProviderId(q, accountId, event.subscription.id);
   if (!sub) return { status: "ignored", note: "assinatura desconhecida" };
+  if (sub.cancel_at && sub.status !== "canceled") return { status: "ignored", note: "cancelamento já agendado para o fim do período pago" };
   const next = await applySubscriptionSignal(q, WEBHOOK, sub.id, "provider_ended", ctx.now(),
     event.type === "SUBSCRIPTION_DELETED" ? "assinatura removida no Asaas" : "assinatura inativada no Asaas");
   return { status: "processed", note: next ? "assinatura encerrada" : "assinatura já estava encerrada" };

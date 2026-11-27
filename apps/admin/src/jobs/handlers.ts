@@ -1,3 +1,4 @@
+import { endScheduledCancellations } from "../billing/cancel-at-period-end.ts";
 import { renewCourtesies, type CourtesySummary } from "../billing/courtesy.ts";
 import { CANCEL_PROVIDER_SUBSCRIPTION_JOB, cancelProviderSubscriptionJob, runDunning, type DunningSummary } from "../billing/service.ts";
 import { markBillingEventFailed, PROCESS_EVENT_JOB, processBillingEvent } from "../billing/webhooks.ts";
@@ -53,6 +54,7 @@ export interface TickSummary {
   jobs: RunSummary;
   dunning: DunningSummary;
   courtesy: CourtesySummary;
+  scheduledCancellations: number;
   expiredReservations: number;
   provisioning: ProvisioningSweep;
   computers: SyncResult & { advanced: number };
@@ -61,10 +63,11 @@ export interface TickSummary {
   alerts: AlertSweep;
 }
 
-/** One cron tick: the overdue ladder and the courtesies, then the queue. Safe to run concurrently and as often as wanted. */
+/** One cron tick: the overdue ladder, the courtesies and the cancellations due at the end of a paid period, then the queue. Safe to run concurrently and as often as wanted. */
 export async function tick(ctx: AppContext, limit = 50): Promise<TickSummary> {
   const dunning = await runDunning(ctx);
   const courtesy = await renewCourtesies(ctx);
+  const scheduledCancellations = await endScheduledCancellations(ctx);
   // Before the queue, so an alert's e-mail goes out on this same tick.
   const alerts = await checkHealthAlerts(ctx);
   const jobs = await runJobs(ctx, JOB_HANDLERS, { limit });
@@ -78,5 +81,5 @@ export async function tick(ctx: AppContext, limit = 50): Promise<TickSummary> {
   await ctx.db.query("DELETE FROM admin_sessions WHERE expires_at < $1", [weekAgo]);
   await ctx.db.query("DELETE FROM account_sessions WHERE expires_at < $1", [weekAgo]);
   await ctx.db.query("DELETE FROM account_otps WHERE expires_at < $1", [ctx.now()]);
-  return { jobs, dunning, courtesy, expiredReservations, provisioning, computers, sleep: { ...idle, woken }, alerts };
+  return { jobs, dunning, courtesy, scheduledCancellations, expiredReservations, provisioning, computers, sleep: { ...idle, woken }, alerts };
 }

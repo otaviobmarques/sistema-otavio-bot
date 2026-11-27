@@ -237,6 +237,27 @@ describe("primeiro acesso: cadastro da empresa e aceite dos termos", () => {
     expect((await ctx.db.query("SELECT 1 FROM organizations")).rows).toHaveLength(1);
   });
 
+  it("a customer who accepted the previous terms is asked to accept the current version before paying again", async () => {
+    const { api, cookie, orgId } = await onboarded(ctx, "v@cliente.com.br");
+    await ctx.db.query("UPDATE terms_acceptances SET version = '2026-11-25'");
+    expect(LEGAL_DOCUMENTS.map((doc) => doc.version)).toEqual(["2026-11-27", "2026-11-27"]);
+
+    const state = await customerClient(ctx, cookie).get("/api/conta/auth/session");
+    expect(state.data).toMatchObject({ needsOnboarding: true, pendingDocuments: ["terms", "privacy"], organization: { id: orgId } });
+    const blocked = await api.post("/api/conta/assinatura", { plan: "essencial", billingType: "PIX" });
+    expect(blocked.status).toBe(409);
+    expect(blocked.data.error).toMatch(/Termos de Uso/);
+
+    const accepted = await api.post("/api/conta/cadastro", { name: "Maria Silva", phone: "(19) 98765-4321", acceptTerms: true });
+    expect(accepted.data).toMatchObject({ needsOnboarding: false, pendingDocuments: [], organization: { id: orgId } });
+    const terms = await ctx.db.query<{ document: string; version: string }>("SELECT document, version FROM terms_acceptances ORDER BY version, document");
+    expect(terms.rows).toEqual([
+      { document: "privacy", version: "2026-11-25" }, { document: "terms", version: "2026-11-25" },
+      { document: "privacy", version: "2026-11-27" }, { document: "terms", version: "2026-11-27" },
+    ]);
+    expect((await ctx.db.query("SELECT 1 FROM organizations")).rows).toHaveLength(1);
+  });
+
   it("the legal versions match the published texts and the WhatsApp matches the site", () => {
     const legal = fileURLToPath(new URL("../../site/conteudo/legal/", import.meta.url));
     for (const doc of LEGAL_DOCUMENTS) {
@@ -346,7 +367,7 @@ describe("assinatura, créditos, cancelamento e LGPD pela área do cliente", () 
     expect((await api.post("/api/conta/assinatura/cancelar", { reason: "" })).status).toBe(400);
     advance(f.ctx, 2 * DAY);
     const canceled = await api.post("/api/conta/assinatura/cancelar", { reason: "Não preciso mais" });
-    expect(canceled.data).toEqual({ ok: true, withinWithdrawalPeriod: true, duringTrial: false });
+    expect(canceled.data).toEqual({ ok: true, withinWithdrawalPeriod: true, duringTrial: false, endsAt: null });
     const sub = await f.ctx.db.query<{ status: string; cancel_reason: string; provider_subscription_id: string }>(
       "SELECT status, cancel_reason, provider_subscription_id FROM subscriptions WHERE organization_id = $1", [orgId]);
     expect(sub.rows[0]).toMatchObject({ status: "canceled", cancel_reason: "Cancelado pelo cliente: Não preciso mais" });

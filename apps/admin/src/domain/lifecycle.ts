@@ -29,6 +29,9 @@ export interface SubscriptionRow {
   courtesy_granted_by: string | null;
   /** End of the free trial, when the subscription started with one; also its first due date. */
   trial_ends_at: Date | null;
+  /** When a cancellation the customer asked for takes effect (the end of the paid period); null = none scheduled. */
+  cancel_at: Date | null;
+  created_at: Date;
 }
 
 export interface OrganizationRow {

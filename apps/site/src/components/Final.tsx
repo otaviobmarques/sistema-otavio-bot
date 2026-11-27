@@ -49,7 +49,7 @@ export function Final() {
             Conheça sua primeira equipe de bots
           </h2>
           <p className="relative mx-auto mt-4 max-w-xl text-lg leading-relaxed text-white/70">
-            Cada dia sem ajuda é mais um cliente esperando resposta. Comece hoje, a partir de R$ 159 por mês, sem fidelidade.
+            Cada dia sem ajuda é mais um cliente esperando resposta. Comece hoje, a partir de R$ 39 por mês, sem fidelidade.
           </p>
           <div className="relative mt-8 flex flex-col justify-center gap-3 sm:flex-row">
             <BotaoContato acao="assinar" variante="claro">

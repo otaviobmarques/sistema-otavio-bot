@@ -18,7 +18,7 @@ interface Detail {
     credits_per_month: number; provider_subscription_id: string | null; next_due_date: string | null; current_period_start: string | null;
     current_period_end: string | null; past_due_since: string | null; canceled_at: string | null; cancel_reason: string | null;
     courtesy: boolean; courtesy_reason: string | null; courtesy_until: string | null; courtesy_granted_by_email: string | null;
-    trial_ends_at: string | null; free_requests_per_day: number;
+    trial_ends_at: string | null; free_requests_per_day: number; cancel_at: string | null;
   };
   addons: { addon_id: string; quantity: number; unit_price_cents: number; name: string; code: string }[];
   wallet: { plan_balance: number; extra_balance: number };
@@ -147,6 +147,8 @@ export function ClientDetailPage() {
                 ["Período atual", subscription.current_period_start ? `${date(subscription.current_period_start)} a ${date(subscription.current_period_end)}` : "—"],
                 ["Em atraso desde", subscription.past_due_since ? dateTime(subscription.past_due_since) : "—"],
                 ["Asaas", subscription.provider_subscription_id ? <Mono>{subscription.provider_subscription_id}</Mono> : "—"],
+                ...(subscription.cancel_at && subscription.status !== "canceled"
+                  ? [["Cancelamento agendado", `${dateTime(subscription.cancel_at)} — ${subscription.cancel_reason ?? ""}`] as [string, ReactNode]] : []),
                 ...(subscription.canceled_at ? [["Cancelada em", `${dateTime(subscription.canceled_at)} — ${subscription.cancel_reason ?? ""}`] as [string, ReactNode]] : []),
               ]} />
               {live && !live.plan_free && !live.courtesy ? <AddonsEditor detail={data} writable={writable} onChanged={reload} /> : null}

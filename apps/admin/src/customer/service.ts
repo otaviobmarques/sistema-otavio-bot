@@ -1,8 +1,9 @@
 import { audit, type Actor } from "../audit.ts";
 import { hit } from "../auth/rate-limit.ts";
 import { activeBillingAccount, defaultProviderFactory, type ProviderFactory } from "../billing/accounts.ts";
+import { cancelAtPeriodEnd, undoCancelAtPeriodEnd } from "../billing/cancel-at-period-end.ts";
 import {
-  cancelSubscription, CENTS_PER_CREDIT, createCreditCharge, inTrial, setSubscriptionAddon, startSubscription, syncSubscriptionPayments, type CreditChargeResult,
+  cancelSubscription, CENTS_PER_CREDIT, createCreditCharge, setSubscriptionAddon, startSubscription, syncSubscriptionPayments, type CreditChargeResult,
 } from "../billing/service.ts";
 import { isoDate } from "../billing/subscription-machine.ts";
 import { trialAvailable } from "../billing/trial.ts";
@@ -14,7 +15,7 @@ import { DomainError, type OrganizationRow, type SubscriptionRow } from "../doma
 import { DUPLICATE_DOCUMENT, insertOrganization } from "../domain/organizations.ts";
 import type { SessionCustomer } from "./auth.ts";
 import {
-  CREDIT_PACKAGES, EXTRA_COMPUTER_ADDON, LEGAL_DOCUMENTS, MAX_EXTRA_COMPUTERS, PLAN_UPGRADES, type CreditPackageId, type CustomerBillingType,
+  cancelTiming, CREDIT_PACKAGES, EXTRA_COMPUTER_ADDON, LEGAL_DOCUMENTS, MAX_EXTRA_COMPUTERS, PLAN_UPGRADES, type CreditPackageId, type CustomerBillingType,
 } from "./catalog.ts";
 
 export type MemberRole = "owner" | "admin" | "member";
@@ -237,7 +238,7 @@ export async function dashboard(ctx: AppContext, req: CustomerRequest, factory: 
     ctx.db.query("SELECT id, name, document_type, document, status, status_reason_code, created_at FROM organizations WHERE id = $1", [orgId]),
     ctx.db.query(
       `SELECT s.id, s.status, s.billing_type, s.price_cents, s.credits_per_month, s.current_period_start, s.current_period_end, s.next_due_date,
-         s.past_due_since, s.canceled_at, s.created_at, s.courtesy, s.courtesy_until, s.trial_ends_at, p.code AS plan_code, p.name AS plan_name, p.included_vps,
+         s.past_due_since, s.canceled_at, s.cancel_at, s.created_at, s.courtesy, s.courtesy_until, s.trial_ends_at, p.code AS plan_code, p.name AS plan_name, p.included_vps,
          p.free_requests_per_day,
          (s.price_cents + COALESCE((SELECT SUM(a.quantity * a.unit_price_cents) FROM subscription_addons a WHERE a.subscription_id = s.id), 0))::int AS total_cents
        FROM subscriptions s JOIN plans p ON p.id = s.plan_id
@@ -293,24 +294,35 @@ export async function setExtraComputers(ctx: AppContext, req: CustomerRequest, q
   return setSubscriptionAddon(ctx, customerActor(req), sub.id, await extraComputerAddonId(ctx.db), quantity, factory);
 }
 
-/** The 7-day withdrawal right (CDC art. 49) counts from the contract; the refund itself is handled by the team. */
-export const WITHDRAWAL_DAYS = 7;
-
+/**
+ * A paid, active subscription keeps running until the end of the period already paid (no further charges); the trial,
+ * the withdrawal window and an unpaid subscription end at once.
+ */
 export async function cancelOwnSubscription(ctx: AppContext, req: CustomerRequest, reason: string, factory: ProviderFactory = defaultProviderFactory) {
   const membership = await requireMembership(ctx.db, req.session.accountId, true);
   const sub = await currentSubscription(ctx.db, membership.organization_id);
   if (!sub) throw new DomainError("Você não tem uma assinatura em andamento", 404);
   if (sub.courtesy) throw new DomainError(COURTESY_SUPPORT, 409);
-  const created = (await ctx.db.query<{ created_at: Date }>("SELECT created_at FROM subscriptions WHERE id = $1", [sub.id])).rows[0]!.created_at;
-  const duringTrial = inTrial(sub, ctx.now());
-  const withinWithdrawal = !duringTrial && ctx.now().getTime() - created.getTime() <= WITHDRAWAL_DAYS * 86_400_000;
+  if (sub.cancel_at) throw new DomainError("O cancelamento da sua assinatura já está agendado", 409);
+  const timing = cancelTiming(sub, ctx.now());
+  const duringTrial = timing.kind === "trial";
+  const withinWithdrawal = timing.kind === "withdrawal";
+  const endsAt = timing.kind === "period_end" && sub.provider_subscription_id ? timing.endsAt : null;
   const text = `Cancelado pelo cliente${duringTrial ? " durante o teste grátis" : ""}: ${reason.trim()}`.slice(0, 500);
-  await cancelSubscription(ctx, customerActor(req), sub.id, text, factory);
+  if (endsAt) await cancelAtPeriodEnd(ctx, customerActor(req), sub.id, text, endsAt, factory);
+  else await cancelSubscription(ctx, customerActor(req), sub.id, text, factory);
   await audit(ctx.db, customerActor(req), {
     action: "subscription.canceled_by_customer", targetType: "subscription", targetId: sub.id, organizationId: membership.organization_id,
-    reason: reason.trim().slice(0, 500), data: { withinWithdrawalPeriod: withinWithdrawal, duringTrial },
+    reason: reason.trim().slice(0, 500), data: { withinWithdrawalPeriod: withinWithdrawal, duringTrial, endsAt: endsAt?.toISOString() ?? null },
   });
-  return { withinWithdrawalPeriod: withinWithdrawal, duringTrial };
+  return { withinWithdrawalPeriod: withinWithdrawal, duringTrial, endsAt: endsAt?.toISOString() ?? null };
+}
+
+export async function undoOwnCancellation(ctx: AppContext, req: CustomerRequest, factory: ProviderFactory = defaultProviderFactory): Promise<void> {
+  const membership = await requireMembership(ctx.db, req.session.accountId, true);
+  const sub = await currentSubscription(ctx.db, membership.organization_id);
+  if (!sub?.cancel_at) throw new DomainError("Não há cancelamento agendado", 404);
+  await undoCancelAtPeriodEnd(ctx, customerActor(req), sub.id, factory);
 }
 
 /** LGPD art. 18 (access and portability): what the platform holds about the account and its organisation. */
@@ -331,7 +343,7 @@ export async function exportData(ctx: AppContext, req: CustomerRequest) {
     ctx.db.query("SELECT created_at, last_seen_at, expires_at, revoked_at, ip, user_agent FROM account_sessions WHERE account_id = $1 ORDER BY created_at", [accountId]).then((r) => r.rows),
     ctx.db.query("SELECT status, reason, created_at, resolved_at FROM account_deletion_requests WHERE account_id = $1 ORDER BY created_at", [accountId]).then((r) => r.rows),
     byOrg(`SELECT s.id, p.name AS plan, s.status, s.billing_type, s.price_cents, s.credits_per_month, s.current_period_start, s.current_period_end,
-             s.next_due_date, s.canceled_at, s.cancel_reason, s.courtesy, s.courtesy_until, s.created_at FROM subscriptions s JOIN plans p ON p.id = s.plan_id
+             s.next_due_date, s.cancel_at, s.canceled_at, s.cancel_reason, s.courtesy, s.courtesy_until, s.created_at FROM subscriptions s JOIN plans p ON p.id = s.plan_id
            WHERE s.organization_id = $1 ORDER BY s.created_at`),
     byOrg(`SELECT ad.name, sa.quantity, sa.unit_price_cents, sa.created_at FROM subscription_addons sa JOIN addons ad ON ad.id = sa.addon_id
            JOIN subscriptions s ON s.id = sa.subscription_id WHERE s.organization_id = $1`),

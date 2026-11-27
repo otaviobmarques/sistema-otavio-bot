@@ -1,7 +1,7 @@
-import { ArrowUpRight, Coins, Download, ExternalLink, KeyRound, ReceiptText, ShieldAlert, Sparkles, Trash2, XCircle } from "lucide-react";
+import { ArrowUpRight, Coins, Download, ExternalLink, KeyRound, ReceiptText, RotateCcw, ShieldAlert, Sparkles, Trash2, XCircle } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Link } from "react-router";
-import { trialNotice, whatsappLink, type CustomerBillingType } from "../../customer/catalog.ts";
+import { cancellationNotice, cancelTiming, lastPaidDay, trialNotice, whatsappLink, type CustomerBillingType } from "../../customer/catalog.ts";
 import { api, useApi } from "../../web/api.ts";
 import { brl, date, dateTime, int, LEDGER_KIND, PAYMENT_STATUS } from "../../web/format.ts";
 import { Badge, Button, Card, Empty, ErrorNote, Field, Loading, Modal, StatusBadge, Table, td, Textarea, useToast, cx } from "../../web/ui.tsx";
@@ -20,7 +20,7 @@ interface Panel {
   role: "owner" | "admin" | "member";
   subscription: null | {
     id: string; status: string; billing_type: string | null; price_cents: number; total_cents: number; credits_per_month: number; plan_code: string; plan_name: string;
-    included_vps: number; next_due_date: string | null; current_period_end: string | null; past_due_since: string | null; canceled_at: string | null; created_at: string;
+    included_vps: number; next_due_date: string | null; current_period_end: string | null; past_due_since: string | null; canceled_at: string | null; cancel_at: string | null; created_at: string;
     courtesy: boolean; courtesy_until: string | null; trial_ends_at: string | null; free_requests_per_day: number;
   };
   addons: { code: string; name: string; quantity: number; unit_price_cents: number }[];
@@ -34,6 +34,8 @@ interface Panel {
   freeRequestsToday: number;
   upgrade: null | { code: string; name: string; unlocks: string };
 }
+
+type PanelSubscription = NonNullable<Panel["subscription"]>;
 
 interface ChargeResult { valueCents: number; credits: number; invoiceUrl: string | null; pix: { encodedImage: string; payload: string } | null }
 
@@ -64,6 +66,10 @@ function statusCopy(panel: Panel): { title: string; text: ReactNode; tone: strin
       if (sub.courtesy) {
         return { title: `Plano ${sub.plan_name} — cortesia (sem cobrança)`, tone: "bg-violet-50 text-violet-900",
           text: <>{sub.courtesy_until ? <>Válida até <b>{date(sub.courtesy_until)}</b>. </> : null}Os {int(sub.credits_per_month)} créditos do plano renovam todo mês, sem cobrança. Para mudar de plano ou encerrar a cortesia, fale com a gente.</> };
+      }
+      if (sub.cancel_at) {
+        return { title: cancellationNotice(sub.cancel_at), tone: "bg-amber-50 text-amber-900",
+          text: <>Não haverá novas cobranças. Seu ArkoBot continua funcionando até <b>{lastPaidDay(sub.cancel_at)}</b>, o fim do período já pago; depois ele é desligado e os seus dados continuam guardados. Mudou de ideia? Desfaça o cancelamento antes dessa data.</> };
       }
       if (sub.trial_ends_at && new Date(sub.trial_ends_at).getTime() > Date.now()) {
         return { title: trialNotice(sub.trial_ends_at, sub.next_due_date), tone: "bg-cyan-soft text-navy-900",
@@ -116,7 +122,7 @@ export function PainelPage({ state, onChanged }: { state: CustomerState; onChang
 
       {sub && copy ? (
         <Card title={<span className="flex items-center gap-2">Assinatura <StatusBadge map={CUSTOMER_SUB_STATUS} value={sub.status} /></span>}
-          actions={canManage && live && !live.courtesy ? <Button size="sm" variant="ghost" onClick={() => setDialog("cancel")}><XCircle className="h-3.5 w-3.5" /> Cancelar assinatura</Button> : null}>
+          actions={canManage && live && !live.courtesy && !live.cancel_at ? <Button size="sm" variant="ghost" onClick={() => setDialog("cancel")}><XCircle className="h-3.5 w-3.5" /> Cancelar assinatura</Button> : null}>
           <div className={cx("rounded-xl p-4", copy.tone)}>
             <div className="font-semibold">{copy.title}</div>
             <p className="mt-1 text-sm">{copy.text}</p>
@@ -124,6 +130,7 @@ export function PainelPage({ state, onChanged }: { state: CustomerState; onChang
               {live && sub.status !== "active" ? <PayButton payment={invoice} /> : null}
               {sub.status === "canceled" && canManage ? <Link to="/assinar" className="inline-flex h-10 items-center rounded-lg bg-navy-950 px-4 text-sm font-medium text-white hover:bg-navy-800">Assinar de novo</Link> : null}
               {sub.status === "suspended" || sub.status === "past_due" ? <WhatsAppButton>Preciso de ajuda</WhatsAppButton> : null}
+              {live?.cancel_at && canManage ? <UndoCancelButton onDone={done} /> : null}
               {live?.courtesy ? <WhatsAppButton message="Olá! Quero falar sobre a cortesia do meu plano ArkoBot.">Falar com a gente</WhatsAppButton> : null}
             </div>
             {live && sub.status !== "active" && !invoice ? <p className="mt-2 text-xs opacity-80">A fatura aparece aqui em instantes; ela também foi enviada para o seu e-mail.</p> : null}
@@ -165,7 +172,7 @@ export function PainelPage({ state, onChanged }: { state: CustomerState; onChang
         </Card>
 
         <MeusComputadoresCard included={live?.included_vps ?? 0} extras={computers} priceCents={data.extraComputer?.price_cents ?? null}
-          onChange={canManage && live && !live.courtesy && data.extraComputer ? () => setDialog("computers") : null} />
+          onChange={canManage && live && !live.courtesy && !live.cancel_at && data.extraComputer ? () => setDialog("computers") : null} />
       </div>
 
       {live?.courtesy && data.payments.length === 0 ? null : <Card title={<span className="flex items-center gap-2"><ReceiptText className="h-4 w-4 text-cyan-ink" /> Pagamentos</span>} padded={false}>
@@ -219,7 +226,7 @@ export function PainelPage({ state, onChanged }: { state: CustomerState; onChang
 
       <CreditsDialog open={dialog === "credits"} packages={data.creditPackages} onClose={() => setDialog(null)} onCreated={reload} />
       <ComputersDialog open={dialog === "computers"} current={computers} panel={data} onClose={() => setDialog(null)} onDone={done} />
-      <CancelDialog open={dialog === "cancel"} createdAt={sub?.created_at ?? null} trialEndsAt={live?.trial_ends_at ?? null} onClose={() => setDialog(null)} onDone={done} />
+      {live ? <CancelDialog open={dialog === "cancel"} sub={live} onClose={() => setDialog(null)} onDone={done} /> : null}
       <DeleteDialog open={dialog === "delete"} hasLiveSubscription={live !== null} onClose={() => setDialog(null)} onDone={done} />
     </div>
   );
@@ -369,19 +376,43 @@ function FreeAiCard({ used, perDay }: { used: number; perDay: number }) {
   );
 }
 
-function CancelDialog({ open, createdAt, trialEndsAt, onClose, onDone }: { open: boolean; createdAt: string | null; trialEndsAt: string | null; onClose: () => void; onDone: () => void }) {
+function UndoCancelButton({ onDone }: { onDone: () => void }) {
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const undo = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await api("/api/conta/assinatura/desfazer-cancelamento", { body: {} });
+      toast("Cancelamento desfeito: sua assinatura continua");
+      onDone();
+    } catch (failure) {
+      setError((failure as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <>
+      <Button variant="secondary" busy={busy} onClick={undo}><RotateCcw className="h-4 w-4" /> Desfazer cancelamento</Button>
+      <ErrorNote message={error} />
+    </>
+  );
+}
+
+function CancelDialog({ open, sub, onClose, onDone }: { open: boolean; sub: PanelSubscription; onClose: () => void; onDone: () => void }) {
   const toast = useToast();
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const duringTrial = trialEndsAt !== null && new Date(trialEndsAt).getTime() > Date.now();
-  const recent = !duringTrial && createdAt !== null && Date.now() - new Date(createdAt).getTime() <= 7 * 86_400_000;
+  const timing = cancelTiming(sub, new Date());
   const cancel = async () => {
     setBusy(true);
     setError(null);
     try {
       await api("/api/conta/assinatura/cancelar", { body: { reason } });
-      toast("Assinatura cancelada");
+      toast(timing.kind === "period_end" ? "Cancelamento agendado" : "Assinatura cancelada");
       onDone();
     } catch (failure) {
       setError((failure as Error).message);
@@ -394,9 +425,13 @@ function CancelDialog({ open, createdAt, trialEndsAt, onClose, onDone }: { open:
       <Button variant="secondary" onClick={onClose}>Manter assinatura</Button>
       <Button variant="danger" busy={busy} disabled={reason.trim().length < 3} onClick={cancel}>Cancelar assinatura</Button>
     </>}>
-      <p className="text-sm text-slate-600">As cobranças futuras param na hora e os seus bots são pausados. Seus créditos e dados continuam guardados se você voltar.</p>
-      {duringTrial ? <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">Você está no teste grátis: cancelando agora, nada é cobrado.</p> : null}
-      {recent ? (
+      {timing.kind === "period_end" ? (
+        <p className="text-sm text-slate-600">As cobranças futuras param agora, mas o seu ArkoBot continua funcionando até <b>{lastPaidDay(timing.endsAt)}</b>, o fim do período já pago. Depois ele é desligado; seus créditos e dados continuam guardados se você voltar. Até lá, você pode desfazer o cancelamento.</p>
+      ) : (
+        <p className="text-sm text-slate-600">As cobranças futuras param na hora e os seus bots são pausados. Seus créditos e dados continuam guardados se você voltar.</p>
+      )}
+      {timing.kind === "trial" ? <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">Você está no teste grátis: cancelando agora, nada é cobrado.</p> : null}
+      {timing.kind === "withdrawal" ? (
         <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">Você assinou há menos de 7 dias: tem direito ao reembolso integral. Nossa equipe entra em contato para devolver o valor.</p>
       ) : null}
       <Field label="Por que você está cancelando?"><Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Conte em poucas palavras; isso nos ajuda a melhorar." /></Field>

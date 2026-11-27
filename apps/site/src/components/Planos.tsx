@@ -30,7 +30,9 @@ export function Planos() {
         texto={
           <>
             Uma equipe de IA que trabalha enquanto você dorme. Planos mensais, <strong className="text-tinta">sem fidelidade</strong>.
-            Do Inicial com IA gratuita ao Empresa com várias empresas: cada degrau acrescenta uma coisa. Ou conecte a sua própria conta de IA.
+            Do Inicial com IA gratuita ao Empresa com várias empresas: cada degrau acrescenta uma coisa. Nos planos pagos, a IA é o Claude, da
+            Anthropic (GPT e Gemini em breve). Ou conecte a sua própria conta de IA. Cada cliente tem o seu ArkoBot nos nossos servidores, no
+            próprio endereço (nome.arkobot.com.br), aberto pela área do cliente, com espaço conforme o plano.
           </>
         }
       />
@@ -111,7 +113,7 @@ export function Planos() {
           </div>
           <p className="shrink-0 text-tinta">
             <span className="text-2xl font-semibold">+ {formatarReais(computadorAdicional.precoMensal)}</span>
-            <span className="text-sm text-cinza"> /mês por bot</span>
+            <span className="text-sm text-cinza"> /mês cada</span>
           </p>
         </div>
         <div className="flex flex-col gap-1 rounded-3xl border border-linha bg-white p-6 sm:flex-row sm:items-center sm:gap-6">

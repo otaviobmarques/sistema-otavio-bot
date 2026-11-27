@@ -178,7 +178,7 @@ describe("teste grátis do plano", () => {
     await api.post("/api/conta/assinatura", { plan: "inicial", billingType: "CREDIT_CARD" });
     advance(f.ctx, 3 * DAY);
     const canceled = await api.post("/api/conta/assinatura/cancelar", { reason: "Não era o que eu queria" });
-    expect(canceled.data).toEqual({ ok: true, withinWithdrawalPeriod: false, duringTrial: true });
+    expect(canceled.data).toEqual({ ok: true, withinWithdrawalPeriod: false, duringTrial: true, endsAt: null });
     const sub = await subOf(f, orgId);
     expect(sub.status).toBe("canceled");
     expect(f.fake.subscriptions.get(sub.provider_subscription_id)!.deleted).toBe(true);

@@ -53,7 +53,7 @@ async function startTrial(
   return rows[0]!;
 }
 
-function providerMessage(error: unknown): never {
+export function providerMessage(error: unknown): never {
   if (error instanceof ProviderError) throw new DomainError(`Asaas: ${error.message}`, 502);
   throw error;
 }
@@ -76,7 +76,7 @@ async function ensureCustomer(ctx: AppContext, factory: ProviderFactory, org: Or
   return saved.rows[0]!.provider_customer_id;
 }
 
-async function subscriptionTotalCents(q: Queryable, subscriptionId: string): Promise<number> {
+export async function subscriptionTotalCents(q: Queryable, subscriptionId: string): Promise<number> {
   const { rows } = await q.query<{ total: number }>(
     `SELECT s.price_cents + COALESCE((SELECT SUM(quantity * unit_price_cents) FROM subscription_addons WHERE subscription_id = s.id), 0) AS total
      FROM subscriptions s WHERE s.id = $1`, [subscriptionId]);
@@ -182,20 +182,23 @@ export async function syncSubscriptionPayments(ctx: AppContext, subscriptionId: 
   }
 }
 
+/** Stops the recurring charges at the provider; a subscription it no longer knows counts as stopped. */
+export async function cancelAtProvider(ctx: AppContext, sub: SubscriptionRow, factory: ProviderFactory): Promise<void> {
+  if (!sub.provider_subscription_id || !sub.billing_account_id) return;
+  const account = await billingAccount(ctx.db, sub.billing_account_id);
+  if (!account) return;
+  await factory(ctx, account).cancelSubscription(sub.provider_subscription_id).catch((error) => {
+    if (error instanceof ProviderError && error.status === 404) return;
+    providerMessage(error);
+  });
+}
+
 /** Cancels at the provider first (so it stops charging), then locally. */
 export async function cancelSubscription(ctx: AppContext, actor: Actor, subscriptionId: string, reason: string, factory: ProviderFactory = defaultProviderFactory): Promise<void> {
   const sub = (await ctx.db.query<SubscriptionRow>("SELECT * FROM subscriptions WHERE id = $1", [subscriptionId])).rows[0];
   if (!sub) throw new DomainError("Assinatura não encontrada", 404);
   if (sub.status === "canceled") throw new DomainError("A assinatura já está cancelada");
-  if (sub.provider_subscription_id && sub.billing_account_id) {
-    const account = await billingAccount(ctx.db, sub.billing_account_id);
-    if (account) {
-      await factory(ctx, account).cancelSubscription(sub.provider_subscription_id).catch((error) => {
-        if (error instanceof ProviderError && error.status === 404) return;
-        providerMessage(error);
-      });
-    }
-  }
+  await cancelAtProvider(ctx, sub, factory);
   await ctx.db.tx(async (q) => {
     await applySubscriptionSignal(q, actor, sub.id, "admin_cancel", ctx.now(), reason);
     if (inTrial(sub, ctx.now())) {
@@ -228,6 +231,7 @@ export async function setSubscriptionAddon(
   const sub = (await ctx.db.query<SubscriptionRow>("SELECT * FROM subscriptions WHERE id = $1", [subscriptionId])).rows[0];
   if (!sub || sub.status === "canceled") throw new DomainError("Assinatura inexistente ou cancelada", 404);
   if (sub.courtesy) throw new DomainError("A cortesia não leva adicionais: eles seriam cobrados e a cortesia não tem cobrança");
+  if (sub.cancel_at) throw new DomainError("O cancelamento desta assinatura está agendado: desfaça o cancelamento antes de mudar os adicionais", 409);
   const addon = (await ctx.db.query<{ id: string; code: string; price_cents: number; paid_plans_only: boolean; active: boolean }>(
     "SELECT * FROM addons WHERE id = $1", [addonId])).rows[0];
   if (!addon || !addon.active) throw new DomainError("Adicional inexistente ou inativo");
