@@ -3463,5 +3463,11 @@
   "server.whatsapp.budgetNotice": "💰 {title}",
   "server.whatsapp.problemNotice": "⚠️ {bot}: {title}",
   "about.tagline": "Ein Zuhause für deine Agenten auf dem Desktop: Open Source, Apache-2.0-Lizenz.",
-  "about.thirdParty": "Lizenzen von Drittanbietern"
+  "about.thirdParty": "Lizenzen von Drittanbietern",
+  "native.welcome.installedTitle": "Willkommen bei {app}",
+  "native.welcome.updatedTitle": "{app} auf Version {version} aktualisiert",
+  "native.welcome.stepInstalled": "Installiert",
+  "native.welcome.stepUpdated": "Aktualisiert",
+  "native.welcome.stepPreparing": "Deine Bots werden vorbereitet",
+  "native.welcome.stepReady": "Bereit"
 }

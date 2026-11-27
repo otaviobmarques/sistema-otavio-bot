@@ -3456,7 +3456,13 @@
       "pair.install.iphone": "c967689cec5b5d396972ee9c87259d5061384546c51c4bb606357d3e25b4a1c6",
       "about.tagline": "d179f57cc2f78fdd3b2e7e1ef03b201410e550fe4b633de4e1236415deaaac30",
       "pair.install.intro": "ae2c9f6ed3fea8c6b59b58e07e519e3602773437668706ea5a5ea2dff1c506d6",
-      "server.storageFull": "d51bfa77ff6d1965772c7ac56588a415a222f7c306d05fda7568557b739a9e74"
+      "server.storageFull": "d51bfa77ff6d1965772c7ac56588a415a222f7c306d05fda7568557b739a9e74",
+      "native.welcome.installedTitle": "3634d3bfa629bbdc0b31a664c51f5294af7bbbc17124b5570e8e6a763a1d11d5",
+      "native.welcome.updatedTitle": "bb6228a84df55720f8b6c720ff970c24a58e42bc77a6dc424a230efd590b0195",
+      "native.welcome.stepInstalled": "f8b32f4e92bd84ce1fcd177bec17d43093de3ee8303bb40c1b9ea521ed6a70f6",
+      "native.welcome.stepUpdated": "3a5ecca188c0579c00ee24cf3cab21bd02c15a06f7a70cc8e0a8ff2381dcbbfd",
+      "native.welcome.stepPreparing": "1f66581294596dfcf92b3e9470e1fddd1a47f2c0d08923f5c70582004c17a59d",
+      "native.welcome.stepReady": "5fa7aac5375c5815787fba3f49559f9b45b14023147ce0652803387974144e5f"
     },
     "es": {
       "whop.description": "1a07cf04ef17029448d3781415cbac16d54e66b821907a40d94e0e6349710e70",
@@ -9530,7 +9536,13 @@
       "pair.install.android": "f273395b105469d2870bbe661de2bcc251de0ef2780c2e358eedaea2fbf8a87c",
       "pair.install.iphone": "c967689cec5b5d396972ee9c87259d5061384546c51c4bb606357d3e25b4a1c6",
       "about.tagline": "d179f57cc2f78fdd3b2e7e1ef03b201410e550fe4b633de4e1236415deaaac30",
-      "pair.install.intro": "ae2c9f6ed3fea8c6b59b58e07e519e3602773437668706ea5a5ea2dff1c506d6"
+      "pair.install.intro": "ae2c9f6ed3fea8c6b59b58e07e519e3602773437668706ea5a5ea2dff1c506d6",
+      "native.welcome.installedTitle": "3634d3bfa629bbdc0b31a664c51f5294af7bbbc17124b5570e8e6a763a1d11d5",
+      "native.welcome.updatedTitle": "bb6228a84df55720f8b6c720ff970c24a58e42bc77a6dc424a230efd590b0195",
+      "native.welcome.stepInstalled": "f8b32f4e92bd84ce1fcd177bec17d43093de3ee8303bb40c1b9ea521ed6a70f6",
+      "native.welcome.stepUpdated": "3a5ecca188c0579c00ee24cf3cab21bd02c15a06f7a70cc8e0a8ff2381dcbbfd",
+      "native.welcome.stepPreparing": "1f66581294596dfcf92b3e9470e1fddd1a47f2c0d08923f5c70582004c17a59d",
+      "native.welcome.stepReady": "5fa7aac5375c5815787fba3f49559f9b45b14023147ce0652803387974144e5f"
     },
     "fr": {
       "pro.fromPrice": "c0dc349bb513592ecca1d6199daabebb8a7a92d279bc3538bf92c673caec903c",
@@ -12821,7 +12833,13 @@
       "pair.install.android": "f273395b105469d2870bbe661de2bcc251de0ef2780c2e358eedaea2fbf8a87c",
       "pair.install.iphone": "c967689cec5b5d396972ee9c87259d5061384546c51c4bb606357d3e25b4a1c6",
       "about.tagline": "d179f57cc2f78fdd3b2e7e1ef03b201410e550fe4b633de4e1236415deaaac30",
-      "pair.install.intro": "ae2c9f6ed3fea8c6b59b58e07e519e3602773437668706ea5a5ea2dff1c506d6"
+      "pair.install.intro": "ae2c9f6ed3fea8c6b59b58e07e519e3602773437668706ea5a5ea2dff1c506d6",
+      "native.welcome.installedTitle": "3634d3bfa629bbdc0b31a664c51f5294af7bbbc17124b5570e8e6a763a1d11d5",
+      "native.welcome.updatedTitle": "bb6228a84df55720f8b6c720ff970c24a58e42bc77a6dc424a230efd590b0195",
+      "native.welcome.stepInstalled": "f8b32f4e92bd84ce1fcd177bec17d43093de3ee8303bb40c1b9ea521ed6a70f6",
+      "native.welcome.stepUpdated": "3a5ecca188c0579c00ee24cf3cab21bd02c15a06f7a70cc8e0a8ff2381dcbbfd",
+      "native.welcome.stepPreparing": "1f66581294596dfcf92b3e9470e1fddd1a47f2c0d08923f5c70582004c17a59d",
+      "native.welcome.stepReady": "5fa7aac5375c5815787fba3f49559f9b45b14023147ce0652803387974144e5f"
     },
     "hi": {
       "pro.fromPrice": "c0dc349bb513592ecca1d6199daabebb8a7a92d279bc3538bf92c673caec903c",
@@ -15964,7 +15982,13 @@
       "pair.install.android": "f273395b105469d2870bbe661de2bcc251de0ef2780c2e358eedaea2fbf8a87c",
       "pair.install.iphone": "c967689cec5b5d396972ee9c87259d5061384546c51c4bb606357d3e25b4a1c6",
       "about.tagline": "d179f57cc2f78fdd3b2e7e1ef03b201410e550fe4b633de4e1236415deaaac30",
-      "pair.install.intro": "ae2c9f6ed3fea8c6b59b58e07e519e3602773437668706ea5a5ea2dff1c506d6"
+      "pair.install.intro": "ae2c9f6ed3fea8c6b59b58e07e519e3602773437668706ea5a5ea2dff1c506d6",
+      "native.welcome.installedTitle": "3634d3bfa629bbdc0b31a664c51f5294af7bbbc17124b5570e8e6a763a1d11d5",
+      "native.welcome.updatedTitle": "bb6228a84df55720f8b6c720ff970c24a58e42bc77a6dc424a230efd590b0195",
+      "native.welcome.stepInstalled": "f8b32f4e92bd84ce1fcd177bec17d43093de3ee8303bb40c1b9ea521ed6a70f6",
+      "native.welcome.stepUpdated": "3a5ecca188c0579c00ee24cf3cab21bd02c15a06f7a70cc8e0a8ff2381dcbbfd",
+      "native.welcome.stepPreparing": "1f66581294596dfcf92b3e9470e1fddd1a47f2c0d08923f5c70582004c17a59d",
+      "native.welcome.stepReady": "5fa7aac5375c5815787fba3f49559f9b45b14023147ce0652803387974144e5f"
     },
     "ja": {
       "whop.description": "1a07cf04ef17029448d3781415cbac16d54e66b821907a40d94e0e6349710e70",
@@ -23706,7 +23730,13 @@
       "pair.install.android": "f273395b105469d2870bbe661de2bcc251de0ef2780c2e358eedaea2fbf8a87c",
       "pair.install.iphone": "c967689cec5b5d396972ee9c87259d5061384546c51c4bb606357d3e25b4a1c6",
       "about.tagline": "d179f57cc2f78fdd3b2e7e1ef03b201410e550fe4b633de4e1236415deaaac30",
-      "pair.install.intro": "ae2c9f6ed3fea8c6b59b58e07e519e3602773437668706ea5a5ea2dff1c506d6"
+      "pair.install.intro": "ae2c9f6ed3fea8c6b59b58e07e519e3602773437668706ea5a5ea2dff1c506d6",
+      "native.welcome.installedTitle": "3634d3bfa629bbdc0b31a664c51f5294af7bbbc17124b5570e8e6a763a1d11d5",
+      "native.welcome.updatedTitle": "bb6228a84df55720f8b6c720ff970c24a58e42bc77a6dc424a230efd590b0195",
+      "native.welcome.stepInstalled": "f8b32f4e92bd84ce1fcd177bec17d43093de3ee8303bb40c1b9ea521ed6a70f6",
+      "native.welcome.stepUpdated": "3a5ecca188c0579c00ee24cf3cab21bd02c15a06f7a70cc8e0a8ff2381dcbbfd",
+      "native.welcome.stepPreparing": "1f66581294596dfcf92b3e9470e1fddd1a47f2c0d08923f5c70582004c17a59d",
+      "native.welcome.stepReady": "5fa7aac5375c5815787fba3f49559f9b45b14023147ce0652803387974144e5f"
     },
     "pt-br": {
       "voice.gemini.keyPlaceholder": "8c87ba2043a4a89d63c90cae8a6dafd5cbd193652e923b97988e381a74773e10",
@@ -33871,7 +33901,13 @@
       "pair.install.intro": "ae2c9f6ed3fea8c6b59b58e07e519e3602773437668706ea5a5ea2dff1c506d6",
       "server.storageFull": "d51bfa77ff6d1965772c7ac56588a415a222f7c306d05fda7568557b739a9e74",
       "cloudStorage.banner.full": "98afd251b439d43eba19530e4058b3bb6242df58cd8afbca8e1aa36e46f7475a",
-      "cloudStorage.banner.over": "1a585c9dd89997b802896163dafd33541cce19e95bd2b8431bdf3ca3f5819d81"
+      "cloudStorage.banner.over": "1a585c9dd89997b802896163dafd33541cce19e95bd2b8431bdf3ca3f5819d81",
+      "native.welcome.installedTitle": "3634d3bfa629bbdc0b31a664c51f5294af7bbbc17124b5570e8e6a763a1d11d5",
+      "native.welcome.updatedTitle": "bb6228a84df55720f8b6c720ff970c24a58e42bc77a6dc424a230efd590b0195",
+      "native.welcome.stepInstalled": "f8b32f4e92bd84ce1fcd177bec17d43093de3ee8303bb40c1b9ea521ed6a70f6",
+      "native.welcome.stepUpdated": "3a5ecca188c0579c00ee24cf3cab21bd02c15a06f7a70cc8e0a8ff2381dcbbfd",
+      "native.welcome.stepPreparing": "1f66581294596dfcf92b3e9470e1fddd1a47f2c0d08923f5c70582004c17a59d",
+      "native.welcome.stepReady": "5fa7aac5375c5815787fba3f49559f9b45b14023147ce0652803387974144e5f"
     },
     "zh": {
       "pro.fromPrice": "c0dc349bb513592ecca1d6199daabebb8a7a92d279bc3538bf92c673caec903c",
@@ -41500,7 +41536,13 @@
       "pair.install.android": "f273395b105469d2870bbe661de2bcc251de0ef2780c2e358eedaea2fbf8a87c",
       "pair.install.iphone": "c967689cec5b5d396972ee9c87259d5061384546c51c4bb606357d3e25b4a1c6",
       "about.tagline": "d179f57cc2f78fdd3b2e7e1ef03b201410e550fe4b633de4e1236415deaaac30",
-      "pair.install.intro": "ae2c9f6ed3fea8c6b59b58e07e519e3602773437668706ea5a5ea2dff1c506d6"
+      "pair.install.intro": "ae2c9f6ed3fea8c6b59b58e07e519e3602773437668706ea5a5ea2dff1c506d6",
+      "native.welcome.installedTitle": "3634d3bfa629bbdc0b31a664c51f5294af7bbbc17124b5570e8e6a763a1d11d5",
+      "native.welcome.updatedTitle": "bb6228a84df55720f8b6c720ff970c24a58e42bc77a6dc424a230efd590b0195",
+      "native.welcome.stepInstalled": "f8b32f4e92bd84ce1fcd177bec17d43093de3ee8303bb40c1b9ea521ed6a70f6",
+      "native.welcome.stepUpdated": "3a5ecca188c0579c00ee24cf3cab21bd02c15a06f7a70cc8e0a8ff2381dcbbfd",
+      "native.welcome.stepPreparing": "1f66581294596dfcf92b3e9470e1fddd1a47f2c0d08923f5c70582004c17a59d",
+      "native.welcome.stepReady": "5fa7aac5375c5815787fba3f49559f9b45b14023147ce0652803387974144e5f"
     },
     "zh-tw": {
       "whop.description": "1a07cf04ef17029448d3781415cbac16d54e66b821907a40d94e0e6349710e70",
@@ -51278,7 +51320,13 @@
       "about.thirdParty": "0c4ee87a5d799fb7d10b63f6ebb03cbc66dde159d14d861b59ec41f7e80f6784",
       "pair.install.android": "f273395b105469d2870bbe661de2bcc251de0ef2780c2e358eedaea2fbf8a87c",
       "pair.install.iphone": "c967689cec5b5d396972ee9c87259d5061384546c51c4bb606357d3e25b4a1c6",
-      "pair.install.intro": "ae2c9f6ed3fea8c6b59b58e07e519e3602773437668706ea5a5ea2dff1c506d6"
+      "pair.install.intro": "ae2c9f6ed3fea8c6b59b58e07e519e3602773437668706ea5a5ea2dff1c506d6",
+      "native.welcome.installedTitle": "3634d3bfa629bbdc0b31a664c51f5294af7bbbc17124b5570e8e6a763a1d11d5",
+      "native.welcome.updatedTitle": "bb6228a84df55720f8b6c720ff970c24a58e42bc77a6dc424a230efd590b0195",
+      "native.welcome.stepInstalled": "f8b32f4e92bd84ce1fcd177bec17d43093de3ee8303bb40c1b9ea521ed6a70f6",
+      "native.welcome.stepUpdated": "3a5ecca188c0579c00ee24cf3cab21bd02c15a06f7a70cc8e0a8ff2381dcbbfd",
+      "native.welcome.stepPreparing": "1f66581294596dfcf92b3e9470e1fddd1a47f2c0d08923f5c70582004c17a59d",
+      "native.welcome.stepReady": "5fa7aac5375c5815787fba3f49559f9b45b14023147ce0652803387974144e5f"
     },
     "uk": {
       "pro.fromPrice": "c0dc349bb513592ecca1d6199daabebb8a7a92d279bc3538bf92c673caec903c",
@@ -54862,7 +54910,13 @@
       "pair.install.android": "f273395b105469d2870bbe661de2bcc251de0ef2780c2e358eedaea2fbf8a87c",
       "pair.install.iphone": "c967689cec5b5d396972ee9c87259d5061384546c51c4bb606357d3e25b4a1c6",
       "about.tagline": "d179f57cc2f78fdd3b2e7e1ef03b201410e550fe4b633de4e1236415deaaac30",
-      "pair.install.intro": "ae2c9f6ed3fea8c6b59b58e07e519e3602773437668706ea5a5ea2dff1c506d6"
+      "pair.install.intro": "ae2c9f6ed3fea8c6b59b58e07e519e3602773437668706ea5a5ea2dff1c506d6",
+      "native.welcome.installedTitle": "3634d3bfa629bbdc0b31a664c51f5294af7bbbc17124b5570e8e6a763a1d11d5",
+      "native.welcome.updatedTitle": "bb6228a84df55720f8b6c720ff970c24a58e42bc77a6dc424a230efd590b0195",
+      "native.welcome.stepInstalled": "f8b32f4e92bd84ce1fcd177bec17d43093de3ee8303bb40c1b9ea521ed6a70f6",
+      "native.welcome.stepUpdated": "3a5ecca188c0579c00ee24cf3cab21bd02c15a06f7a70cc8e0a8ff2381dcbbfd",
+      "native.welcome.stepPreparing": "1f66581294596dfcf92b3e9470e1fddd1a47f2c0d08923f5c70582004c17a59d",
+      "native.welcome.stepReady": "5fa7aac5375c5815787fba3f49559f9b45b14023147ce0652803387974144e5f"
     },
     "vi": {
       "whop.description": "1a07cf04ef17029448d3781415cbac16d54e66b821907a40d94e0e6349710e70",
@@ -60436,7 +60490,13 @@
       "pair.install.android": "f273395b105469d2870bbe661de2bcc251de0ef2780c2e358eedaea2fbf8a87c",
       "pair.install.iphone": "c967689cec5b5d396972ee9c87259d5061384546c51c4bb606357d3e25b4a1c6",
       "about.tagline": "d179f57cc2f78fdd3b2e7e1ef03b201410e550fe4b633de4e1236415deaaac30",
-      "pair.install.intro": "ae2c9f6ed3fea8c6b59b58e07e519e3602773437668706ea5a5ea2dff1c506d6"
+      "pair.install.intro": "ae2c9f6ed3fea8c6b59b58e07e519e3602773437668706ea5a5ea2dff1c506d6",
+      "native.welcome.installedTitle": "3634d3bfa629bbdc0b31a664c51f5294af7bbbc17124b5570e8e6a763a1d11d5",
+      "native.welcome.updatedTitle": "bb6228a84df55720f8b6c720ff970c24a58e42bc77a6dc424a230efd590b0195",
+      "native.welcome.stepInstalled": "f8b32f4e92bd84ce1fcd177bec17d43093de3ee8303bb40c1b9ea521ed6a70f6",
+      "native.welcome.stepUpdated": "3a5ecca188c0579c00ee24cf3cab21bd02c15a06f7a70cc8e0a8ff2381dcbbfd",
+      "native.welcome.stepPreparing": "1f66581294596dfcf92b3e9470e1fddd1a47f2c0d08923f5c70582004c17a59d",
+      "native.welcome.stepReady": "5fa7aac5375c5815787fba3f49559f9b45b14023147ce0652803387974144e5f"
     },
     "tr": {
       "whop.description": "1a07cf04ef17029448d3781415cbac16d54e66b821907a40d94e0e6349710e70",
@@ -66010,7 +66070,13 @@
       "pair.install.android": "f273395b105469d2870bbe661de2bcc251de0ef2780c2e358eedaea2fbf8a87c",
       "pair.install.iphone": "c967689cec5b5d396972ee9c87259d5061384546c51c4bb606357d3e25b4a1c6",
       "about.tagline": "d179f57cc2f78fdd3b2e7e1ef03b201410e550fe4b633de4e1236415deaaac30",
-      "pair.install.intro": "ae2c9f6ed3fea8c6b59b58e07e519e3602773437668706ea5a5ea2dff1c506d6"
+      "pair.install.intro": "ae2c9f6ed3fea8c6b59b58e07e519e3602773437668706ea5a5ea2dff1c506d6",
+      "native.welcome.installedTitle": "3634d3bfa629bbdc0b31a664c51f5294af7bbbc17124b5570e8e6a763a1d11d5",
+      "native.welcome.updatedTitle": "bb6228a84df55720f8b6c720ff970c24a58e42bc77a6dc424a230efd590b0195",
+      "native.welcome.stepInstalled": "f8b32f4e92bd84ce1fcd177bec17d43093de3ee8303bb40c1b9ea521ed6a70f6",
+      "native.welcome.stepUpdated": "3a5ecca188c0579c00ee24cf3cab21bd02c15a06f7a70cc8e0a8ff2381dcbbfd",
+      "native.welcome.stepPreparing": "1f66581294596dfcf92b3e9470e1fddd1a47f2c0d08923f5c70582004c17a59d",
+      "native.welcome.stepReady": "5fa7aac5375c5815787fba3f49559f9b45b14023147ce0652803387974144e5f"
     },
     "pl": {
       "whop.description": "1a07cf04ef17029448d3781415cbac16d54e66b821907a40d94e0e6349710e70",
@@ -72841,7 +72907,13 @@
       "pair.install.android": "f273395b105469d2870bbe661de2bcc251de0ef2780c2e358eedaea2fbf8a87c",
       "pair.install.iphone": "c967689cec5b5d396972ee9c87259d5061384546c51c4bb606357d3e25b4a1c6",
       "about.tagline": "d179f57cc2f78fdd3b2e7e1ef03b201410e550fe4b633de4e1236415deaaac30",
-      "pair.install.intro": "ae2c9f6ed3fea8c6b59b58e07e519e3602773437668706ea5a5ea2dff1c506d6"
+      "pair.install.intro": "ae2c9f6ed3fea8c6b59b58e07e519e3602773437668706ea5a5ea2dff1c506d6",
+      "native.welcome.installedTitle": "3634d3bfa629bbdc0b31a664c51f5294af7bbbc17124b5570e8e6a763a1d11d5",
+      "native.welcome.updatedTitle": "bb6228a84df55720f8b6c720ff970c24a58e42bc77a6dc424a230efd590b0195",
+      "native.welcome.stepInstalled": "f8b32f4e92bd84ce1fcd177bec17d43093de3ee8303bb40c1b9ea521ed6a70f6",
+      "native.welcome.stepUpdated": "3a5ecca188c0579c00ee24cf3cab21bd02c15a06f7a70cc8e0a8ff2381dcbbfd",
+      "native.welcome.stepPreparing": "1f66581294596dfcf92b3e9470e1fddd1a47f2c0d08923f5c70582004c17a59d",
+      "native.welcome.stepReady": "5fa7aac5375c5815787fba3f49559f9b45b14023147ce0652803387974144e5f"
     },
     "ru": {
       "whop.description": "1a07cf04ef17029448d3781415cbac16d54e66b821907a40d94e0e6349710e70",
@@ -79734,7 +79806,13 @@
       "pair.install.android": "f273395b105469d2870bbe661de2bcc251de0ef2780c2e358eedaea2fbf8a87c",
       "pair.install.iphone": "c967689cec5b5d396972ee9c87259d5061384546c51c4bb606357d3e25b4a1c6",
       "about.tagline": "d179f57cc2f78fdd3b2e7e1ef03b201410e550fe4b633de4e1236415deaaac30",
-      "pair.install.intro": "ae2c9f6ed3fea8c6b59b58e07e519e3602773437668706ea5a5ea2dff1c506d6"
+      "pair.install.intro": "ae2c9f6ed3fea8c6b59b58e07e519e3602773437668706ea5a5ea2dff1c506d6",
+      "native.welcome.installedTitle": "3634d3bfa629bbdc0b31a664c51f5294af7bbbc17124b5570e8e6a763a1d11d5",
+      "native.welcome.updatedTitle": "bb6228a84df55720f8b6c720ff970c24a58e42bc77a6dc424a230efd590b0195",
+      "native.welcome.stepInstalled": "f8b32f4e92bd84ce1fcd177bec17d43093de3ee8303bb40c1b9ea521ed6a70f6",
+      "native.welcome.stepUpdated": "3a5ecca188c0579c00ee24cf3cab21bd02c15a06f7a70cc8e0a8ff2381dcbbfd",
+      "native.welcome.stepPreparing": "1f66581294596dfcf92b3e9470e1fddd1a47f2c0d08923f5c70582004c17a59d",
+      "native.welcome.stepReady": "5fa7aac5375c5815787fba3f49559f9b45b14023147ce0652803387974144e5f"
     },
     "it": {
       "whop.description": "1a07cf04ef17029448d3781415cbac16d54e66b821907a40d94e0e6349710e70",
@@ -86429,7 +86507,13 @@
       "pair.install.android": "f273395b105469d2870bbe661de2bcc251de0ef2780c2e358eedaea2fbf8a87c",
       "pair.install.iphone": "c967689cec5b5d396972ee9c87259d5061384546c51c4bb606357d3e25b4a1c6",
       "about.tagline": "d179f57cc2f78fdd3b2e7e1ef03b201410e550fe4b633de4e1236415deaaac30",
-      "pair.install.intro": "ae2c9f6ed3fea8c6b59b58e07e519e3602773437668706ea5a5ea2dff1c506d6"
+      "pair.install.intro": "ae2c9f6ed3fea8c6b59b58e07e519e3602773437668706ea5a5ea2dff1c506d6",
+      "native.welcome.installedTitle": "3634d3bfa629bbdc0b31a664c51f5294af7bbbc17124b5570e8e6a763a1d11d5",
+      "native.welcome.updatedTitle": "bb6228a84df55720f8b6c720ff970c24a58e42bc77a6dc424a230efd590b0195",
+      "native.welcome.stepInstalled": "f8b32f4e92bd84ce1fcd177bec17d43093de3ee8303bb40c1b9ea521ed6a70f6",
+      "native.welcome.stepUpdated": "3a5ecca188c0579c00ee24cf3cab21bd02c15a06f7a70cc8e0a8ff2381dcbbfd",
+      "native.welcome.stepPreparing": "1f66581294596dfcf92b3e9470e1fddd1a47f2c0d08923f5c70582004c17a59d",
+      "native.welcome.stepReady": "5fa7aac5375c5815787fba3f49559f9b45b14023147ce0652803387974144e5f"
     },
     "ko": {
       "connectedWorkspaces.localTitle": "7d6deafeab011d734c3fdd1bfd6f69544fbb746a004019269bdb48544b01164b",
@@ -93840,7 +93924,13 @@
       "pair.install.android": "f273395b105469d2870bbe661de2bcc251de0ef2780c2e358eedaea2fbf8a87c",
       "pair.install.iphone": "c967689cec5b5d396972ee9c87259d5061384546c51c4bb606357d3e25b4a1c6",
       "about.tagline": "d179f57cc2f78fdd3b2e7e1ef03b201410e550fe4b633de4e1236415deaaac30",
-      "pair.install.intro": "ae2c9f6ed3fea8c6b59b58e07e519e3602773437668706ea5a5ea2dff1c506d6"
+      "pair.install.intro": "ae2c9f6ed3fea8c6b59b58e07e519e3602773437668706ea5a5ea2dff1c506d6",
+      "native.welcome.installedTitle": "3634d3bfa629bbdc0b31a664c51f5294af7bbbc17124b5570e8e6a763a1d11d5",
+      "native.welcome.updatedTitle": "bb6228a84df55720f8b6c720ff970c24a58e42bc77a6dc424a230efd590b0195",
+      "native.welcome.stepInstalled": "f8b32f4e92bd84ce1fcd177bec17d43093de3ee8303bb40c1b9ea521ed6a70f6",
+      "native.welcome.stepUpdated": "3a5ecca188c0579c00ee24cf3cab21bd02c15a06f7a70cc8e0a8ff2381dcbbfd",
+      "native.welcome.stepPreparing": "1f66581294596dfcf92b3e9470e1fddd1a47f2c0d08923f5c70582004c17a59d",
+      "native.welcome.stepReady": "5fa7aac5375c5815787fba3f49559f9b45b14023147ce0652803387974144e5f"
     }
   }
 }

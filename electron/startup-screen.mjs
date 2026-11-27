@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import nativeText from "./native-text.cjs";
+import { WELCOME_FINISH_MS, WELCOME_SIZE, welcomeScreenHtml } from "./welcome-screen.mjs";
 
 const attribute = (value) => String(value).replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;");
 const resource = (name) => fileURLToPath(new URL(`./resources/${name}`, import.meta.url));
@@ -36,11 +37,13 @@ export function startupScreenHtml({ t = nativeText.englishText.t, lang = "en", v
 export function createStartupScreen({
   BrowserWindow, iconPath, platform = process.platform, isQuitting, onQuit,
   onHide, isHidden = () => false, onShow, onFinished, t, lang,
+  /** { kind: "installed" | "updated", version }: the first open after an install or update shows the welcome. */
+  welcome = null,
 }) {
   let disposed = false, revealed = false, fallback, resolveReady;
   const ready = new Promise(resolve => { resolveReady = resolve; });
   const splash = new BrowserWindow({
-    width: 440, height: 300, resizable: false, maximizable: false,
+    ...(welcome ? WELCOME_SIZE : { width: 440, height: 300 }), resizable: false, maximizable: false,
     fullscreenable: false, frame: false, transparent: true,
     backgroundColor: "#00000000", show: false, icon: iconPath,
     title: "ArkoBot", autoHideMenuBar: true,
@@ -91,12 +94,24 @@ export function createStartupScreen({
   splash.webContents.on("did-finish-load", say);
   const startupFallback = setTimeout(resolveReady, 10_000);
   startupFallback.unref?.();
-  void splash.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(startupScreenHtml({ t, lang })))
+  void splash.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(welcome
+    ? welcomeScreenHtml({ t, lang, kind: welcome.kind, version: welcome.version })
+    : startupScreenHtml({ t, lang })))
     .catch(resolveReady);
   const attach = (win, { maximized = false } = {}) => {
+    let finishing = null;
+    // The welcome first plays its last step ("Pronto"), then the app's window replaces it.
     const reveal = () => {
+      if (!welcome || revealed || disposed || splash.isDestroyed()) return show();
+      if (finishing) return;
+      void splash.webContents.executeJavaScript("window.welcomeFinish?.()").catch(() => {});
+      finishing = setTimeout(show, WELCOME_FINISH_MS);
+      finishing.unref?.();
+    };
+    const show = () => {
       if (revealed || win.isDestroyed() || isQuitting()) return;
       revealed = true;
+      clearTimeout(finishing);
       const minimized = !splash.isDestroyed() && splash.isMinimized();
       if (isHidden()) {
         win.setSkipTaskbar(true);

@@ -35,6 +35,7 @@ import { createOrganizationEntry, isOrganizationDeepLink, takeOrganizationDeepLi
 import { windowBackground, windowChromeOptions } from "./window-chrome.mjs";
 import { createAllWindowsClosedQuit } from "./window-all-closed.mjs";
 import { createStartupScreen } from "./startup-screen.mjs";
+import { welcomeKind } from "./welcome-screen.mjs";
 import { createSystemTray } from "./system-tray.mjs";
 import { createLendingIndicator } from "./lending-indicator.mjs";
 import { createLendingDialogs } from "./lending-dialogs.mjs";
@@ -2831,7 +2832,7 @@ setCuaStateListener((connection) => {
 });
 
 app.whenReady().then(async () => {
-  await evictStartupCacheOnce({
+  const lastRun = await evictStartupCacheOnce({
     userData: app.getPath("userData"),
     currentVersion: app.getVersion(),
     clearCache: () => session.defaultSession.clearCache(),
@@ -2856,6 +2857,7 @@ app.whenReady().then(async () => {
     isHidden: () => desktopTray?.isHidden() ?? false,
     onShow: (win) => desktopTray?.windowShown(win),
     onFinished: () => { startupScreen = null; },
+    welcome: welcomeKind(lastRun) ? { kind: welcomeKind(lastRun), version: app.getVersion() } : null,
   });
   await startupScreen?.ready;
   if (desktopShutdownStarted) return;

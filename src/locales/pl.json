@@ -6833,5 +6833,11 @@
   "phone.code.typeIntro": "Otwórz aplikację {app} i wpisz ten kod parowania.",
   "phone.signIn.emailCode": "Kod logowania z Twojego e-maila",
   "about.tagline": "Dom na pulpicie dla Twoich agentów: open source, licencja Apache 2.0.",
-  "about.thirdParty": "Licencje stron trzecich"
+  "about.thirdParty": "Licencje stron trzecich",
+  "native.welcome.installedTitle": "Witaj w {app}",
+  "native.welcome.updatedTitle": "{app} zaktualizowano do wersji {version}",
+  "native.welcome.stepInstalled": "Zainstalowano",
+  "native.welcome.stepUpdated": "Zaktualizowano",
+  "native.welcome.stepPreparing": "Przygotowywanie Twoich botów",
+  "native.welcome.stepReady": "Gotowe"
 }

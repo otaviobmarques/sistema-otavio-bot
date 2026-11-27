@@ -9780,5 +9780,11 @@
   "remote.client.endsDec7": "這種連線方式將於 12 月 7 日停止。之後請在另一台電腦的「手機和裝置」中重新配對這台電腦。",
   "phone.code.pairingCode": "配對碼",
   "phone.code.typeIntro": "開啟 {app} 應用程式並輸入這個配對碼。",
-  "phone.signIn.emailCode": "電子郵件中的登入碼"
+  "phone.signIn.emailCode": "電子郵件中的登入碼",
+  "native.welcome.installedTitle": "歡迎使用 {app}",
+  "native.welcome.updatedTitle": "{app} 已更新至 {version} 版",
+  "native.welcome.stepInstalled": "已安裝",
+  "native.welcome.stepUpdated": "已更新",
+  "native.welcome.stepPreparing": "正在準備你的機器人",
+  "native.welcome.stepReady": "就緒"
 }

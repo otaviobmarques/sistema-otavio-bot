@@ -3586,5 +3586,11 @@
   "memory.journal.instructions": "інструкції",
   "memory.journal.actor.teamSetup": "Налаштування команди",
   "about.tagline": "Дім для ваших агентів на комп’ютері: відкритий код, ліцензія Apache 2.0.",
-  "about.thirdParty": "Ліцензії третіх сторін"
+  "about.thirdParty": "Ліцензії третіх сторін",
+  "native.welcome.installedTitle": "Ласкаво просимо до {app}",
+  "native.welcome.updatedTitle": "{app} оновлено до версії {version}",
+  "native.welcome.stepInstalled": "Встановлено",
+  "native.welcome.stepUpdated": "Оновлено",
+  "native.welcome.stepPreparing": "Готуємо ваших ботів",
+  "native.welcome.stepReady": "Готово"
 }

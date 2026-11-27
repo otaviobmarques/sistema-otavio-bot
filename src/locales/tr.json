@@ -5576,5 +5576,11 @@
   "memory.journal.instructions": "talimatlar",
   "memory.journal.actor.teamSetup": "Ekip kurulumu",
   "about.tagline": "Ajanlarınız için masaüstünde bir yuva: açık kaynak, Apache 2.0 lisanslı.",
-  "about.thirdParty": "Üçüncü taraf lisansları"
+  "about.thirdParty": "Üçüncü taraf lisansları",
+  "native.welcome.installedTitle": "{app} uygulamasına hoş geldiniz",
+  "native.welcome.updatedTitle": "{app}, {version} sürümüne güncellendi",
+  "native.welcome.stepInstalled": "Yüklendi",
+  "native.welcome.stepUpdated": "Güncellendi",
+  "native.welcome.stepPreparing": "Botlarınız hazırlanıyor",
+  "native.welcome.stepReady": "Hazır"
 }

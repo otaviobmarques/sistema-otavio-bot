@@ -6895,5 +6895,11 @@
   "phone.code.typeIntro": "Откройте приложение {app} и введите этот код сопряжения.",
   "phone.signIn.emailCode": "Код входа из письма",
   "about.tagline": "Дом для ваших агентов на компьютере: открытый исходный код, лицензия Apache 2.0.",
-  "about.thirdParty": "Сторонние лицензии"
+  "about.thirdParty": "Сторонние лицензии",
+  "native.welcome.installedTitle": "Добро пожаловать в {app}",
+  "native.welcome.updatedTitle": "{app} обновлён до версии {version}",
+  "native.welcome.stepInstalled": "Установлено",
+  "native.welcome.stepUpdated": "Обновлено",
+  "native.welcome.stepPreparing": "Готовим ваших ботов",
+  "native.welcome.stepReady": "Готово"
 }

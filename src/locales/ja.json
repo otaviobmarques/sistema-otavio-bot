@@ -7744,5 +7744,11 @@
   "phone.code.typeIntro": "{app} アプリを開いて、このペアリングコードを入力してください。",
   "phone.signIn.emailCode": "メールに届いたサインインコード",
   "about.tagline": "エージェントのためのデスクトップの拠点。オープンソース、Apache 2.0 ライセンス。",
-  "about.thirdParty": "サードパーティのライセンス"
+  "about.thirdParty": "サードパーティのライセンス",
+  "native.welcome.installedTitle": "{app} へようこそ",
+  "native.welcome.updatedTitle": "{app} をバージョン {version} に更新しました",
+  "native.welcome.stepInstalled": "インストール完了",
+  "native.welcome.stepUpdated": "更新完了",
+  "native.welcome.stepPreparing": "ボットを準備しています",
+  "native.welcome.stepReady": "準備完了"
 }

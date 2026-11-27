@@ -7631,5 +7631,11 @@
   "phone.code.typeIntro": "打开 {app} 应用并输入这个配对码。",
   "phone.signIn.emailCode": "邮件中的登录码",
   "about.tagline": "你的智能体在桌面上的家：开源，采用 Apache 2.0 许可。",
-  "about.thirdParty": "第三方许可"
+  "about.thirdParty": "第三方许可",
+  "native.welcome.installedTitle": "欢迎使用 {app}",
+  "native.welcome.updatedTitle": "{app} 已更新到 {version} 版本",
+  "native.welcome.stepInstalled": "已安装",
+  "native.welcome.stepUpdated": "已更新",
+  "native.welcome.stepPreparing": "正在准备你的机器人",
+  "native.welcome.stepReady": "就绪"
 }
