@@ -1,6 +1,6 @@
 # Termos de Uso do ArkoBot
 
-**Versão 1.1, em vigor a partir de 25/11/2026. Última atualização: 27 de novembro de 2026**
+**Versão 1.1, em vigor a partir de 27/11/2026. Última atualização: 27 de novembro de 2026**
 
 Estes Termos de Uso ("Termos") regulam o uso do ArkoBot, oferecido pela Domma Tecnologia. Leia com atenção. Ao criar uma conta, contratar um plano ou usar o ArkoBot, você declara que leu, entendeu e aceita estes Termos, a [Política de Privacidade](politica-de-privacidade.md) e a [Política de Cookies](politica-de-cookies.md), que fazem parte deles.
 
@@ -15,6 +15,7 @@ Este resumo não substitui o texto completo, mas mostra o essencial:
 - Os planos são pagos, mensais e sem fidelidade: **Inicial** (R$ 39, com 7 dias grátis e IA gratuita com limite diário), **Essencial** (R$ 159), **Profissional** (R$ 599) e **Empresa** (R$ 999). Os planos a partir do Essencial incluem créditos de IA. Você também pode conectar a sua própria conta ou chave de IA, cujo uso não consome créditos. Detalhes na seção 5 e na página de planos.
 - No teste grátis do Inicial não pedimos cartão. **Cancele antes do fim dos 7 dias e nada será cobrado.**
 - Cada plano tem um limite de espaço. Avisamos por e-mail ao chegar a 80% e a 100%; acima de 110%, novos arquivos são recusados. **Nada é apagado automaticamente enquanto a assinatura estiver ativa.**
+- **Cancele quando quiser, sem multa.** As cobranças param na hora e o seu ArkoBot **continua funcionando até o fim do mês já pago**; depois disso ele é desligado e os dados continuam guardados (seções 8.2 e 8.8).
 - Se um pagamento atrasar, o seu ArkoBot pode ser pausado, mas os dados são mantidos (seção 7).
 - **Se você é consumidor (pessoa física que contrata para uso próprio) e contratou pela internet, pode desistir em até 7 dias** e receber de volta o que pagou.
 - Os conteúdos que você envia aos bots são processados por provedores de IA, em geral fora do Brasil. Hoje, os planos pagos usam os modelos Claude, da Anthropic (GPT e Gemini virão em breve). A IA gratuita do Inicial usa os planos gratuitos de provedores como Groq, Google (Gemini), NVIDIA e OpenRouter, que podem ficar lentos ou indisponíveis e ter regras de uso de dados diferentes (seção 13).
@@ -200,7 +201,13 @@ Em qualquer plano você pode contratar computadores (VPS) adicionais por **R$ 15
 
 8.1. **Cancelar quando quiser.** Você pode cancelar o plano pago a qualquer momento, sem multa, pela área de conta do app ou pelo e-mail [contato@arkobot.com.br](mailto:contato@arkobot.com.br) ou pelo [WhatsApp +55 (19) 98782-2290](https://wa.me/5519987822290), pelo mesmo meio usado para contratar. Confirmamos o recebimento do pedido imediatamente.
 
-8.2. **Efeito do cancelamento.** Hoje, o cancelamento tem **efeito imediato**: a assinatura termina e o seu ArkoBot é desligado na hora, mesmo que ainda restem dias do mês já pago. Por isso, copie o que precisar antes de cancelar (os dados continuam guardados, como diz a seção 8.8). Salvo no caso de arrependimento (8.3), não há nova cobrança depois do cancelamento e não há devolução proporcional de período já iniciado, exceto nos casos dos itens 8.3, 8.5 e 8.6. Se você cancelar durante o teste grátis, nada é cobrado (seção 5.10).
+8.2. **Efeito do cancelamento.** Ao cancelar, a cobrança recorrente no Asaas é encerrada na hora e **não há nova cobrança**. O seu ArkoBot **continua funcionando até o fim do período (mês) já pago** e é desligado nessa data; até lá, a área do cliente mostra a data do desligamento e você pode **desfazer o cancelamento**, e a assinatura continua como antes. Não há devolução proporcional do período já pago, exceto nos casos dos itens 8.3, 8.5 e 8.6. O cancelamento vale **na hora**, sem período a aproveitar, quando:
+
+- a) você cancela durante o teste grátis: nada é cobrado (seção 5.10);
+- b) você exerce o direito de arrependimento (itens 8.3 e 8.4), porque os valores pagos são devolvidos; ou
+- c) a mensalidade está em atraso ou ainda não foi paga, porque não há período pago em curso.
+
+Depois que o ArkoBot é desligado, os dados continuam guardados, como diz a seção 8.8.
 
 8.3. **Direito de arrependimento (Consumidor).** Se você é **Consumidor** e contratou pela internet, pode **desistir da contratação em até 7 (sete) dias** contados da contratação ou do primeiro pagamento, o que ocorrer por último, sem precisar justificar (art. 49 do CDC e art. 5º do Decreto nº 7.962/2013). Isso vale para a assinatura de plano pago, para a compra de pacotes de Créditos e para a contratação de VPS adicional. Nesse caso:
 
@@ -227,7 +234,7 @@ O reembolso considera o preço efetivamente pago por Crédito, sem incluir Créd
 
 8.7. **Créditos depois do cancelamento.** Se você cancelar o plano mas mantiver a conta, os Créditos comprados avulsos continuam válidos até o vencimento e podem ser usados se você voltar a contratar um plano dentro desse prazo.
 
-8.8. **O que acontece com os dados depois do cancelamento.** Hoje, o ArkoBot não apaga dados automaticamente por prazo. Depois do cancelamento da assinatura, por qualquer motivo:
+8.8. **O que acontece com os dados depois do cancelamento.** Hoje, o ArkoBot não apaga dados automaticamente por prazo. Depois que a assinatura termina, por qualquer motivo (no cancelamento pedido por você, ao fim do período já pago, como diz a seção 8.2):
 
 - a) o seu ArkoBot fica desligado, e os dados continuam guardados **enquanto a conta existir**;
 - b) você pode pedir a **exportação** dos seus dados pela área do cliente ou pelos canais da seção 1.2;

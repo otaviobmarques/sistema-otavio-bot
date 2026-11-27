@@ -2,13 +2,13 @@
 
 /**
  * The legal documents the customer accepts at onboarding. The version is the date the text took effect
- * ("Versão 1.0, em vigor a partir de 25/11/2026" in apps/site/conteudo/legal/*.md). When a text changes,
+ * ("Versão 1.1, em vigor a partir de 27/11/2026" in apps/site/conteudo/legal/*.md). When a text changes,
  * update the date here: customers who accepted an older version are asked to accept again.
  * test/customer.test.ts checks these dates against the Markdown files.
  */
 export const LEGAL_DOCUMENTS = [
-  { document: "terms", version: "2026-11-25", title: "Termos de Uso", url: "https://arkobot.com.br/termos/", source: "termos-de-uso.md" },
-  { document: "privacy", version: "2026-11-25", title: "Política de Privacidade", url: "https://arkobot.com.br/privacidade/", source: "politica-de-privacidade.md" },
+  { document: "terms", version: "2026-11-27", title: "Termos de Uso", url: "https://arkobot.com.br/termos/", source: "termos-de-uso.md" },
+  { document: "privacy", version: "2026-11-27", title: "Política de Privacidade", url: "https://arkobot.com.br/privacidade/", source: "politica-de-privacidade.md" },
 ] as const;
 
 export type LegalDocument = (typeof LEGAL_DOCUMENTS)[number]["document"];
@@ -41,6 +41,46 @@ export function trialNotice(trialEndsAt: string | Date, nextDueDate: string | nu
   const end = dayMonth.format(new Date(trialEndsAt));
   const due = nextDueDate ? dueDayMonth.format(new Date(`${nextDueDate.slice(0, 10)}T00:00:00Z`)) : end;
   return `Teste grátis até ${end} — a primeira cobrança vem em ${due}`;
+}
+
+/** The 7-day withdrawal right (CDC art. 49) counts from the contract; the refund itself is handled by the team. */
+export const WITHDRAWAL_DAYS = 7;
+
+export interface CancelableSubscription {
+  status: string;
+  courtesy: boolean;
+  price_cents: number;
+  created_at: string | Date;
+  trial_ends_at: string | Date | null;
+  current_period_end: string | Date | null;
+}
+
+export type CancelTiming =
+  | { kind: "trial" | "withdrawal" | "unpaid" }
+  | { kind: "period_end"; endsAt: Date };
+
+/**
+ * When a cancellation the customer asks for now takes effect. A paid, active subscription runs until midnight in
+ * Brasília at the start of its period's end date (the next due date); the trial, the withdrawal window (refunded in
+ * full) and anything not paid up end at once.
+ */
+export function cancelTiming(sub: CancelableSubscription, now: Date): CancelTiming {
+  const trialEnd = sub.trial_ends_at ? new Date(sub.trial_ends_at) : null;
+  if (trialEnd && trialEnd > now) return { kind: "trial" };
+  if (now.getTime() - new Date(sub.created_at).getTime() <= WITHDRAWAL_DAYS * 86_400_000) return { kind: "withdrawal" };
+  if (sub.status !== "active" || sub.courtesy || sub.price_cents <= 0 || !sub.current_period_end) return { kind: "unpaid" };
+  const endsAt = new Date(`${new Date(sub.current_period_end).toISOString().slice(0, 10)}T03:00:00Z`);
+  return endsAt > now ? { kind: "period_end", endsAt } : { kind: "unpaid" };
+}
+
+/** "Cancelamento agendado para 25/12": the day the ArkoBot is switched off. */
+export function cancellationNotice(cancelAt: string | Date): string {
+  return `Cancelamento agendado para ${dayMonth.format(new Date(cancelAt))}`;
+}
+
+/** The last day the ArkoBot still works before a scheduled cancellation, as dd/mm. */
+export function lastPaidDay(cancelAt: string | Date): string {
+  return dayMonth.format(new Date(new Date(cancelAt).getTime() - 1));
 }
 
 /** The plan ladder: what the next plan up unlocks, by plan code. Changing plans goes through support for now. */

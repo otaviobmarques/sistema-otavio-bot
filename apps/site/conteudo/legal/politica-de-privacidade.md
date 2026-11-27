@@ -1,6 +1,6 @@
 # Política de Privacidade do ArkoBot
 
-**Versão 1.1, em vigor a partir de 25/11/2026. Última atualização: 27 de novembro de 2026**
+**Versão 1.1, em vigor a partir de 27/11/2026. Última atualização: 27 de novembro de 2026**
 
 Esta Política explica, de forma clara, quais dados pessoais o ArkoBot trata, para quê, com quem compartilha, por quanto tempo guarda e como você exerce os seus direitos. Ela segue a Lei Geral de Proteção de Dados Pessoais (Lei nº 13.709/2018, "LGPD"), o Marco Civil da Internet (Lei nº 12.965/2014) e o seu regulamento (Decreto nº 8.771/2016), o Código de Defesa do Consumidor e o Decreto nº 7.962/2013.
 
@@ -186,7 +186,7 @@ Guardamos os dados pelo tempo necessário para as finalidades desta Política ou
 | Registros de acesso (IP, data e hora) | **6 meses** (art. 15 do Marco Civil), ou mais se houver pedido de autoridade nos termos do art. 15, § 2º |
 | Registros de segurança e de uso proibido | Até **1 ano**, salvo se forem necessários por mais tempo para investigação ou processo |
 | Atendimento | **5 anos** após o encerramento do atendimento |
-| Conteúdo do Cliente (bots, conversas, memórias, arquivos, logins salvos, sessões) | Enquanto a conta existir ou até o Cliente apagar. Depois do cancelamento da assinatura, os dados continuam guardados enquanto a conta existir e são excluídos a pedido do Cliente ou depois de aviso prévio por e-mail (seção 8.8 dos Termos). Nada é apagado automaticamente por causa do limite de espaço do plano |
+| Conteúdo do Cliente (bots, conversas, memórias, arquivos, logins salvos, sessões) | Enquanto a conta existir ou até o Cliente apagar. Depois que a assinatura termina (no cancelamento, ao fim do período já pago), os dados continuam guardados enquanto a conta existir e são excluídos a pedido do Cliente ou depois de aviso prévio por e-mail (seção 8.8 dos Termos). Nada é apagado automaticamente por causa do limite de espaço do plano |
 | Cópias de segurança (backups) | Feitas diariamente e guardadas por **14 dias**, em rotação; dados excluídos somem dos backups ao fim desse ciclo |
 | Sessão do WhatsApp | Até o Cliente desconectar ou a sessão ser encerrada pelo celular, quando é apagada |
 | VPS adicional | Até a exclusão, feita depois de aviso prévio por e-mail após o fim da contratação (seção 12.6 dos Termos) |
