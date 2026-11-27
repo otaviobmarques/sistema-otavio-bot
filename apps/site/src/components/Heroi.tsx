@@ -74,8 +74,9 @@ export function Heroi() {
             <span className="block">no piloto automático</span>
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-cinza sm:text-lg">
-            Uma equipe de bots de IA que atende, vende, cobra e pesquisa 24 horas por dia. Cada bot tem a sua função e o seu
-            computador, conversa com os outros e pede o seu sim pelo WhatsApp antes de qualquer coisa sensível.
+            Uma equipe de bots de IA que atende, vende, cobra e pesquisa 24 horas por dia. Cada bot tem a sua função, conversa
+            com os outros e pede o seu sim pelo WhatsApp antes de qualquer coisa sensível. Computador próprio para os bots
+            incluído a partir do Profissional, ou como adicional em qualquer plano.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <BotaoContato acao="assinar" className="w-full sm:w-auto">
