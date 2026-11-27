@@ -6076,5 +6076,11 @@
   "memory.journal.instructions": "las instrucciones",
   "memory.journal.actor.teamSetup": "La configuración del equipo",
   "about.tagline": "Un hogar en el escritorio para tus agentes: código abierto, con licencia Apache 2.0.",
-  "about.thirdParty": "Licencias de terceros"
+  "about.thirdParty": "Licencias de terceros",
+  "native.welcome.installedTitle": "Bienvenido a {app}",
+  "native.welcome.updatedTitle": "{app} actualizado a la versión {version}",
+  "native.welcome.stepInstalled": "Instalado",
+  "native.welcome.stepUpdated": "Actualizado",
+  "native.welcome.stepPreparing": "Preparando tus bots",
+  "native.welcome.stepReady": "Listo"
 }

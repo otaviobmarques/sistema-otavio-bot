@@ -10186,5 +10186,11 @@
   "settings.opening.sound": "Opening sound",
   "settings.opening.soundSubtitle": "Plays the opening with its sound.",
   "opening.label": "{app} opening",
-  "opening.skip": "Click or press any key to skip"
+  "opening.skip": "Click or press any key to skip",
+  "native.welcome.installedTitle": "Welcome to {app}",
+  "native.welcome.updatedTitle": "{app} updated to {version}",
+  "native.welcome.stepInstalled": "Installed",
+  "native.welcome.stepUpdated": "Updated",
+  "native.welcome.stepPreparing": "Preparing your bots",
+  "native.welcome.stepReady": "Ready"
 }

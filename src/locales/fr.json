@@ -3293,5 +3293,11 @@
   "memory.journal.instructions": "les instructions",
   "memory.journal.actor.teamSetup": "La configuration de l'équipe",
   "about.tagline": "Un foyer sur votre bureau pour vos agents : open source, sous licence Apache 2.0.",
-  "about.thirdParty": "Licences tierces"
+  "about.thirdParty": "Licences tierces",
+  "native.welcome.installedTitle": "Bienvenue dans {app}",
+  "native.welcome.updatedTitle": "{app} mis à jour vers la version {version}",
+  "native.welcome.stepInstalled": "Installé",
+  "native.welcome.stepUpdated": "Mis à jour",
+  "native.welcome.stepPreparing": "Préparation de vos bots",
+  "native.welcome.stepReady": "Prêt"
 }

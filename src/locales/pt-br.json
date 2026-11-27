@@ -10186,5 +10186,11 @@
   "settings.opening.sound": "Som da abertura",
   "settings.opening.soundSubtitle": "Toca a abertura com som.",
   "opening.label": "Abertura do {app}",
-  "opening.skip": "Clique ou aperte qualquer tecla para pular"
+  "opening.skip": "Clique ou aperte qualquer tecla para pular",
+  "native.welcome.installedTitle": "Bem-vindo ao {app}",
+  "native.welcome.updatedTitle": "{app} atualizado para a versão {version}",
+  "native.welcome.stepInstalled": "Instalado",
+  "native.welcome.stepUpdated": "Atualizado",
+  "native.welcome.stepPreparing": "Preparando seus bots",
+  "native.welcome.stepReady": "Pronto"
 }

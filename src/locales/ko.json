@@ -7413,5 +7413,11 @@
   "phone.code.typeIntro": "{app} 앱을 열고 이 페어링 코드를 입력하세요.",
   "phone.signIn.emailCode": "이메일로 받은 로그인 코드",
   "about.tagline": "에이전트를 위한 데스크톱 공간: 오픈 소스, Apache 2.0 라이선스.",
-  "about.thirdParty": "타사 라이선스"
+  "about.thirdParty": "타사 라이선스",
+  "native.welcome.installedTitle": "{app}에 오신 것을 환영합니다",
+  "native.welcome.updatedTitle": "{app}이(가) {version} 버전으로 업데이트되었습니다",
+  "native.welcome.stepInstalled": "설치됨",
+  "native.welcome.stepUpdated": "업데이트됨",
+  "native.welcome.stepPreparing": "봇을 준비하는 중",
+  "native.welcome.stepReady": "준비 완료"
 }

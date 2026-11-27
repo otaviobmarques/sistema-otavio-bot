@@ -5576,5 +5576,11 @@
   "memory.journal.instructions": "chỉ dẫn",
   "memory.journal.actor.teamSetup": "Thiết lập nhóm",
   "about.tagline": "Ngôi nhà trên máy tính cho các tác tử của bạn: mã nguồn mở, giấy phép Apache 2.0.",
-  "about.thirdParty": "Giấy phép của bên thứ ba"
+  "about.thirdParty": "Giấy phép của bên thứ ba",
+  "native.welcome.installedTitle": "Chào mừng đến với {app}",
+  "native.welcome.updatedTitle": "{app} đã được cập nhật lên phiên bản {version}",
+  "native.welcome.stepInstalled": "Đã cài đặt",
+  "native.welcome.stepUpdated": "Đã cập nhật",
+  "native.welcome.stepPreparing": "Đang chuẩn bị bot của bạn",
+  "native.welcome.stepReady": "Sẵn sàng"
 }

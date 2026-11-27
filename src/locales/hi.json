@@ -3145,5 +3145,11 @@
   "memory.journal.instructions": "निर्देश",
   "memory.journal.actor.teamSetup": "टीम सेटअप",
   "about.tagline": "आपके एजेंटों के लिए डेस्कटॉप पर एक घर: ओपन सोर्स, Apache 2.0 लाइसेंस।",
-  "about.thirdParty": "तृतीय-पक्ष लाइसेंस"
+  "about.thirdParty": "तृतीय-पक्ष लाइसेंस",
+  "native.welcome.installedTitle": "{app} में आपका स्वागत है",
+  "native.welcome.updatedTitle": "{app} को संस्करण {version} में अपडेट किया गया",
+  "native.welcome.stepInstalled": "इंस्टॉल हो गया",
+  "native.welcome.stepUpdated": "अपडेट हो गया",
+  "native.welcome.stepPreparing": "आपके बॉट तैयार किए जा रहे हैं",
+  "native.welcome.stepReady": "तैयार"
 }

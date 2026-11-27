@@ -6697,5 +6697,11 @@
   "about.tagline": "Una casa sul desktop per i tuoi agenti: open source, con licenza Apache 2.0.",
   "about.thirdParty": "Licenze di terze parti",
   "phoneApp.iosSteps": "In Safari, apri l'indirizzo del tuo {app}, poi Condividi → Aggiungi alla schermata Home.",
-  "phoneApp.androidSteps": "In Chrome, apri l'indirizzo del tuo {app}, poi il menu (⋮) → Installa app."
+  "phoneApp.androidSteps": "In Chrome, apri l'indirizzo del tuo {app}, poi il menu (⋮) → Installa app.",
+  "native.welcome.installedTitle": "Benvenuto in {app}",
+  "native.welcome.updatedTitle": "{app} aggiornato alla versione {version}",
+  "native.welcome.stepInstalled": "Installato",
+  "native.welcome.stepUpdated": "Aggiornato",
+  "native.welcome.stepPreparing": "Preparazione dei tuoi bot",
+  "native.welcome.stepReady": "Pronto"
 }
