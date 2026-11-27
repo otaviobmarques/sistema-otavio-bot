@@ -12,6 +12,7 @@ import {
   creditsFor, isGatewayProvider, isOpenAiCompatible, priceFromRow, type GatewayProvider, type ModelPrice, type PriceRow, type TokenUsage,
 } from "./pricing.ts";
 import { FreeAiRateLimiter, freeModelAllowed, loadFreeAiConfig, type FreeAiConfig } from "./free-ai.ts";
+import { hasKeyFor, keyedProviders } from "./keyed-providers.ts";
 import { isVersionedProvider, OPENAI_COMPATIBLE_BASE_URLS } from "./providers.ts";
 import { planAllows, resolveGatewayToken, type GatewayCaller } from "./tokens.ts";
 import { UsageMeter, type ApiFlavor } from "./usage.ts";
@@ -172,7 +173,8 @@ export function createGatewayApp(ctx: GatewayContext) {
     const caller = await authenticate(c);
     const { rows } = await ctx.db.query<PriceRow>("SELECT * FROM model_prices WHERE enabled ORDER BY provider, model");
     const usable = caller.organizationStatus === "active" && caller.subscriptionStatus === "active";
-    const data = rows.map(priceFromRow).filter((price) => planAllows(caller, price) && (!provider || servedOn(provider, price))).map((price) => ({
+    const keyed = await keyedProviders(ctx.db);
+    const data = rows.map(priceFromRow).filter((price) => planAllows(caller, price) && hasKeyFor(price, keyed) && (!provider || servedOn(provider, price))).map((price) => ({
       id: price.model, object: "model", type: "model", provider: catalogProvider(price), upstream_provider: price.provider, free: price.free,
       display_name: price.label || price.model, owned_by: price.provider, created: 0,
     }));
@@ -231,6 +233,8 @@ export function createGatewayApp(ctx: GatewayContext) {
     const price = priceRow ? priceFromRow(priceRow) : null;
     if (!price || !price.enabled || !servedOn(provider, price)) return refuse(price && planAllows(caller, price) ? "model_unavailable" : "model_not_in_plan");
     if (!planAllows(caller, price)) return refuse("model_not_in_plan");
+    // A paid model whose provider has no key yet: refused before any credit is reserved (and hidden from the catalog).
+    if (!hasKeyFor(price, await keyedProviders(ctx.db))) return refuse("model_unavailable");
 
     const flavor = endpoint.flavor;
     if (price.free) {

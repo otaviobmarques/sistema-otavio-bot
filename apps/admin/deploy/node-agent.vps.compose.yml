@@ -5,10 +5,24 @@
 #   ARKO_REGISTRY_USER / ARKO_REGISTRY_TOKEN (só se a imagem do ArkoBot no GHCR for privada: usuário e PAT com read:packages)
 # Opcionais: ARKO_INSTANCE_NETWORK (padrão arkobot-instances), ARKO_TRAEFIK_ENTRYPOINT (websecure),
 #   ARKO_TRAEFIK_CERTRESOLVER (letsencrypt), ARKO_TRUSTED_PROXIES (padrão: a sub-rede da rede das instâncias),
-#   ARKO_TRAEFIK_CONTAINER (padrão traefik-traefik-1: o agente o mantém ligado à rede das instâncias; vazio desliga).
+#   ARKO_TRAEFIK_CONTAINER (padrão traefik-traefik-1: o agente o mantém ligado à rede das instâncias; vazio desliga),
+#   ARKO_WAKE_PORT (padrão 8790; 0 desliga a página de despertar),
+#   ARKO_WAKE_RULE (a regra do roteador da página de despertar; padrão: qualquer <slug>.arkobot.com.br, sintaxe do Traefik v3).
 #
-# O agente não abre porta nenhuma: ele chama o Admin (pull). Só ele tem o socket do Docker; as instâncias nunca.
-# Ele só mexe em contêineres com a etiqueta arkobot.managed=true deste nó e nunca apaga volumes.
+# O agente chama o Admin (pull) e só ele tem o socket do Docker; as instâncias nunca. Ele só mexe em contêineres com a
+# etiqueta arkobot.managed=true deste nó e nunca apaga volumes.
+#
+# Página de despertar (plano que dorme, ex.: Inicial): enquanto uma instância dorme o contêiner dela está parado e o
+# roteador dela some do Traefik. O roteador abaixo, de prioridade 1 (a menor), pega então qualquer <slug>.arkobot.com.br
+# que nenhuma instância atende e manda para a porta 8790 do agente, que mostra "Seu ArkoBot está acordando…" e pede ao
+# Admin para acordá-la. Endereço desconhecido: 404. O certificado de cada <slug> continua no acme.json do Traefik, que o
+# serve pelo SNI mesmo com o roteador da instância fora do ar.
+#
+# Rede: o agente entra na rede das instâncias (precisa existir antes do primeiro `up`: o agente a cria sozinho na
+# primeira execução; num servidor novo, `docker network create arkobot-instances`). Assim o Traefik o alcança nos dois
+# jeitos de rodar: em network_mode host ele fala direto com o IP do contêiner nessa rede bridge (o host tem rota para
+# toda sub-rede bridge local), e num Traefik em bridge o próprio agente o liga a essa rede (ARKO_TRAEFIK_CONTAINER).
+# A porta 8790 não é publicada no host.
 name: arkobot-node-agent
 services:
   agent:
@@ -18,7 +32,23 @@ services:
     env_file: .env
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+    networks: [instances]
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: ${ARKO_INSTANCE_NETWORK:-arkobot-instances}
+      traefik.http.routers.arkobot-wake.rule: ${ARKO_WAKE_RULE:-HostRegexp(`^[a-z0-9][a-z0-9-]*\.arkobot\.com\.br$$`)}
+      traefik.http.routers.arkobot-wake.priority: "1"
+      traefik.http.routers.arkobot-wake.entrypoints: ${ARKO_TRAEFIK_ENTRYPOINT:-websecure}
+      traefik.http.routers.arkobot-wake.tls: "true"
+      traefik.http.routers.arkobot-wake.tls.certresolver: ${ARKO_TRAEFIK_CERTRESOLVER:-letsencrypt}
+      traefik.http.routers.arkobot-wake.service: arkobot-wake
+      traefik.http.services.arkobot-wake.loadbalancer.server.port: ${ARKO_WAKE_PORT:-8790}
     mem_limit: 256m
     logging:
       driver: json-file
       options: { max-size: "10m", max-file: "3" }
+
+networks:
+  instances:
+    name: ${ARKO_INSTANCE_NETWORK:-arkobot-instances}
+    external: true

@@ -1776,19 +1776,23 @@ judge a pending timer by a wall-clock time stored when it was set.
 - work ended 2 minutes ago, the home has been awake 2 minutes, and the next
   scheduled run is at least 5 minutes away.
 
-**`GET /api/cloud/power[?idleMinutes=N]`**, signed like the health read
+**`GET /api/cloud/power[?idleMinutes=N][&browsers=1]`**, signed like the health read
 (`v1\n<timestamp>\n<nonce>\nGET\n<path and query>\n<hash of the empty body>`),
 its own nonces. `200`:
 
 ```json
 { "v": 1, "at": 1792355000000, "bootedAt": 1792350000000, "wokeAt": 1792354000000,
   "idle": false, "busy": ["recent-activity"], "lastActivityAt": 1792354900000, "lastWorkAt": null,
-  "nextDueAt": 1792358600000, "sleeping": false, "wokeBy": { "by": "events", "background": true } }
+  "nextDueAt": 1792358600000, "sleeping": false, "wokeBy": { "by": "events", "background": true }, "browsers": 1 }
 ```
 
 `busy` holds fixed codes only: `turn`, `run`, `handoff`, `live-call`,
 `computer`, `maintenance`, `recent-activity`, `recent-work`, `just-woke`,
-`due-soon`. A Team Cloud answers like any other home: its plan decides whether
+`due-soon`, `browser`. `browsers` (additive) counts the signed-in pages with
+their event stream open now. An Admin that never sleeps a home under an open
+page (the ArkoBot Admin, `apps/admin/src/provisioning/sleep.ts`) adds
+`browsers=1` to the read and `"browsers": true` to the sleep request: each open
+page then counts as busy (`browser`); without it nothing changes. A Team Cloud answers like any other home: its plan decides whether
 the Admin ever asks.
 `nextDueAt` is the earliest enabled routine's next run or queued run's retry,
 or, while a bot waits for something (`wait_until`), 30 minutes on, so its
@@ -1803,7 +1807,7 @@ was a background one; `null` otherwise. The Admin counts it for a wake by
 Fly's proxy, to tell which app reaches a sleeping home.
 
 **`POST /api/cloud/power/sleep`**, signed over its JSON body
-`{"v":1,"idleMinutes":10}`. `409 {"ok":false,"busy":[…]}` while not idle;
+`{"v":1,"idleMinutes":10}` (optionally `"browsers":true`, as above). `409 {"ok":false,"busy":[…]}` while not idle;
 `200 {"ok":true,"nextDueAt":…}` once the home agreed. From then on, until a
 resume, someone's use, or 120 s (a sleep the Admin never carried out):
 
