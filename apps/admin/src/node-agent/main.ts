@@ -11,9 +11,10 @@ import { DEFAULT_RELAY_IMAGE, reconcileEdges } from "./edges.ts";
 import { DockerClient, type DockerApi } from "./docker.ts";
 import { attachProxy, prepareNetwork, reconcile, type Log } from "./reconcile.ts";
 import type { NodeSettings } from "./spec.ts";
+import { reconcileTasks } from "./tasks.ts";
 import { startWakeServer } from "./wake-server.ts";
 
-export const AGENT_VERSION = "0.3.0";
+export const AGENT_VERSION = "0.4.0";
 /** The waking page's port (ARKO_WAKE_PORT; 0 turns it off). Traefik's catch-all router points here. */
 export const DEFAULT_WAKE_PORT = 8790;
 /** While a container it started is still booting, the agent polls this often, so the panels see it up within seconds. */
@@ -155,6 +156,11 @@ export function createAgent(config: AgentConfig, deps: { docker?: DockerApi; fet
         report = await reconcile(docker, node, desired, AGENT_VERSION, log);
         const edgeProblem = await reconcileEdges(docker, node, desired.edges, config.relayImage ?? DEFAULT_RELAY_IMAGE, log);
         if (edgeProblem) report = { ...report, error: edgeProblem };
+        // Backups and restores (src/node-agent/tasks.ts): a problem there is told per task, never stops the rest.
+        await reconcileTasks(docker, node, desired.tasks, {
+          image: config.relayImage ?? DEFAULT_RELAY_IMAGE, adminUrl: config.adminUrl, token: config.token, log,
+          call: (path, body) => adminCall(config, fetcher, "POST", path, body),
+        }).catch((error) => log(`tarefas: ${(error as Error).message.slice(0, 300)}`));
         await disk.attach(report, desired.node.id);
       } catch (error) {
         const message = (error as Error).message.slice(0, 500);

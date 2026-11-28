@@ -15,6 +15,7 @@ import type { DesiredInstance, DesiredState, StatusReport } from "./protocol.ts"
 import { queuePlanSync, queueStorageSync } from "./queue.ts";
 import { recordDiskUsage } from "./storage.ts";
 import { dedicatedNodeFor, edgesFor } from "../computers/placement.ts";
+import { tasksFor } from "../backups/backups.ts";
 
 export interface InstanceRow {
   id: string;
@@ -40,6 +41,7 @@ export interface InstanceRow {
   observed_at: Date | null;
   container_id: string | null;
   ready_at: Date | null;
+  relocating_to_node_id?: string | null;
   plan_tier_synced: string | null;
   /** The data volume as last measured (storage.ts); bigint columns, so a string from some drivers. */
   disk_used_bytes: number | string | null;
@@ -183,10 +185,11 @@ export async function sweepProvisioning(ctx: AppContext, limit = 10): Promise<Pr
  * long) is stopped too; the node agent's waking page, "Abrir meu ArkoBot" and its next routine wake it again.
  */
 export function desiredOf(
-  row: Pick<InstanceRow, "decommissioned_at" | "operator_stopped" | "state"> & { sleeping_since?: Date | string | null },
+  row: Pick<InstanceRow, "decommissioned_at" | "operator_stopped" | "state"> & { sleeping_since?: Date | string | null; relocating_to_node_id?: string | null },
 ): DesiredInstance["desired"] {
   if (row.decommissioned_at) return "absent";
-  if (row.operator_stopped || row.state === "stopped" || row.state === "failed") return "stopped";
+  // Moving to another server (src/backups): stopped here while its data is copied out.
+  if (row.operator_stopped || row.relocating_to_node_id || row.state === "stopped" || row.state === "failed") return "stopped";
   if (row.sleeping_since && (row.state === "ready" || row.state === "payment_problem")) return "stopped";
   return "running";
 }
@@ -217,7 +220,7 @@ function desiredInstance(ctx: AppContext, row: DesiredRow): DesiredInstance {
     .update(JSON.stringify({ image: settings.image, host, resources, generation: row.generation, env: Object.entries(env).sort(([a], [b]) => a.localeCompare(b)) }))
     .digest("hex").slice(0, 32);
   const desired = desiredOf(row);
-  const sleeping = desired === "stopped" && desiredOf({ ...row, sleeping_since: null }) === "running";
+  const sleeping = desired === "stopped" && desiredOf({ ...row, sleeping_since: null }) === "running" && !row.relocating_to_node_id;
   return { id: row.id, slug: row.slug, desired, sleeping, host, image: settings.image, revision, env, resources };
 }
 
@@ -241,7 +244,7 @@ export async function desiredStateFor(ctx: AppContext, node: Pick<NodeRow, "id" 
       console.error(`[provisionamento] instância ${row.slug}: ${(error as Error).message}`);
     }
   }
-  return { node: { id: node.id, name: node.name }, pollSeconds: AGENT_POLL_SECONDS, instances, edges: await edgesFor(ctx.db, node) };
+  return { node: { id: node.id, name: node.name }, pollSeconds: AGENT_POLL_SECONDS, instances, edges: await edgesFor(ctx.db, node), tasks: await tasksFor(ctx, node.id) };
 }
 
 /** Records what the agent saw; an instance being set up becomes ready once its container runs and answers its health check. */

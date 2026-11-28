@@ -13,6 +13,8 @@ export const LABEL_REVISION = "arkobot.revision";
 export const LABEL_SLUG = "arkobot.slug";
 /** On the relay containers of a shared node (edges): kept apart from the instances' containers. */
 export const LABEL_EDGE = "arkobot.edge";
+/** On a backup or restore helper container: the task it runs (src/node-agent/tasks.ts). */
+export const LABEL_TASK = "arkobot.task";
 
 const SLUG = /^[a-z0-9][a-z0-9-]{1,62}$/;
 const ENV_NAME = /^[A-Z][A-Z0-9_]{0,63}$/;
@@ -46,11 +48,26 @@ export const desiredEdgeSchema = z.object({
 });
 export type DesiredEdge = z.infer<typeof desiredEdgeSchema>;
 
+/**
+ * A job the agent runs beside the instances (src/node-agent/tasks.ts). backup: freeze the instance's container a moment,
+ * pack its volume, send it to the backup store through part URLs the Admin signs. restore: unpack `url` (a signed download
+ * link) into the volume of an instance that has no container on this node yet.
+ */
+export const desiredTaskSchema = z.object({
+  id: z.uuid(),
+  kind: z.enum(["backup", "restore"]),
+  instanceId: z.uuid(),
+  slug: z.string().regex(SLUG),
+  url: z.url().max(4096).optional(),
+});
+export type DesiredTask = z.infer<typeof desiredTaskSchema>;
+
 export const desiredStateSchema = z.object({
   node: z.object({ id: z.uuid(), name: z.string() }),
   pollSeconds: z.number().int().min(5).max(600),
   instances: z.array(desiredInstanceSchema).max(1000),
   edges: z.array(desiredEdgeSchema).max(1000).default([]),
+  tasks: z.array(desiredTaskSchema).max(200).default([]),
 });
 export type DesiredState = z.infer<typeof desiredStateSchema>;
 
@@ -77,6 +94,16 @@ export type StatusReport = z.infer<typeof statusReportSchema>;
 
 /** The Admin's nudge to a node's waking page after it woke an instance there: a visit that always wakes. */
 export const WAKE_POKE_HEADER = "x-arkobot-wake";
+
+/** A backup helper asks for the URL of one part of its upload (S3 parts: 5 MiB at least, except the last). */
+export const BACKUP_PART_BYTES = 64 * 1024 * 1024;
+export const taskPartRequestSchema = z.object({ partNumber: z.number().int().min(1).max(10_000) });
+export const taskCompleteSchema = z.object({
+  parts: z.array(z.object({ partNumber: z.number().int().min(1).max(10_000), etag: z.string().min(1).max(200) })).min(1).max(10_000),
+  bytes: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+  sha256: z.string().regex(/^[0-9a-f]{64}$/),
+});
+export const taskFailSchema = z.object({ error: z.string().max(1000) });
 
 /** The agent's waking page asks the Admin to wake a sleeping instance someone just visited. */
 export const wakeRequestSchema = z.object({ instanceId: z.uuid() });

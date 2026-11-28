@@ -13,7 +13,7 @@ export interface ContainerSummary {
 export interface ContainerDetails {
   Id: string;
   Config: { Labels: Record<string, string> | null };
-  State: { Status: string; Running: boolean; Restarting?: boolean; Error?: string; ExitCode?: number; Health?: { Status: string } | null };
+  State: { Status: string; Running: boolean; Paused?: boolean; Restarting?: boolean; Error?: string; ExitCode?: number; Health?: { Status: string } | null };
 }
 
 export interface NetworkDetails {
@@ -54,6 +54,9 @@ export interface DockerApi {
   stopContainer(id: string, timeoutSeconds: number): Promise<void>;
   /** Removes the container only: volumes are never removed (`v=false`). */
   removeContainer(id: string): Promise<void>;
+  /** Freezes every process of a running container (cgroup freezer) while its volume is packed; unpause thaws it. */
+  pauseContainer(id: string): Promise<void>;
+  unpauseContainer(id: string): Promise<void>;
   /** Every volume's size (GET /system/df?type=volume): slow on a busy node, so the agent asks rarely (disk.ts). */
   volumeUsage(): Promise<VolumeUsage[]>;
 }
@@ -163,6 +166,14 @@ export class DockerClient implements DockerApi {
 
   async removeContainer(id: string) {
     await this.#json("DELETE", `/containers/${encodeURIComponent(id)}?v=false&force=false`, undefined, [204, 404]);
+  }
+
+  async pauseContainer(id: string) {
+    await this.#json("POST", `/containers/${encodeURIComponent(id)}/pause`, undefined, [204, 304]);
+  }
+
+  async unpauseContainer(id: string) {
+    await this.#json("POST", `/containers/${encodeURIComponent(id)}/unpause`, undefined, [204, 304]);
   }
 
   async volumeUsage() {

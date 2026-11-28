@@ -8,7 +8,7 @@ import { build } from "esbuild";
 const root = fileURLToPath(new URL("..", import.meta.url));
 const out = join(root, "dist", "node-agent");
 mkdirSync(out, { recursive: true });
-for (const [source, file] of [["main.ts", "agent.mjs"], ["relay.ts", "relay.mjs"]]) {
+for (const [source, file] of [["main.ts", "agent.mjs"], ["relay.ts", "relay.mjs"], ["task-helper.ts", "task-helper.mjs"]]) {
   await build({
     entryPoints: [join(root, "src", "node-agent", source)],
     outfile: join(out, file),

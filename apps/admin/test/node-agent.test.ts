@@ -21,7 +21,7 @@ function instance(overrides: Partial<DesiredInstance> = {}): DesiredInstance {
     ...overrides,
   };
 }
-const state = (...instances: DesiredInstance[]): DesiredState => ({ node: { id: NODE, name: "vps-1" }, pollSeconds: 15, instances, edges: [] });
+const state = (...instances: DesiredInstance[]): DesiredState => ({ node: { id: NODE, name: "vps-1" }, pollSeconds: 15, instances, edges: [], tasks: [] });
 
 describe("agente do nó", () => {
   it("never touches a container without its labels or with another node's, and reports managed ones it was not asked for", async () => {

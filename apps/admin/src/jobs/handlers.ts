@@ -1,4 +1,5 @@
 import { endScheduledCancellations } from "../billing/cancel-at-period-end.ts";
+import { sweepBackups, type BackupSweep } from "../backups/backups.ts";
 import { renewCourtesies, type CourtesySummary } from "../billing/courtesy.ts";
 import { CANCEL_PROVIDER_SUBSCRIPTION_JOB, cancelProviderSubscriptionJob, runDunning, type DunningSummary } from "../billing/service.ts";
 import { markBillingEventFailed, PROCESS_EVENT_JOB, processBillingEvent } from "../billing/webhooks.ts";
@@ -61,6 +62,8 @@ export interface TickSummary {
   /** Instances of plans that sleep: woken for their next routine, and the awake ones asked whether they are idle. */
   sleep: IdleSweep & { woken: number };
   alerts: AlertSweep;
+  /** Daily customer backups, timed-out ones, retention, and moves to a customer's own VPS (src/backups). */
+  backups: BackupSweep;
 }
 
 /** One cron tick: the overdue ladder, the courtesies and the cancellations due at the end of a paid period, then the queue. Safe to run concurrently and as often as wanted. */
@@ -75,11 +78,15 @@ export async function tick(ctx: AppContext, limit = 50): Promise<TickSummary> {
   const computers = { ...(await sweepComputers(ctx)), advanced: await advanceDueMachines(ctx) };
   const woken = await wakeDueInstances(ctx, { poke: true });
   const idle = await checkIdleInstances(ctx);
+  const backups = await sweepBackups(ctx).catch((error): BackupSweep => {
+    console.error(`[backups] ${(error as Error).message}`);
+    return { scheduled: 0, timedOut: 0, deleted: 0, relocations: 0 };
+  });
   await sweepRateLimits(ctx.db, ctx.now());
   const expiredReservations = await expireReservations(ctx.db, ctx.now());
   const weekAgo = new Date(ctx.now().getTime() - 7 * 24 * 60 * 60_000);
   await ctx.db.query("DELETE FROM admin_sessions WHERE expires_at < $1", [weekAgo]);
   await ctx.db.query("DELETE FROM account_sessions WHERE expires_at < $1", [weekAgo]);
   await ctx.db.query("DELETE FROM account_otps WHERE expires_at < $1", [ctx.now()]);
-  return { jobs, dunning, courtesy, scheduledCancellations, expiredReservations, provisioning, computers, sleep: { ...idle, woken }, alerts };
+  return { jobs, dunning, courtesy, scheduledCancellations, expiredReservations, provisioning, computers, sleep: { ...idle, woken }, alerts, backups };
 }

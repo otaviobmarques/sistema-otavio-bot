@@ -1,10 +1,11 @@
-import { Boxes, KeyRound, Play, Plus, RefreshCw, ServerCog, Square, Trash2 } from "lucide-react";
+import { ArrowRightLeft, Archive, Boxes, KeyRound, Play, Plus, RefreshCw, ServerCog, Square, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router";
 import { canWrite, useMe } from "../App.tsx";
 import { api, useApi } from "../api.ts";
 import { dateTime, INSTANCE_STATE, type Tone } from "../format.ts";
 import { HealthAlerts, PowerCell } from "./instance-power.tsx";
+import { BackupCell, BackupsDialog, RelocateDialog, type BackupFields } from "./instance-backups.tsx";
 import { diskUsageCopy, diskUsageOf } from "../../customer/disk-usage.ts";
 import { Badge, Button, Card, Empty, ErrorNote, Field, Input, Loading, Modal, Mono, PageHeader, StatusBadge, Table, td, Textarea, useToast } from "../ui.tsx";
 
@@ -16,6 +17,7 @@ interface InstanceItem {
   disk_used_bytes: number | string | null; disk_quota_bytes: number | string | null; disk_state: string | null; disk_measured_at: string | null;
   power: "asleep" | "waking" | "awake"; sleeping_since: string | null; wake_at: string | null; power_busy: string | null; power_checked_at: string | null;
   idle_sleep_minutes: number | null; unhealthy_since: string | null; unhealthy_alerted_at: string | null;
+  relocating_to_node_id: string | null; relocating_to_node_name: string | null; last_backup_at: string | null; last_backup_bytes: number | string | null;
 }
 
 interface NodeItem {
@@ -25,7 +27,7 @@ interface NodeItem {
 }
 
 interface Data {
-  settings: { baseDomain: string; image: string; gatewayUrl: string };
+  settings: { baseDomain: string; image: string; gatewayUrl: string; backups: boolean };
   instances: InstanceItem[];
   nodes: NodeItem[];
 }
@@ -65,6 +67,8 @@ export function InstancesPage() {
   const [action, setAction] = useState<Action | null>(null);
   const [newNode, setNewNode] = useState(false);
   const [token, setToken] = useState<{ name: string; token: string } | null>(null);
+  const [backups, setBackups] = useState<BackupFields | null>(null);
+  const [relocate, setRelocate] = useState<BackupFields | null>(null);
   if (loading && !data) return <Loading />;
   if (!data) return <ErrorNote message={error} />;
 
@@ -117,7 +121,7 @@ export function InstancesPage() {
       </Card>
 
       <Card title={<span className="flex items-center gap-2"><Boxes className="h-4 w-4" /> Instâncias ({live.length})</span>} padded={false}>
-        <Table head={["Cliente", "Endereço", "Plano", "Servidor", "Situação", "No servidor", "Disco", ""]} empty="Nenhuma instância ainda: elas nascem sozinhas quando uma assinatura fica ativa.">
+        <Table head={["Cliente", "Endereço", "Plano", "Servidor", "Situação", "No servidor", "Disco", "Backup", ""]} empty="Nenhuma instância ainda: elas nascem sozinhas quando uma assinatura fica ativa.">
           {data.instances.map((instance) => (
             <tr key={instance.id} className={instance.decommissioned_at ? "opacity-50" : undefined}>
               <td className={td}><Link to={`/clientes/${instance.organization_id}`} className="font-medium hover:underline">{instance.organization_name}</Link></td>
@@ -138,12 +142,16 @@ export function InstancesPage() {
                 <div className="text-xs text-slate-500">{dateTime(instance.observed_at)}</div>
               </td>
               <td className={td}><DiskCell instance={instance} /></td>
+              <td className={td}><BackupCell instance={instance} configured={data.settings.backups} /></td>
               <td className={`${td} whitespace-nowrap text-right`}>
                 {writable && !instance.decommissioned_at ? (
                   <>
                     {instance.operator_stopped
                       ? <Button size="sm" variant="ghost" onClick={() => start(instance)}><Play className="h-3.5 w-3.5" /> Ligar</Button>
                       : <Button size="sm" variant="ghost" onClick={() => setAction({ kind: "stop", instance })}><Square className="h-3.5 w-3.5" /> Parar</Button>}
+                    <Button size="sm" variant="ghost" onClick={() => setBackups(instance)}><Archive className="h-3.5 w-3.5" /> Backups</Button>
+                    {data.settings.backups && instance.node_id && !instance.relocating_to_node_id
+                      ? <Button size="sm" variant="ghost" onClick={() => setRelocate(instance)}><ArrowRightLeft className="h-3.5 w-3.5" /> Mudar de servidor</Button> : null}
                     <Button size="sm" variant="ghost" onClick={() => setAction({ kind: "reprovision", instance })}><RefreshCw className="h-3.5 w-3.5" /> Reprovisionar</Button>
                     <Button size="sm" variant="ghost" onClick={() => setAction({ kind: "decommission", instance })}><Trash2 className="h-3.5 w-3.5" /> Desativar</Button>
                   </>
@@ -154,6 +162,8 @@ export function InstancesPage() {
         </Table>
       </Card>
 
+      {backups ? <BackupsDialog instance={backups} owner={me.role === "owner"} writable={writable} onClose={() => { setBackups(null); reload(); }} /> : null}
+      {relocate ? <RelocateDialog instance={relocate} nodes={data.nodes} onClose={() => setRelocate(null)} onDone={() => { setRelocate(null); reload(); }} /> : null}
       <ActionDialog action={action} onClose={() => setAction(null)} onDone={() => { setAction(null); reload(); }} />
       <NodeDialog open={newNode} onClose={() => setNewNode(false)} onCreated={(created) => { setNewNode(false); setToken(created); reload(); }} />
       <Modal title={`Token do agente — ${token?.name ?? ""}`} open={token !== null} onClose={() => setToken(null)} footer={<Button onClick={() => setToken(null)}>Já guardei</Button>}>
