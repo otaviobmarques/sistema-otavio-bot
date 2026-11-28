@@ -44,3 +44,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS instance_restores_one_open ON instance_restore
 -- roda na origem, depois a restauração no destino) e só então node_id passa a ser o destino.
 ALTER TABLE instances ADD COLUMN IF NOT EXISTS relocating_to_node_id uuid REFERENCES nodes (id) ON DELETE SET NULL;
 ALTER TABLE instances ADD COLUMN IF NOT EXISTS relocation_started_at timestamptz;
+
+-- Como as demais tabelas: só o Admin (dono do banco) lê e escreve; a API pública do Supabase não vê nada.
+ALTER TABLE instance_backups ENABLE ROW LEVEL SECURITY;
+ALTER TABLE instance_restores ENABLE ROW LEVEL SECURITY;
