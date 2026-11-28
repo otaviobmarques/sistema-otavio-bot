@@ -39,9 +39,10 @@ describe("computers the Admin assigns to a Cloud home", () => {
   });
 
   it("writes a strict Host block with its own key and known hosts, under the hidden data folder", () => {
-    const text = computersSshConfigText("/data/.openmausbot/ssh", [{ ...good, port: 22, alias: computerAlias(good.id) }]);
+    const sshDir = join("/data", ".openmausbot", "ssh");
+    const text = computersSshConfigText(sshDir, [{ ...good, port: 22, alias: computerAlias(good.id) }]);
     expect(text).toContain("Host arko-c1f2e3d4\n  HostName 203.0.113.10\n  Port 22\n  User arkobot");
-    expect(text).toContain('IdentityFile "/data/.openmausbot/ssh/arko-computers-ed25519"');
+    expect(text).toContain(`IdentityFile ${JSON.stringify(join(sshDir, "arko-computers-ed25519"))}`);
     expect(text).toContain("StrictHostKeyChecking yes");
     expect(text).toContain("IdentitiesOnly yes");
   });
@@ -54,7 +55,8 @@ describe("computers the Admin assigns to a Cloud home", () => {
     expect(alias()).toBe("arko-c1f2e3d4");
     expect(checks).toEqual(["arko-c1f2e3d4"]);
     const ssh = join(dataDir, "ssh");
-    expect(statSync(join(ssh, "arko-computers-ed25519")).mode & 0o777).toBe(0o600);
+    // Windows has no POSIX modes; a Cloud home is always Linux.
+    if (process.platform !== "win32") expect(statSync(join(ssh, "arko-computers-ed25519")).mode & 0o777).toBe(0o600);
     expect(readFileSync(join(ssh, "arko-known-hosts"), "utf8")).toBe(`[203.0.113.10]:2222 ${HOST_KEY}\n`);
     expect(readFileSync(join(ssh, COMPUTERS_SSH_CONFIG), "utf8")).toContain("Host arko-c1f2e3d4");
     // The VPS SSH config every docker command uses includes it.
