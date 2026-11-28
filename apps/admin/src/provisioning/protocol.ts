@@ -68,6 +68,11 @@ export const desiredStateSchema = z.object({
   instances: z.array(desiredInstanceSchema).max(1000),
   edges: z.array(desiredEdgeSchema).max(1000).default([]),
   tasks: z.array(desiredTaskSchema).max(200).default([]),
+  /**
+   * Only on a customer's extra VPS (a "computer" for its bots): the SSH login its ArkoBot uses. The agent keeps
+   * /home/<user>/.ssh/authorized_keys equal to these lines (each one carries its own from="…" restriction).
+   */
+  sshAccess: z.object({ user: z.string().regex(/^[a-z_][a-z0-9_-]{0,31}$/), keys: z.array(z.string().min(20).max(2000)).max(8) }).nullable().default(null),
 });
 export type DesiredState = z.infer<typeof desiredStateSchema>;
 
@@ -89,6 +94,8 @@ export const statusReportSchema = z.object({
   /** Managed containers on this node that the desired state does not name. */
   orphans: z.array(z.string().max(64)).max(1000).default([]),
   error: z.string().max(2000).nullable().default(null),
+  /** This server's SSH host public keys (/etc/ssh/ssh_host_*_key.pub), so an ArkoBot that logs in never trusts on first use. */
+  sshHostKeys: z.array(z.string().regex(/^(ssh-ed25519|ecdsa-sha2-nistp(?:256|384|521)|ssh-rsa) [A-Za-z0-9+/]+={0,3}$/)).max(8).optional(),
 });
 export type StatusReport = z.infer<typeof statusReportSchema>;
 

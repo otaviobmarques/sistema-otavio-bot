@@ -26,6 +26,11 @@ describe("CloudBackendPicker", () => {
     expect(picker()).toBe("");
   });
 
+  it("shows on My Cloud once the Admin has assigned it a VPS computer", () => {
+    fixture.config = { cloudHome: true, vps: { sshAlias: "arko-c1f2e3d4" } };
+    expect(picker("vps")).toContain("Self-hosted VPS");
+  });
+
   it.each(["box", "vps"] as const)("offers both backends whichever is chosen (%s)", (value) => {
     const markup = picker(value);
     expect(markup).toContain("Boat");

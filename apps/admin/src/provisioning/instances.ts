@@ -16,6 +16,7 @@ import { queuePlanSync, queueStorageSync } from "./queue.ts";
 import { recordDiskUsage } from "./storage.ts";
 import { dedicatedNodeFor, edgesFor } from "../computers/placement.ts";
 import { tasksFor } from "../backups/backups.ts";
+import { sshAccessFor } from "../computers/assign.ts";
 
 export interface InstanceRow {
   id: string;
@@ -42,6 +43,7 @@ export interface InstanceRow {
   container_id: string | null;
   ready_at: Date | null;
   relocating_to_node_id?: string | null;
+  computer_public_key?: string | null;
   plan_tier_synced: string | null;
   /** The data volume as last measured (storage.ts); bigint columns, so a string from some drivers. */
   disk_used_bytes: number | string | null;
@@ -244,7 +246,8 @@ export async function desiredStateFor(ctx: AppContext, node: Pick<NodeRow, "id" 
       console.error(`[provisionamento] instância ${row.slug}: ${(error as Error).message}`);
     }
   }
-  return { node: { id: node.id, name: node.name }, pollSeconds: AGENT_POLL_SECONDS, instances, edges: await edgesFor(ctx.db, node), tasks: await tasksFor(ctx, node.id) };
+  return { node: { id: node.id, name: node.name }, pollSeconds: AGENT_POLL_SECONDS, instances, edges: await edgesFor(ctx.db, node), tasks: await tasksFor(ctx, node.id),
+    sshAccess: await sshAccessFor(ctx.db, node.id) };
 }
 
 /** Records what the agent saw; an instance being set up becomes ready once its container runs and answers its health check. */
@@ -254,6 +257,7 @@ export async function applyStatusReport(ctx: AppContext, node: Pick<NodeRow, "id
   await ctx.db.tx(async (q) => {
     await q.query("UPDATE nodes SET last_seen_at = $2, agent_version = $3, last_error = $4, orphan_containers = $5 WHERE id = $1",
       [node.id, now, report.agentVersion, report.error, report.orphans.length]);
+    if (report.sshHostKeys?.length) await q.query("UPDATE nodes SET ssh_host_keys = $2 WHERE id = $1", [node.id, report.sshHostKeys]);
     for (const seen of report.instances) {
       const row = (await q.query<Pick<InstanceRow, "id" | "state" | "organization_id" | "slug" | "decommissioned_at" | "node_id">>(
         "SELECT id, state, organization_id, slug, decommissioned_at, node_id FROM instances WHERE id = $1 AND (node_id = $2 OR previous_node_id = $2) FOR UPDATE",

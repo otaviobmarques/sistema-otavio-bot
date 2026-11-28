@@ -12,6 +12,7 @@ import { DockerClient, type DockerApi } from "./docker.ts";
 import { attachProxy, prepareNetwork, reconcile, type Log } from "./reconcile.ts";
 import type { NodeSettings } from "./spec.ts";
 import { reconcileTasks } from "./tasks.ts";
+import { createSshAccess } from "./ssh-access.ts";
 import { startWakeServer } from "./wake-server.ts";
 
 export const AGENT_VERSION = "0.4.0";
@@ -109,6 +110,7 @@ export function createAgent(config: AgentConfig, deps: { docker?: DockerApi; fet
   const fetcher = deps.fetch ?? globalThis.fetch;
   const log = deps.log ?? ((line) => console.log(`[arkobot-agent] ${line}`));
   const disk = createDiskMeter(docker, { log, now: deps.now });
+  const ssh = createSshAccess(docker, { image: config.relayImage ?? DEFAULT_RELAY_IMAGE, log, now: deps.now });
   const clock = deps.now ?? Date.now;
   let failures = 0;
   let subnet: string | null | undefined;
@@ -161,6 +163,13 @@ export function createAgent(config: AgentConfig, deps: { docker?: DockerApi; fet
           image: config.relayImage ?? DEFAULT_RELAY_IMAGE, adminUrl: config.adminUrl, token: config.token, log,
           call: (path, body) => adminCall(config, fetcher, "POST", path, body),
         }).catch((error) => log(`tarefas: ${(error as Error).message.slice(0, 300)}`));
+        // A customer's extra VPS: its ArkoBot's SSH login, and this server's host keys for the Admin.
+        if (desired.sshAccess) {
+          const problem = await ssh.apply(desired.node.id, desired.sshAccess).catch((error: Error) => error.message.slice(0, 300));
+          if (problem) report = { ...report, error: problem };
+          const hostKeys = await ssh.hostKeys(desired.node.id).catch(() => undefined);
+          if (hostKeys) report = { ...report, sshHostKeys: hostKeys };
+        }
         await disk.attach(report, desired.node.id);
       } catch (error) {
         const message = (error as Error).message.slice(0, 500);

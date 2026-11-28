@@ -10,6 +10,7 @@ import { CLOUD_HEALTH_PATH, CLOUD_PAIRING_PATH, createCloudPairing, createCloudR
 import { teamMemberEmail, type CloudTeam } from "../cloud-team.ts";
 import { CLOUD_TEAM_ADMIN_PATH, type TeamAdminSummary } from "../cloud-team-admin.ts";
 import { CLOUD_TEAM_POLICY_CHANGED_PATH } from "../cloud-team-policy.ts";
+import { CLOUD_COMPUTERS_PATH, type CloudComputers } from "../cloud-computers.ts";
 import type { CloudHealth } from "../cloud-health.ts";
 import { CLOUD_IDLE_ACTIVITY_MS, CLOUD_POWER_PATH, CLOUD_POWER_SLEEP_PATH, type CloudPower } from "../cloud-power.ts";
 import { json } from "../harness/http.ts";
@@ -55,6 +56,8 @@ export function createCloudSignedRoutes(deps: {
   planTier?: ((tier: string) => void) | null;
   /** How full this Cloud's disk is (the body without `v`); false when that is not a storage state. Absent on a server that is not a Cloud home. */
   storage?: ((status: unknown) => boolean) | null;
+  /** The computers the Admin assigned to this home (cloud-computers.ts); absent on a server that is not a Cloud home. */
+  computers?: CloudComputers | null;
   now?: () => number;
 }) {
   const pairing = createCloudPairing({ secret: deps.secret, sessions: deps.sessions, team: deps.team ?? null, now: deps.now });
@@ -67,6 +70,8 @@ export function createCloudSignedRoutes(deps: {
   const planRequests = createCloudRequestVerifier({ secret: deps.secret, now: deps.now });
   const policyNudges = createCloudRequestVerifier({ secret: deps.secret, now: deps.now });
   const storageRequests = createCloudRequestVerifier({ secret: deps.secret, now: deps.now });
+  const computerReads = createCloudRequestVerifier({ secret: deps.secret, now: deps.now });
+  const computerChanges = createCloudRequestVerifier({ secret: deps.secret, now: deps.now });
   /** True when the request was one of these and has been answered. */
   return async ({ req, res, url, path, method }: CloudSignedRequest): Promise<boolean> => {
     const power = path === CLOUD_POWER_PATH || path === CLOUD_POWER_SLEEP_PATH ? deps.power?.() ?? null : null;
@@ -75,7 +80,8 @@ export function createCloudSignedRoutes(deps: {
     const plan = path === CLOUD_PLAN_PATH && (deps.plan || deps.planTier) ? true : null;
     const policyChanged = path === CLOUD_TEAM_POLICY_CHANGED_PATH && deps.team ? deps.policyChanged ?? null : null;
     const storage = path === CLOUD_STORAGE_PATH ? deps.storage ?? null : null;
-    if (path !== CLOUD_PAIRING_PATH && path !== CLOUD_HEALTH_PATH && path !== CLOUD_BOX_PATH && !power && !teamAdmin && !memberLeft && !plan && !policyChanged && !storage) return false;
+    const computers = path === CLOUD_COMPUTERS_PATH ? deps.computers ?? null : null;
+    if (path !== CLOUD_PAIRING_PATH && path !== CLOUD_HEALTH_PATH && path !== CLOUD_BOX_PATH && !power && !teamAdmin && !memberLeft && !plan && !policyChanged && !storage && !computers) return false;
     res.setHeader("cache-control", "no-store");
     const source = requestSource(req);
     const header = (name: string) => { const value = req.headers[name]; return typeof value === "string" ? value : undefined; };
@@ -158,6 +164,34 @@ export function createCloudSignedRoutes(deps: {
       const { v, ...status } = (parsed ?? {}) as Record<string, unknown>;
       if (v !== 1 || !storage(status)) { json(res, 400, { error: "invalid_storage" }); return true; }
       json(res, 200, { ok: true });
+      return true;
+    }
+    if (computers) {
+      if (method === "GET") {
+        const verdict = computerReads.verify({ ...signed, method, target: `${path}${url.search}`, body: "" });
+        if (!verdict.ok) { console.warn(`cloud computers read refused from ${source}: ${verdict.error}`); json(res, verdict.status, { error: verdict.error }); return true; }
+        json(res, 200, { v: 1, publicKey: await computers.publicKey(), computers: computers.list().map(({ id, name, alias }) => ({ id, name, alias })) });
+        return true;
+      }
+      if (method !== "POST") { json(res, 405, { error: "method_not_allowed" }); return true; }
+      if (!/^application\/json\b/i.test(String(req.headers["content-type"] ?? ""))) { json(res, 415, { error: "send the request as JSON (content-type: application/json)" }); return true; }
+      const body = await readSignedBody(req);
+      const verdict = computerChanges.verify({ ...signed, method, target: `${path}${url.search}`, body });
+      if (!verdict.ok) { console.warn(`cloud computers change refused from ${source}: ${verdict.error}`); json(res, verdict.status, { error: verdict.error }); return true; }
+      let parsed: { v?: unknown; action?: unknown; computer?: unknown; id?: unknown };
+      try { parsed = JSON.parse(body.toString("utf8")) ?? {}; } catch { json(res, 400, { error: "invalid_body" }); return true; }
+      if (parsed.v !== 1) { json(res, 400, { error: "invalid_version" }); return true; }
+      try {
+        if (parsed.action === "add") {
+          const added = await computers.add(parsed.computer as never);
+          json(res, 200, { ok: true, alias: added.computer.alias, check: added.check });
+        } else if (parsed.action === "remove" && typeof parsed.id === "string") {
+          json(res, 200, { ok: true, removed: await computers.remove(parsed.id) });
+        } else json(res, 400, { error: "invalid_action" });
+      } catch (error) {
+        const status = (error as { status?: number }).status;
+        json(res, status === 400 || status === 409 ? status : 500, { error: status ? (error as Error).message : "computer_change_failed" });
+      }
       return true;
     }
     if (path === CLOUD_BOX_PATH) {

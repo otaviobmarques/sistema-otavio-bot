@@ -527,8 +527,9 @@ function RecordStepsRow({ on, browserOn, myChrome, onChange }: { on: boolean; br
   );
 }
 
-export function cloudPreferenceShown(bot: Pick<Bot, "computer">, config: { cloudHome?: boolean } | null | undefined): boolean {
-  return (!bot.computer || bot.computer === "cloud") && !config?.cloudHome;
+export function cloudPreferenceShown(bot: Pick<Bot, "computer">, config: { cloudHome?: boolean; vps?: { sshAlias?: string } } | null | undefined): boolean {
+  // A Cloud home shows it once the Admin has assigned it a VPS computer (server/cloud-computers.ts).
+  return (!bot.computer || bot.computer === "cloud") && (!config?.cloudHome || Boolean(config.vps?.sshAlias));
 }
 
 /**

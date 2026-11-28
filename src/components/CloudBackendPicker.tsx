@@ -13,7 +13,8 @@ export function CloudBackendPicker({
   onChange: (backend: CloudBackend) => void;
 }) {
   const { state } = useStore();
-  if (state.config?.cloudHome) return null;
+  // On a Cloud home only once the Admin has assigned it a VPS computer (server/cloud-computers.ts).
+  if (state.config?.cloudHome && !state.config.vps?.sshAlias) return null;
   return (
     <div className="mt-3 rounded-lg bg-inset p-3">
       <div className="text-[12px] font-medium text-ink">{compact ? t("botAccess.cloud.provider") : t("botAccess.cloud.backend")}</div>

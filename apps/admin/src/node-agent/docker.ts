@@ -57,6 +57,8 @@ export interface DockerApi {
   /** Freezes every process of a running container (cgroup freezer) while its volume is packed; unpause thaws it. */
   pauseContainer(id: string): Promise<void>;
   unpauseContainer(id: string): Promise<void>;
+  /** A finished container's stdout (Docker's multiplexed log stream, demultiplexed), at most 64 KiB. */
+  containerLogs(id: string): Promise<string>;
   /** Every volume's size (GET /system/df?type=volume): slow on a busy node, so the agent asks rarely (disk.ts). */
   volumeUsage(): Promise<VolumeUsage[]>;
 }
@@ -94,6 +96,20 @@ export class DockerClient implements DockerApi {
       req.on("timeout", () => req.destroy(new Error(`Docker: ${method} ${path.split("?")[0]} demorou demais`)));
       req.on("error", reject);
       if (payload) req.write(payload);
+      req.end();
+    });
+  }
+
+  #callRaw(method: string, path: string): Promise<{ status: number; text: Buffer }> {
+    return new Promise((resolve, reject) => {
+      const req = request({ socketPath: this.#socketPath, path, method, timeout: 60_000, headers: { host: "docker" } }, (res) => {
+        const chunks: Buffer[] = [];
+        res.on("data", (chunk: Buffer) => chunks.push(chunk));
+        res.on("end", () => resolve({ status: res.statusCode ?? 0, text: Buffer.concat(chunks) }));
+        res.on("error", reject);
+      });
+      req.on("timeout", () => req.destroy(new Error(`Docker: ${method} ${path.split("?")[0]} demorou demais`)));
+      req.on("error", reject);
       req.end();
     });
   }
@@ -176,11 +192,29 @@ export class DockerClient implements DockerApi {
     await this.#json("POST", `/containers/${encodeURIComponent(id)}/unpause`, undefined, [204, 304]);
   }
 
+  async containerLogs(id: string) {
+    const { status, text } = await this.#callRaw("GET", `/containers/${encodeURIComponent(id)}/logs?stdout=1&stderr=0&tail=500`);
+    if (status !== 200) throw new DockerError(status, `Docker logs: ${status}`);
+    return demuxLogs(text).slice(0, 65_536);
+  }
+
   async volumeUsage() {
     const { status, text } = await this.#call("GET", "/system/df?type=volume", undefined, {}, 5 * 60_000);
     if (status !== 200) throw new DockerError(status, `Docker GET /system/df: ${status} ${messageOf(text)}`);
     return (JSON.parse(text) as { Volumes?: VolumeUsage[] | null }).Volumes ?? [];
   }
+}
+
+/** Docker's log stream without a TTY: frames of [stream, 0, 0, 0, size (4 bytes, big-endian)] then the bytes. */
+export function demuxLogs(raw: Buffer): string {
+  const out: Buffer[] = [];
+  let at = 0;
+  while (at + 8 <= raw.length) {
+    const size = raw.readUInt32BE(at + 4);
+    if (raw[at] === 1) out.push(raw.subarray(at + 8, at + 8 + size));
+    at += 8 + size;
+  }
+  return Buffer.concat(out).toString("utf8");
 }
 
 function messageOf(text: string): string {
