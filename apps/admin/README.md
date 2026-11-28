@@ -409,9 +409,20 @@ Um plano com `plans.idle_sleep_minutes` (o Inicial: 30, migração `0011`) dorme
 - **Instância com erro**: vista em `error` pelo agente, ou com o health check falhando, por mais de **10 min** (`instances.unhealthy_since`) → e-mail uma vez (`unhealthy_alerted_at`) e outro quando volta ao normal. Só para instâncias num servidor que responde.
 - Destinatários: `ADMIN_ALERT_EMAIL` ou os donos ativos. A página **Instâncias** mostra uma faixa vermelha enquanto durar.
 
+### Backups e mudança de servidor
+
+`src/backups` (Admin) e `src/node-agent/tasks.ts` (agente 0.4.0+). Liga com as variáveis `BACKUP_S3_*` (qualquer armazenamento compatível com S3: Contabo Object Storage, Backblaze B2, Cloudflare R2, MinIO); sem elas nada muda.
+
+- **Diário**: o cron agenda um backup por instância que já subiu, quando o último tem mais de 22 h. O agente **congela** o contêiner (`docker pause`, para os arquivos SQLite ficarem coerentes), um ajudante `arkotask-pack-<id>` (a imagem do próprio agente, sem rede) empacota o volume num volume de passagem (`arkobot-backup-staging`), o contêiner **descongela** e outro ajudante `arkotask-up-<id>` envia o arquivo em partes de 64 MB direto ao armazenamento. O Admin só assina os endereços de cada parte (SigV4, válidos por 1 h); os dados nunca passam pela Vercel e as chaves do armazenamento nunca vão para os servidores. Uma instância dormindo é copiada parada, sem congelar.
+- **Retenção**: os últimos `BACKUP_KEEP_DAILY` diários (padrão 7) por instância; manuais por 30 dias; os de mudança por 7. Um backup que não termina em 6 h é dado como falho (e o envio em partes é abortado).
+- **Painel** (Instâncias): coluna **Backup** (o último), **Backups** (lista, **Fazer backup agora**, **Baixar** só para o dono) e **Mudar de servidor**.
+- **Mudar de servidor** (com os dados): a instância para, um backup "mudança" roda no servidor de origem, o servidor de destino restaura antes de existir contêiner ali (`arkotask-restore-<id>`) e então a instância liga lá (geração +1); o servidor antigo remove o contêiner e **mantém o volume**. Se o backup ou a restauração falhar, a mudança é cancelada e a instância volta a ligar onde estava. Leva alguns minutos.
+- **VPS própria do cliente**: com backups ligados, a mudança de uma instância com dados para a VPS dela (Computadores, "dados a copiar") acontece **sozinha** pelo cron, do mesmo jeito.
+- **Agentes antigos** (< 0.4.0) ignoram as tarefas: os backups deles ficam "na fila" e falham em 6 h. Atualize os agentes antes de ligar os backups.
+
 ### Ainda não feito
 
-- Cota de disco imposta pelo sistema de arquivos (hoje é medida e só recusa uploads novos), troca de plano aplicada sem reprovisionar à mão (o limite de bots já muda no próximo "Abrir"), equipes (`role=team`), backup dos volumes, e apagar o volume de uma instância desativada (hoje só à mão: `docker volume rm arkoinst-<id>-data`).
+- Cota de disco imposta pelo sistema de arquivos (hoje é medida e só recusa uploads novos), troca de plano aplicada sem reprovisionar à mão (o limite de bots já muda no próximo "Abrir"), equipes (`role=team`), e apagar o volume de uma instância desativada (hoje só à mão: `docker volume rm arkoinst-<id>-data`).
 - Dormir: o app desktop ainda não pede ao Admin para acordar a instância (o `POST /api/cloud/desktop/wake` do `docs/cloud-pro.md` é do Admin antigo); se o Admin estiver fora do ar, a página de despertar não consegue acordar ninguém (só mostra "acordando" e tenta de novo).
 
 ## Computadores próprios (VPS)
@@ -453,7 +464,7 @@ Navegador ─► *.arkobot.com.br (VPS compartilhada, Traefik) ─► contêiner
 
 ### Mover uma instância com dados
 
-Com a VPS do cliente "No ar" e a instância marcada "dados a copiar": pare a instância (Instâncias → Parar), copie o volume e clique **Mover ArkoBot**:
+Com os backups ligados (`BACKUP_S3_*`, seção "Backups e mudança de servidor"), isso é automático: o cron muda a instância com os dados. Sem eles, à mão: com a VPS do cliente "No ar" e a instância marcada "dados a copiar", pare a instância (Instâncias → Parar), copie o volume e clique **Mover ArkoBot**:
 
 ```bash
 # na VPS compartilhada (troque <id> e o IP da VPS do cliente; a chave do operador já está nela)

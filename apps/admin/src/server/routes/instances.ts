@@ -8,6 +8,7 @@ import { createNode, rotateNodeToken, setNodeStatus } from "../../provisioning/n
 import { NODE_STALE_MS, provisioningSettings } from "../../provisioning/settings.ts";
 import { powerStateOf } from "../../provisioning/sleep.ts";
 import { actorOf, body, param, reason, router, type Ctx } from "../http.ts";
+import { backupDownloadUrl, listBackups, requestBackup, startRelocation } from "../../backups/backups.ts";
 
 const nodeSchema = z.object({
   name: z.string().trim().min(2).max(63),
@@ -17,8 +18,8 @@ const nodeSchema = z.object({
   capacityRamMb: z.number().int().min(256).max(10_000_000).nullable().optional(),
 });
 
-function ownerOnly(c: Ctx) {
-  if (c.get("admin").role !== "owner") throw new DomainError("Só o dono cadastra servidores e troca os tokens deles", 403);
+function ownerOnly(c: Ctx, message = "Só o dono cadastra servidores e troca os tokens deles") {
+  if (c.get("admin").role !== "owner") throw new DomainError(message, 403);
 }
 
 /** Instances and the nodes that run them (/api/instances). */
@@ -32,8 +33,12 @@ export function instanceRoutes(ctx: AppContext) {
            i.operator_stopped, i.decommissioned_at, i.observed_state, i.observed_health, i.observed_error, i.observed_at, i.ready_at, i.generation,
            i.plan_tier_synced, i.created_at, p.code AS plan_code, p.name AS plan_name,
            i.disk_used_bytes, i.disk_quota_bytes, i.disk_state, i.disk_measured_at,
-           i.sleeping_since, i.wake_at, i.woke_at, i.power_busy, i.power_checked_at, i.unhealthy_since, i.unhealthy_alerted_at, p.idle_sleep_minutes
+           i.sleeping_since, i.wake_at, i.woke_at, i.power_busy, i.power_checked_at, i.unhealthy_since, i.unhealthy_alerted_at, p.idle_sleep_minutes,
+           i.relocating_to_node_id, rn.name AS relocating_to_node_name, lb.finished_at AS last_backup_at, lb.bytes AS last_backup_bytes
          FROM instances i JOIN organizations o ON o.id = i.organization_id LEFT JOIN nodes n ON n.id = i.node_id
+         LEFT JOIN nodes rn ON rn.id = i.relocating_to_node_id
+         LEFT JOIN LATERAL (SELECT b.finished_at, b.bytes FROM instance_backups b WHERE b.instance_id = i.id AND b.status = 'done'
+                            ORDER BY b.finished_at DESC LIMIT 1) lb ON true
          LEFT JOIN LATERAL (SELECT s.plan_id FROM subscriptions s WHERE s.organization_id = i.organization_id
                             ORDER BY (s.status <> 'canceled') DESC, s.created_at DESC LIMIT 1) s ON true
          LEFT JOIN plans p ON p.id = s.plan_id
@@ -46,7 +51,7 @@ export function instanceRoutes(ctx: AppContext) {
     ]);
     const now = ctx.now().getTime();
     return c.json({
-      settings: provisioningSettings(ctx.config),
+      settings: { ...provisioningSettings(ctx.config), backups: Boolean(ctx.config.backups) },
       instances: instances.rows.map((row) => ({ ...row, desired: desiredOf(row as never), power: powerStateOf(row as never, ctx.now()) })),
       nodes: nodes.rows.map((row) => ({ ...row, online: row.last_seen_at ? now - new Date(row.last_seen_at as string).getTime() < NODE_STALE_MS : false })),
     });
@@ -84,6 +89,25 @@ export function instanceRoutes(ctx: AppContext) {
   app.post("/:id/sync-plan", async (c) => {
     const synced = await syncInstancePlan(ctx, param(c, "id")).catch((error) => { throw new DomainError((error as Error).message, 502); });
     return c.json({ ok: true, synced });
+  });
+
+  // Backups (src/backups): the latest ones, one now, a download link, and moving to another server with the data.
+  app.get("/:id/backups", async (c) => c.json({ configured: Boolean(ctx.config.backups), backups: await listBackups(ctx, param(c, "id")) }));
+
+  app.post("/:id/backups", async (c) => {
+    const row = await requestBackup(ctx, actorOf(c), param(c, "id"));
+    return c.json({ backup: { id: row.id, status: row.status } }, 201);
+  });
+
+  app.post("/:id/backups/:backupId/download", async (c) => {
+    ownerOnly(c, "Só o dono baixa os dados de um cliente");
+    return c.json({ url: await backupDownloadUrl(ctx, param(c, "id"), param(c, "backupId")) });
+  });
+
+  app.post("/:id/relocate", async (c) => {
+    const input = await body(c, z.object({ nodeId: z.uuid(), reason }));
+    const backup = await startRelocation(ctx, { ...actorOf(c), label: `${actorOf(c).label ?? "operador"}: ${input.reason}`.slice(0, 200) }, param(c, "id"), input.nodeId);
+    return c.json({ ok: true, backupId: backup.id }, 202);
   });
 
   app.post("/nodes", async (c) => {

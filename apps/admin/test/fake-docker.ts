@@ -8,6 +8,8 @@ interface FakeContainer {
   body: Record<string, unknown>;
   running: boolean;
   health: string | null;
+  paused?: boolean;
+  exitCode?: number;
 }
 
 /** An in-memory Docker daemon with the calls the agent makes, and a log of every change. */
@@ -43,12 +45,12 @@ export class FakeDocker implements DockerApi {
   async listContainers(labelFilter: string): Promise<ContainerSummary[]> {
     const [key, value] = labelFilter.split("=");
     return [...this.containers.values()].filter((c) => c.labels[key!] === value)
-      .map((c) => ({ Id: c.id, Names: [`/${c.name}`], Labels: { ...c.labels }, State: c.running ? "running" : "exited" }));
+      .map((c) => ({ Id: c.id, Names: [`/${c.name}`], Labels: { ...c.labels }, State: c.paused ? "paused" : c.running ? "running" : "exited" }));
   }
 
   async inspectContainer(id: string): Promise<ContainerDetails> {
     const c = this.#get(id);
-    return { Id: c.id, Config: { Labels: { ...c.labels } }, State: { Status: c.running ? "running" : "exited", Running: c.running, Health: c.health ? { Status: c.health } : null } };
+    return { Id: c.id, Config: { Labels: { ...c.labels } }, State: { Status: c.paused ? "paused" : c.running ? "running" : "exited", Running: c.running, Paused: c.paused ?? false, ExitCode: c.exitCode ?? 0, Health: c.health ? { Status: c.health } : null } };
   }
 
   async imageExists(image: string) {
@@ -109,6 +111,26 @@ export class FakeDocker implements DockerApi {
     const c = this.#get(id);
     this.containers.delete(id);
     this.calls.push(`remove ${c.name}`);
+  }
+
+  async pauseContainer(id: string) {
+    const c = this.#get(id);
+    c.paused = true;
+    this.calls.push(`pause ${c.name}`);
+  }
+
+  async unpauseContainer(id: string) {
+    const c = this.#get(id);
+    c.paused = false;
+    this.calls.push(`unpause ${c.name}`);
+  }
+
+  /** A helper container finishing its work (tests): it stops with this exit code. */
+  finish(name: string, exitCode = 0) {
+    const c = this.byName(name);
+    if (!c) throw new Error(`no container ${name}`);
+    c.running = false;
+    c.exitCode = exitCode;
   }
 
   async volumeUsage(): Promise<VolumeUsage[]> {

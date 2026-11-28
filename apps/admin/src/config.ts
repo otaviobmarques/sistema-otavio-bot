@@ -35,6 +35,18 @@ export interface AdminConfig {
     /** The AI gateway the instances use (OMB_CLOUD_AI_GATEWAY_URL). */
     gatewayUrl?: string;
   };
+  /** Customer backups (src/backups): an S3-compatible store. Unset: no backups are made. Never logged. */
+  backups?: {
+    endpoint: string;
+    region: string;
+    bucket: string;
+    accessKeyId: string;
+    secretAccessKey: string;
+    /** Prefix of every object key, e.g. "arkobot/". */
+    prefix: string;
+    /** How many daily backups each instance keeps. */
+    keepDaily: number;
+  };
   /** Computadores próprios (src/computers). Never logged. */
   computers?: {
     /** Hetzner Cloud project token. Each provider is usable only with its credentials; without them nothing is bought there. */
@@ -123,6 +135,17 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AdminConfig {
       image: env.INSTANCE_IMAGE?.trim() || undefined,
       gatewayUrl: env.AI_GATEWAY_PUBLIC_URL?.trim() || undefined,
     },
+    backups: env.BACKUP_S3_ENDPOINT?.trim() && env.BACKUP_S3_BUCKET?.trim() && env.BACKUP_S3_ACCESS_KEY_ID?.trim() && env.BACKUP_S3_SECRET_ACCESS_KEY?.trim()
+      ? {
+        endpoint: env.BACKUP_S3_ENDPOINT.trim().replace(/\/+$/, ""),
+        region: env.BACKUP_S3_REGION?.trim() || "us-east-1",
+        bucket: env.BACKUP_S3_BUCKET.trim(),
+        accessKeyId: env.BACKUP_S3_ACCESS_KEY_ID.trim(),
+        secretAccessKey: env.BACKUP_S3_SECRET_ACCESS_KEY.trim(),
+        prefix: (env.BACKUP_S3_PREFIX?.trim() ?? "arkobot/").replace(/^\/+/, ""),
+        keepDaily: positiveInt(env.BACKUP_KEEP_DAILY, 7, "BACKUP_KEEP_DAILY"),
+      }
+      : undefined,
     computers: {
       hetznerApiToken: env.HETZNER_API_TOKEN?.trim() || undefined,
       hostingerApiToken: env.HOSTINGER_API_TOKEN?.trim() || undefined,
