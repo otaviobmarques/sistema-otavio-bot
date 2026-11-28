@@ -28,7 +28,7 @@ describe("página de despertar: o servidor HTTP do agente", () => {
   it("responde pelo Host de cada pedido: acordando, pausado ou 404", async () => {
     const sleeping = instance({ desired: "stopped", sleeping: true, host: "dorminhoco.arkobot.com.br" });
     const paused = instance({ desired: "stopped", host: "pausado.arkobot.com.br" });
-    const state: DesiredState = { node: { id: NODE, name: "vps-1" }, pollSeconds: 15, instances: [sleeping, paused], edges: [], tasks: [] };
+    const state: DesiredState = { node: { id: NODE, name: "vps-1" }, pollSeconds: 15, instances: [sleeping, paused], edges: [], tasks: [], sshAccess: null };
     const woke: string[] = [];
     const server = startWakeServer(0, { desired: () => state, wake: async (id) => { woke.push(id); return { ok: true, state: "waking" }; }, nudge: () => undefined, log: () => undefined });
     servers.push(server);
@@ -75,7 +75,7 @@ describe("o que acorda uma instância que dorme", () => {
     const sleeping = instance({ desired: "stopped", sleeping: true });
     let asks = 0;
     const handle = createWakeHandler({
-      desired: () => ({ node: { id: NODE, name: "vps-1" }, pollSeconds: 15, instances: [sleeping], edges: [], tasks: [] }),
+      desired: () => ({ node: { id: NODE, name: "vps-1" }, pollSeconds: 15, instances: [sleeping], edges: [], tasks: [], sshAccess: null }),
       wake: async () => { asks++; return { ok: true, state: "waking" }; }, nudge: () => undefined, log: () => undefined,
     });
     const headers: Record<string, string> = {};
@@ -103,7 +103,7 @@ describe("agente: despertar rápido", () => {
     const docker = new FakeDocker();
     docker.images.add(IMAGE);
     docker.healthOnStart = "starting";
-    const desired: DesiredState = { node: { id: NODE, name: "vps-1" }, pollSeconds: 15, instances: [instance()], edges: [], tasks: [] };
+    const desired: DesiredState = { node: { id: NODE, name: "vps-1" }, pollSeconds: 15, instances: [instance()], edges: [], tasks: [], sshAccess: null };
     const fetcher = (async (url: string) => String(url).endsWith("/desired") ? Response.json(desired) : Response.json({ ok: true })) as unknown as typeof fetch;
     const agent = createAgent(agentConfig({ ARKO_ADMIN_URL: "https://admin.test", ARKO_NODE_TOKEN: TOKEN }), { docker, fetch: fetcher, log: () => undefined, now: () => clock });
     expect(await agent.once()).toBe(STARTING_POLL_SECONDS);

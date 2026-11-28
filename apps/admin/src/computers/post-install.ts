@@ -36,6 +36,8 @@ export interface PostInstallInput {
   acmeEmail: string;
   /** The operator's SSH public keys, added to root's authorized_keys. */
   sshKeys: string[];
+  /** An extra computer for the customer's bots: the `arkobot` login its ArkoBot uses over SSH (src/computers/assign.ts). */
+  computerLogin?: boolean;
 }
 
 const SSH_KEY = /^(?:ssh-ed25519|ssh-rsa|ecdsa-sha2-nistp(?:256|384|521)) [A-Za-z0-9+/=]{40,}(?: [A-Za-z0-9@._-]{1,100})?$/;
@@ -50,6 +52,17 @@ KEYS
 chmod 600 /root/.ssh/authorized_keys
 `;
 }
+
+/**
+ * The login the customer's ArkoBot uses to run its bots' desktops here (docker over SSH). In the docker group, with no
+ * password: only the key the agent writes (limited to the ArkoBot's address) lets it in.
+ */
+const COMPUTER_LOGIN_BLOCK = `id arkobot >/dev/null 2>&1 || useradd --create-home --shell /bin/bash arkobot
+usermod -aG docker arkobot
+passwd -l arkobot >/dev/null 2>&1 || true
+install -d -m 700 -o arkobot -g arkobot /home/arkobot/.ssh
+touch /home/arkobot/.ssh/authorized_keys && chown arkobot:arkobot /home/arkobot/.ssh/authorized_keys && chmod 600 /home/arkobot/.ssh/authorized_keys
+`;
 
 const SAFE = /^[A-Za-z0-9._:/@+-]+$/;
 
@@ -74,7 +87,7 @@ EDGE_IP='${edge}'
 
 ${sshKeysBlock(input.sshKeys)}if ! command -v docker >/dev/null 2>&1; then curl -fsSL https://get.docker.com | sh; fi
 systemctl enable --now docker
-
+${input.computerLogin ? COMPUTER_LOGIN_BLOCK : ""}
 RESP=''
 for attempt in $(seq 1 60); do
   if RESP=$(curl -fsS --max-time 30 -X POST "$ADMIN/api/agent/v1/enroll" -H 'content-type: application/json' \\

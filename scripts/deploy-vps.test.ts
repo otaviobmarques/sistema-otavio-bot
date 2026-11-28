@@ -52,7 +52,19 @@ describe("the Otávio Bot VPS deployment", () => {
       expect(index).toBeLessThan(app);
     }
     expect(server[ssh].args).toContain("rm -rf /var/lib/apt/lists/*");
-    expect(stageSteps(dockerfile, "cloud-home").some(step => step.args.includes("docker-cli"))).toBe(false);
+  });
+
+  it("ships them in the Cloud home image too, for the VPS computers the Admin assigns, run by the server outside the bot box", () => {
+    const home = stageSteps(dockerfile, "cloud-home");
+    const ssh = home.findIndex(step => step.op === "RUN" && step.args.includes("apt-get install -y --no-install-recommends openssh-client"));
+    const docker = home.findIndex(step => step.args === "--from=docker-cli /usr/local/bin/docker /usr/local/bin/docker");
+    const engines = home.findIndex(step => step.op === "RUN" && step.args.includes("npm install -g $CLOUD_HOME_ENGINES"));
+    const app = home.findIndex(step => step.args.includes("--from=build"));
+    for (const index of [ssh, docker]) {
+      expect(index).toBeGreaterThan(-1);
+      expect(index).toBeLessThan(engines);
+      expect(index).toBeLessThan(app);
+    }
   });
 
   it("runs the fork's image around the clock, with a memory cap, a health check and a way to the host's SSH", () => {

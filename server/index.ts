@@ -488,6 +488,7 @@ import type { WebhookTrigger } from "../shared/webhooks.ts";
 import { AGENTS_NODE_FLAG, SPAWNED_PROXIES } from "./proxy-paths.ts";
 import { agentsProxyLaunch, agentsToolBridgeEnv, applyAgentsBridge, bridgedToolTitle, turnEngine } from "./agents-bridge-switch.ts"; import { agentsServerEnv, COMPUTER_OFF_REFUSAL, computerPickRefusal, directTurnKind, roomSkillsRefusal, type TurnKind } from "./agents-turn.ts";
 import { harnessMcpTokenEnv } from "./harness-mcp-token.ts";
+import { harnessComputerIntegration, createCloudComputersHost, relayVpsComputerCall, type VpsTarget } from "./host/cloud-computers-host.ts";
 import {
   loadBundledSkills,
   loadUserSkills,
@@ -1608,6 +1609,7 @@ type InternalCapability = {
   teamComputerId?: string;
   /** Set only by the harness at attach; null: mounted, and the first call creates or wakes the Boat. */
   boxId?: string | null;
+  vpsTarget?: VpsTarget; // a boxed turn's own VPS computer, relayed by the server (host/cloud-computers-host.ts)
   browserSession?: string;
   roomHandoffId?: string;
   attachedFiles?: number;
@@ -2481,9 +2483,9 @@ function controlIntegration(
   botId: string,
   threadId: string,
   generation: string,
-  machine: "this computer" | { localVmTarget?: LocalVmTarget; boxId?: string | null } = {},
+  machine: "this computer" | { localVmTarget?: LocalVmTarget; boxId?: string | null; vpsTarget?: VpsTarget } = {},
 ) {
-  const { localVmTarget, boxId } = machine === "this computer" ? {} : machine;
+  const { localVmTarget, boxId, vpsTarget } = machine === "this computer" ? {} : machine;
   return {
     url: `http://127.0.0.1:${PORT}/api/internal/computer-control?botId=${encodeURIComponent(botId)}`,
     token: mintInternalCapability({
@@ -2493,7 +2495,7 @@ function controlIntegration(
       depth: 0,
       kind: "computer",
       ...(localVmTarget ? { localVmTarget } : {}),
-      ...(boxId !== undefined ? { boxId } : {}),
+      ...(boxId !== undefined ? { boxId } : {}), ...(vpsTarget ? { vpsTarget } : {}),
       ...(teamComputerTurns.get(threadId) ? { teamComputerId: teamComputerTurns.get(threadId)!.computerId } : {}),
       skillAuthoring: false,
       createdBots: 0,
@@ -2843,7 +2845,9 @@ const phones = createPhones({
   active: (turn) => internalCapabilityIsActive(turn as InternalCapability),
 });
 const cloudPlanTier = createCloudPlanTier({ dataDir: DATA_DIR, cloudHome: Boolean(CLOUD_HOME), changed: () => broadcast({ kind: "config", ...configStatus() }) }); const botLimit = createBotLimit({ starter: () => cloudPlanTier.starter(), tier: () => cloudPlanTier.tier(), bots: () => store.bots }); const starterAwake = createStarterAwake({ dataDir: DATA_DIR, starter: () => cloudPlanTier.starter(), bots: () => store.bots, changed: () => broadcast({ kind: "config", ...configStatus() }) }); const starterCaps = createStarterCaps({ starter: () => cloudPlanTier.starter(), awake: starterAwake, waitsOnOthers: (threadId) => coordinator.outstandingFor(threadId).length > 0, botName: (botId) => store.bot(botId)?.name, pausedLine: (language, limit) => serverLine(language, "server.botPaused", { limit }), refused: () => broadcast({ kind: "config", ...configStatus() }) }); engineMemory.useCap(starterCaps.engine); const cloudStorage = createCloudStorageQuota({ dataDir: DATA_DIR, cloudHome: Boolean(CLOUD_HOME), changed: () => broadcast({ kind: "config", ...configStatus() }) }); let cloudPower: CloudPower | null = null; // The sleep handshake of a plan that sleeps (server/cloud-power.ts), made just before the server listens.
-const { cloudHealth, cloudSigned } = createCloudSignedHost({ cloudHome: CLOUD_HOME, sessions, power: () => cloudPower, box: () => botBox.report(), teamAdmin: teamAdminHost(), policyChanged: nudgeCloudTeamPolicy, plan: (cancelled) => routineHolds?.plan(cancelled), planTier: (tier) => cloudPlanTier.set(tier), storage: (status) => cloudStorage.set(status), memberLeft: (email) => leaveTeam ? leaveTeam(email).then((result) => { botApi.manager.revokeMintedBy(personKey({ id: "", email })); teamOwners.left(email); teamMessages.inbox.forget(personKey({ id: "", email })); forgetSetupPresser(store, personKey({ id: "", email })); devsReports.forget(personKey({ id: "", email })); return result; }) : Promise.reject(new Error("not a team")), health: { store, bus, dataDir: DATA_DIR, eventsDir: EVENTS_DIR, version: serverVersion(), image: process.env.OMB_CLOUD_IMAGE,
+const cloudComputers = createCloudComputersHost({ cloudHome: Boolean(CLOUD_HOME), dataDir: DATA_DIR, defaultAlias: () => vpsSshAlias(cfg), setDefaultAlias: (alias) => { saveConfig({ vps: { sshAlias: alias ?? "" } }); Object.assign(cfg, loadConfig()); broadcast({ kind: "config", ...configStatus() }); },
+  inUse: async (alias) => { const found = await vps.listManagedVpsComputers(cfg, managedBoatOwners(), undefined, [alias]); return !found.available || found.instances.length > 0 || store.bots.some((bot) => bot.vpsAlias === alias); } });
+const { cloudHealth, cloudSigned } = createCloudSignedHost({ cloudHome: CLOUD_HOME, sessions, ...(cloudComputers ? { computers: cloudComputers } : {}), power: () => cloudPower, box: () => botBox.report(), teamAdmin: teamAdminHost(), policyChanged: nudgeCloudTeamPolicy, plan: (cancelled) => routineHolds?.plan(cancelled), planTier: (tier) => cloudPlanTier.set(tier), storage: (status) => cloudStorage.set(status), memberLeft: (email) => leaveTeam ? leaveTeam(email).then((result) => { botApi.manager.revokeMintedBy(personKey({ id: "", email })); teamOwners.left(email); teamMessages.inbox.forget(personKey({ id: "", email })); forgetSetupPresser(store, personKey({ id: "", email })); devsReports.forget(personKey({ id: "", email })); return result; }) : Promise.reject(new Error("not a team")), health: { store, bus, dataDir: DATA_DIR, eventsDir: EVENTS_DIR, version: serverVersion(), image: process.env.OMB_CLOUD_IMAGE,
   engines: () => registry.instances().map((instance) => ({ instanceId: instance.instanceId, driverKind: instance.driverKind, snapshot: registry.knownSnapshot(instance.instanceId) })),
   connectors: () => emailHost.health(composio.configured(cfg) ? composio.connectedServices(cfg) : null),
   browser: () => ({ available: browserReady(undefined), installing: Boolean(browserEngineInstall), interrupted: browserRuntime.interruptedCount() }), firstHour: () => firstHourHooks.health(), ...(engineMemory.enabled ? { room: () => engineMemory.dayPressure() } : {}) } });
@@ -5821,13 +5825,7 @@ function cloudEngine(instance: ReturnType<typeof registry.get>, model?: string):
 
 /** The agent process holds only a turn-scoped capability naming this Boat, never a Boat credential. */
 function cloudComputerTools(botId: string, owner: TurnOwner, boxId: string | null): NonNullable<SendTurnInput["integrations"]>["localComputer"] {
-  const control = controlIntegration(botId, owner.threadId, owner.generation, { boxId });
-  return {
-    command: process.execPath,
-    args: [SPAWNED_PROXIES.harnessMcp, "computer"],
-    env: { ...AGENTS_NODE_FLAG, OMB_HARNESS_URL: `http://127.0.0.1:${PORT}`, [harnessMcpTokenEnv("computer")]: control.token },
-    platform: "linux",
-  };
+  return harnessComputerIntegration(PORT, controlIntegration(botId, owner.threadId, owner.generation, { boxId }).token);
 }
 
 /** `askNow`: read at the first screen call (an Auto pin below Full access, checked live), so the person is asked once then. */
@@ -5870,6 +5868,8 @@ async function mountBotVps(
       opts.onClaimed(vpsCapture);
     },
   });
+  // A boxed engine has no route out and cannot read the server's SSH keys: the server relays its calls instead.
+  if (botBox.enabled()) return { integration: harnessComputerIntegration(PORT, controlIntegration(bot.id, owner.threadId, owner.generation, { vpsTarget: { alias: remote.sshAlias, container: vpsMcp.args[2] ?? "" } }).token) };
   return {
     integration: {
       ...vpsMcp,
@@ -13157,6 +13157,7 @@ const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
       // The turn's capability names its Boat; the Boat credential stays here.
       if (await dispatchRoutes([savedSteps.journalRoutes({ capability: internalCapability, readBody: readInternalBody })], { req, res, url, path, method, auth, json, readBody })) return; if (method === "POST" && path === "/api/internal/computer/mcp") {
         const body = await readInternalBody();
+        if (internalCapability.vpsTarget) return json(res, 200, { result: await relayVpsComputerCall(res, body, internalCapability.vpsTarget, { gate: (signal) => computerCallGate(internalCapability, signal), refusal: (control) => controlRefusal(control as ControlState), assertActive: requireActiveInternalCapability }) });
         if (internalCapability.boxId === undefined) return json(res, 403, { error: "this turn has no cloud computer" });
         const abort = new AbortController();
         res.once("close", () => { if (!res.writableEnded) abort.abort(); });

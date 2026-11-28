@@ -1,6 +1,7 @@
 // Buying and installing a customer's computer, one step at a time (the job and the cron tick call `advanceMachine`):
 // requested → ordering (the purchase, sent once) → provisioning (until its agent enrolls and reports) → running. The
 // first-boot script carries a single-purpose enrollment token; the node token only travels in the enrollment answer.
+import { unassignComputer } from "./assign.ts";
 import { audit, SYSTEM, type Actor } from "../audit.ts";
 import type { AppContext } from "../context.ts";
 import type { Queryable } from "../db/db.ts";
@@ -55,6 +56,7 @@ async function order(ctx: AppContext, row: MachineRow): Promise<void> {
     script = postInstallScript({
       adminUrl: ctx.config.publicUrl, machineId: row.id, enrollToken, edgeIp: await edgeIp(ctx.db),
       acmeEmail: ctx.config.mailFrom.match(/<([^>]+)>/)?.[1] ?? "admin@arkobot.com.br", sshKeys: ctx.config.computers?.sshKeys ?? [],
+      computerLogin: row.purpose === "computer",
     });
   } catch (error) {
     await setStatus(ctx.db, row.id, { status: "failed", status_reason: "configuração inválida", last_error: (error as Error).message.slice(0, 2000) });
@@ -224,6 +226,8 @@ export async function releaseMachine(ctx: AppContext, actor: Actor, id: string, 
   if (!row) throw new DomainError("Computador não encontrado", 404);
   if (!bought(row) || ["released", "deleted", "canceled"].includes(row.status)) throw new DomainError("Nada a encerrar neste computador", 409);
   if (row.status === "ordering") throw new DomainError("A compra ainda está em andamento", 409);
+  // An extra computer goes back from its ArkoBot first (refused while a bot's desktop still lives on it).
+  if (row.purpose === "computer") await unassignComputer(ctx, row.id);
   const node = await nodeOf(ctx.db, row.id);
   if (node) {
     const busy = await ctx.db.query("SELECT 1 FROM instances WHERE node_id = $1 AND decommissioned_at IS NULL LIMIT 1", [node.id]);

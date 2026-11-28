@@ -427,7 +427,7 @@ Um plano com `plans.idle_sleep_minutes` (o Inicial: 30, migração `0011`) dorme
 
 ## Computadores próprios (VPS)
 
-O que o OpenMausBot vendia como "computador extra (VPS)": R$ 159/mês cada, em qualquer plano; o Profissional inclui 1 e o Empresa 2. Aqui, cada unidade vira uma VPS comprada pelo Admin num provedor, com o mesmo agente do nó. **O primeiro computador de cada cliente recebe o ArkoBot dele** (nó `dedicated`, instância no modo `dedicated`, com a VPS só para ele). As unidades seguintes ficam registradas e no ar como nós do cliente, à espera de serem ligadas aos bots (próxima parte), por isso nunca são compradas sem aprovação.
+O que o OpenMausBot vendia como "computador extra (VPS)": R$ 159/mês cada, em qualquer plano; o Profissional inclui 1 e o Empresa 2. Aqui, cada unidade vira uma VPS comprada pelo Admin num provedor, com o mesmo agente do nó. **O primeiro computador de cada cliente recebe o ArkoBot dele** (nó `dedicated`, instância no modo `dedicated`, com a VPS só para ele). As unidades seguintes viram **computadores dos bots** do cliente (seção "Computadores extras ligados aos bots"); elas nunca são compradas sem aprovação.
 
 ```
 Asaas (pagamento confirmado) ─► Admin: direito do cliente ─► pedido (vps_machines) ─► [Aprovar e contratar] ─► provedor (Hetzner/Hostinger/Contabo)
@@ -446,6 +446,18 @@ Navegador ─► *.arkobot.com.br (VPS compartilhada, Traefik) ─► contêiner
 - **Dormir numa VPS do cliente**: o roteador TCP da borda vale para o endereço esteja a instância acordada ou não (os roteadores TCP `HostSNI` passam na frente do catch-all HTTP da página de despertar da VPS compartilhada). Na VPS do cliente, o compose do agente gerado pelo script de instalação tem o mesmo roteador de despertar (prioridade 1, porta 8790) que `node-agent.vps.compose.yml` (um teste mantém os dois iguais), então a página "acordando…" aparece lá, e o agente de lá pede ao Admin para acordá-la com o token do próprio nó. A regra padrão é `*.arkobot.com.br`; com outro domínio, defina `ARKO_WAKE_RULE` no `.env` do agente.
 - **Encerrar** (só o dono, com motivo; recusado enquanto o ArkoBot do cliente roda na VPS — mova ou desative a instância antes): Hostinger desliga a renovação (a VPS e os dados somem no fim do período pago); Contabo cancela no fim do período; **Hetzner apaga a VPS na hora, com o disco** (a cobrança é por hora). O cliente deixa de pagar pelo Asaas quando o adicional é reduzido ou a assinatura acaba; a máquina fica "Encerrar no provedor" até o operador agir: nenhum dado é apagado sem ação explícita.
 - **Área do cliente**: o cartão **Meus computadores** mostra cada computador (preparando, pronto, encerrando), sem IP nem provedor; **Alterar** muda a quantidade do adicional (o novo valor vale na próxima cobrança, e a compra espera esse pagamento).
+
+### Computadores extras ligados aos bots
+
+`src/computers/assign.ts` (Admin), `src/node-agent/ssh-access.ts` (agente 0.4.0+) e, no app, `server/cloud-computers.ts` e `server/vps-computer-rpc.ts`. Cada VPS extra (`purpose = 'computer'`) vira um computador **"VPS própria"** dos bots do ArkoBot do cliente: um contêiner de área de trabalho por bot, rodando na VPS e controlado por `docker -H ssh://arko-vps-<id>`.
+
+1. O script de instalação cria o login `arkobot` (grupo `docker`, sem senha).
+2. O agente da VPS lê as chaves de host do SSH (`/etc/ssh`, num ajudante só de leitura) e manda ao Admin (`nodes.ssh_host_keys`): o ArkoBot **nunca confia no primeiro acesso**.
+3. O cron pede ao ArkoBot do cliente a chave pública dele (GET assinado `/api/cloud/computers`; o ArkoBot gera a chave na primeira vez e **a privada nunca sai dele**, numa pasta que os bots não enxergam).
+4. O agente da VPS põe essa chave no `authorized_keys` do `arkobot`, **limitada ao IP do servidor do ArkoBot** (`from="…"`).
+5. O cron entrega o computador (POST assinado, `action: add`, com IP, login e chaves de host). Se o ArkoBot ainda não tiver VPS padrão, essa vira a padrão; a tela do bot passa a mostrar "VPS própria" na escolha do computador na nuvem.
+
+Os bots rodam numa área isolada sem rede: quem fala com a VPS é o **servidor** do ArkoBot, que repassa as chamadas das ferramentas do bot (o bot nunca vê a chave). Encerrar uma VPS extra primeiro a devolve do ArkoBot (`action: remove`); é recusado enquanto a área de trabalho de algum bot ainda estiver nela. Precisa da imagem do ArkoBot com `ssh` e `docker` (cloud-home atualizada) e do agente 0.4.0 na VPS.
 
 ### Provedores
 
@@ -482,5 +494,5 @@ Por unidade, R$ 159/mês de receita contra cerca de R$ 26 (Hetzner `cx23`, ajust
 
 - **Instâncias**: backup dos volumes (veja [Provisionamento automático](#provisionamento-automático-instâncias-dos-clientes)).
 - **Gateway**: e-mail dos avisos de 50/80/100% (`UsageAlertNotifier`), preços por faixa de contexto longo.
-- **Computadores (VPS)**: os computadores extras ligados aos bots (o backend "VPS própria" do app, por SSH), cópia automática do volume ao mudar de servidor, e PROXY protocol na borda (hoje a instância vê o IP da VPS compartilhada).
+- **Computadores (VPS)**: PROXY protocol na borda (hoje a instância vê o IP da VPS compartilhada). Feito: computadores extras ligados aos bots e cópia automática do volume ao mudar de servidor (seções acima).
 - Troca de plano com pró-rata (também na Área do cliente), emissão de NFS-e quando a conta PJ estiver ativa, convites de membros para a organização.

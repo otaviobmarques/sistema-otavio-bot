@@ -7,6 +7,8 @@ import { delimiter, join, resolve } from "node:path";
 import { PRODUCT_NAME } from "../shared/product-name.ts";
 
 export const VPS_SSH_DIR = "ssh";
+/** The Host blocks of the computers the Admin assigned to a Cloud home (cloud-computers.ts), in the same folder. */
+export const COMPUTERS_SSH_CONFIG = "computers.conf";
 
 function shellQuote(value: string): string {
   return `'${value.replace(/'/g, "'\\''")}'`;
@@ -47,11 +49,12 @@ function writeIfChanged(path: string, content: string, mode: number): void {
 }
 
 /** ssh keeps the first value it sees, so the person's file goes first; -F skips the system file, so it goes last. */
-export function vpsSshConfigText(sshDir: string, userConfig = join(homedir(), ".ssh", "config"), systemConfig = "/etc/ssh/ssh_config"): string {
+export function vpsSshConfigText(sshDir: string, userConfig = join(homedir(), ".ssh", "config"), systemConfig = "/etc/ssh/ssh_config", computersConfig: string | null = null): string {
   return [
     `# Written by ${PRODUCT_NAME} for its VPS computer connections. Do not edit;`,
     "# it is regenerated. Your own ~/.ssh/config is included first and wins.",
     ...(existsSync(userConfig) ? [`Include ${JSON.stringify(userConfig)}`] : []),
+    ...(computersConfig && existsSync(computersConfig) ? [`Include ${JSON.stringify(computersConfig)}`] : []),
     "Host *",
     "  ControlMaster auto",
     `  ControlPath ${JSON.stringify(join(sshDir.replace(/%/g, "%%"), "cm-%C"))}`,
@@ -77,7 +80,7 @@ export function prepareVpsSsh(dataDir: string, pathValue: string, platform: Node
   mkdirSync(binDir, { recursive: true, mode: 0o700 });
   chmodSync(sshDir, 0o700);
   const configPath = join(sshDir, "config");
-  writeIfChanged(configPath, vpsSshConfigText(controlDirectory(sshDir)), 0o600);
+  writeIfChanged(configPath, vpsSshConfigText(controlDirectory(sshDir), undefined, undefined, join(sshDir, COMPUTERS_SSH_CONFIG)), 0o600);
   const realSsh = findExecutable("ssh", pathValue, binDir);
   if (!realSsh) return { configPath, path: pathValue };
   const shim = [

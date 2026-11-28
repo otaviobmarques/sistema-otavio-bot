@@ -96,7 +96,7 @@ export class FakeDocker implements DockerApi {
 
   async startContainer(id: string) {
     const c = this.#get(id);
-    c.running = true;
+    c.running = !this.runsToEnd.has(c.name);
     c.health = this.healthOnStart;
     this.calls.push(`start ${c.name}`);
   }
@@ -123,6 +123,15 @@ export class FakeDocker implements DockerApi {
     const c = this.#get(id);
     c.paused = false;
     this.calls.push(`unpause ${c.name}`);
+  }
+
+  /** What a container prints, by name (helpers that report through their output). */
+  outputs = new Map<string, string>();
+  /** Containers that finish as soon as they start, with this output (the SSH helpers). */
+  runsToEnd = new Set<string>();
+
+  async containerLogs(id: string) {
+    return this.outputs.get(this.#get(id).name) ?? "";
   }
 
   /** A helper container finishing its work (tests): it stops with this exit code. */
